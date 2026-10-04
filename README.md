@@ -15,7 +15,7 @@ game does not mean support for every TT game that uses the same extension.
 
 | Area | What is here | Current status |
 | --- | --- | --- |
-| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, name editor, source animation, face target editing and render helpers | 0.1.7 development source / 0.1.6 build; experimental LMSH1/LB3 support, partial DCSV structure |
+| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, companion-file checks, name editor, source animation, face target editing and render helpers | 0.1.7 experimental source/build; partial LMSH1/LB3 scene assembly, partial DCSV structure |
 | [LSW1 HGP models](formats/hgp/lsw1/README.md) | Character meshes, native skeletons, corrected palette colors, textures, face alpha and normal maps | 0.1.3; original 2005 PC game only |
 | [LIJ1 Xbox 360 prototype textures](formats/nu20/lij1-xbox360/README.md) | Drag-and-drop Windows DDS extractor and format notes | 0.1.2; BC1/2/3/5, float, cubemaps, TEX and font textures |
 | [LMSH1 AN4 animation](formats/an4/lmsh1/README.md) | Scalar decoder, corrected rotation sampler and experimental BVH export | Observed ANI-D layouts and original Marvel rig |

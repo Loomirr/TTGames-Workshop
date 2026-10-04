@@ -6,7 +6,7 @@ below, then use GitHub's **Download raw file** button to save the ZIP.
 | Tool | Package | Use |
 | --- | --- | --- |
 | Original LSW1 HGP importer 0.1.3 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.3.zip) | Native character meshes/rigs, corrected palette colors, textures, alpha and normals |
-| CU3 importer 0.1.6 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.6.zip) | Experimental cutscene/source animation import and facial editing/render helpers |
+| CU3 importer 0.1.7 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.7.zip) | Experimental asset-folder scene assembly, companion-file checks, source animation and facial editing/render helpers; full cutscenes remain incomplete |
 | LIJ1 Xbox 360 prototype extractor 0.1.2 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip) | GHG/GSC/TEX/FNT/DDS inputs; cubemaps, BC5, float and legacy textures |
 
 Checksums and exact download sizes are in [manifest.json](manifest.json).

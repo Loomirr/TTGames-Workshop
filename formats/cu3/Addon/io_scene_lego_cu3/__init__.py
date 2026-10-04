@@ -25,6 +25,7 @@ class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
     filter_glob: StringProperty(default='*.cu3;*.CU3', options={'HIDDEN'})
     mode: EnumProperty(name='Import mode', items=[
         ('ASSEMBLE', 'Assemble available scene assets', 'Find source actors, costume materials and cameras under an extracted asset folder; report missing systems'),
+        ('DEPENDENCIES', 'Check companion files', 'Report character definitions, models, active attachments and costume textures before building a scene'),
         ('INSPECT', 'Inspect scene references', 'Read actor names, timeline and source data report'),
         ('SKELETONS', 'Create source armatures', 'Create armatures for actors matching the supplied GHG/JSON source skeleton'),
         ('SELECTED', 'Animate selected source rig', 'Apply one actor track to a compatible source armature')], default='INSPECT')
@@ -41,10 +42,10 @@ class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
     def draw(self, context):
         layout = self.layout
         layout.prop(self, 'mode')
-        if self.mode == 'ASSEMBLE':
+        if self.mode in ('ASSEMBLE','DEPENDENCIES'):
             layout.prop(self, 'game_profile')
             layout.prop(self, 'asset_root')
-            layout.label(text='Creates a new scene and a missing-assets report.', icon='INFO')
+            layout.label(text='Checks declared character companion files.' if self.mode=='DEPENDENCIES' else 'Creates a new scene and a missing-assets report.', icon='INFO')
             layout.label(text='Environments, audio and effects still need work.')
         elif self.mode != 'INSPECT':
             layout.prop(self, 'skeleton_path')
@@ -54,12 +55,23 @@ class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
             layout.prop(self, 'source_visibility')
             if self.mode == 'SELECTED':
                 layout.prop(self, 'copy_rig')
-        if self.mode != 'ASSEMBLE':layout.prop(self, 'cameras')
+        if self.mode not in ('ASSEMBLE','DEPENDENCIES'):layout.prop(self, 'cameras')
 
     def execute(self, context):
         try:
             cut = Cutscene(self.filepath)
             source = context.view_layer.objects.active
+            if self.mode == 'DEPENDENCIES':
+                if not self.asset_root.strip():
+                    raise FormatError('Choose the extracted game asset folder before checking companions')
+                import json
+                from .asset_index import AssetIndex
+                from .dependencies import ResourceResolver, dependency_report
+                report = dependency_report(cut, ResourceResolver(AssetIndex(bpy.path.abspath(self.asset_root)), self.game_profile))
+                text = bpy.data.texts.new(cut.name+' / companion files')
+                text.write(json.dumps(report,indent=2))
+                self.report({'INFO'}, f'{report["resolved_resources"]} resources found; {report["missing_resources"]} missing, {report["unresolved_resources"]} unresolved. See "{text.name}" in Text Editor.')
+                return {'FINISHED'}
             if self.mode == 'ASSEMBLE':
                 if not self.asset_root.strip():
                     raise FormatError('Choose the extracted game asset folder before assembling a scene')

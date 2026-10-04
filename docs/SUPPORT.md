@@ -5,7 +5,9 @@ all formats or games are now supported.
 
 - CU3: observed LMSH1/LB3 structures, matching source skeletons, packed curves,
   name rebuilding, hash/layout-locked GHG face target editing. DCSV is partial.
-  Full scene assembly is still a private research pipeline. The V5 face helper
+  Version 0.1.7 adds partial actor/camera assembly from extracted assets and a
+  companion-file preflight. Full scene reconstruction remains incomplete.
+  The V5 face helper
   requires actual companion meshes and verified material flags.
   Version 0.1.6 adds live camera preview copies of assembled scenes, with
   approximate post-skinning facial clipping and preserved native export data.

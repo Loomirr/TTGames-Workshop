@@ -1,4 +1,4 @@
-# Progress — local 0.1.7 development (unreleased)
+# Progress — 0.1.7 experimental
 
 Updated October 4, 2026. This records the current implementation and checks;
 it isn't a promise that every cutscene or game is supported.
@@ -38,8 +38,10 @@ manual scene selection incorrectly included; four instances were corrected.
 The new images still show major framing, surface, cape-deformation and scene
 completeness issues. Missing floor/geometry and exact character appearance are
 not declared fixed. V8 remains a work-in-progress copy, not a fidelity milestone.
-Eighteen portable tests pass, including five texture-inventory regression tests.
-No 0.1.7 package has been published; the 0.1.6 ZIP remains the prior build.
+Thirty-two portable tests pass, including texture inventories, attachment
+controls, morph scalar values, empty display locators and dependency graphs.
+The 0.1.7 source-only addon package is available in the builds folder. Full
+scene fidelity remains incomplete; earlier builds remain available too.
 
 ## Broader assembly samples
 
@@ -82,6 +84,42 @@ operator completion as full support. Choose a new output folder for each run:
 ```text
 blender -b --factory-startup --python-exit-code 1 --python scripts/check_assembly_corpus_blender.py -- example.CU3 --assets extracted-assets --game LB3 --output audit-output --save-scenes --render-midpoint
 ```
+
+## Shared fixes after the first broader sample
+
+The opening test now constructs **6 / 7** actor nodes and eight model instances,
+up from 3 / 7, after adding bounded attachment controls, the second observed
+BSA compression flag variant and UMTL 198. The remaining Sinestro face has a
+non-boolean single-channel control and is explicitly rejected. Flash's helmet
+now imports in the level-15 sample: DISP 32 retains its empty VFX locator records
+instead of rejecting the model. That test still has 4 / 11 actor nodes; the
+static helmet is an additional model, not an additional animated actor node.
+
+Control checks across 196 source files sampled 1,409,679 frames from 1,393
+successful one/two-channel tracks; one additional track was rejected as
+non-boolean. Sixty-four BSA `0xAC` tracks produced 124,232 finite scalar samples.
+The opening's two such morph tracks were sampled across all 1,017 frames;
+other BSA tracks used five timeline positions. These are decoding checks, not
+in-game expression matching. New midpoint images still show serious framing
+and completeness problems. No full-scene fidelity claim follows from the
+increased import counts.
+
+The new **Check companion files** mode and portable `check_dependencies.py`
+share resource resolution with scene assembly. Reports follow CD model
+overrides, active attachment layers and declared costume textures, deduplicate
+repeated instances and distinguish missing files from ambiguous/unsupported
+resources. A missing CD can redirect a character to a shared model, so the
+report no longer incorrectly implies that every character must have its own
+same-named GHG/GSC. The level-15 preflight finds three resources and identifies
+one missing shared tentacle resource requested by seven actor instances.
+Archive extraction, environment dependencies and effects remain outside this
+preflight's scope.
+
+The packaged 0.1.7 ZIP was loaded directly in Blender 5.2.2. Both companion
+checking and actual scene assembly completed for the opening and level-15
+samples, with matching dependency reports. Saved scenes and midpoint renders
+were produced from the packaged code. Every packaged Python module matches
+the source bytes; archive integrity and the no-game-assets checks pass.
 
 ## Live playback
 

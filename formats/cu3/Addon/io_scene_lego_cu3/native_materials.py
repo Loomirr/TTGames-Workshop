@@ -83,7 +83,7 @@ def read_materials(path):
     if marker < 0:
         raise FormatError('Native material table missing')
     version, count = r.get('2I', marker+4)
-    if version not in (174, 175, 176, 177, 195, 199, 200, 201, 202) or count > 65536:
+    if version not in (174, 175, 176, 177, 195, 198, 199, 200, 201, 202) or count > 65536:
         raise FormatError(f'Unverified native material table version/count: {version}/{count}')
     start = marker+12
     if version < 190:

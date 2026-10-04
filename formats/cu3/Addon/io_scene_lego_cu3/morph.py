@@ -179,5 +179,5 @@ def animate_shape_keys(obj, animation, frames):
         fc.update()
     keys.animation_data_create()
     keys.animation_data.action, keys.animation_data.action_slot = action, slot
-    obj['cu3_morph_status'] = 'Source target offsets + observed BSA 53-channel weights. Game shader details unresolved.'
+    obj['cu3_morph_status'] = f'Source target offsets + observed BSA {animation.curves}-channel weights. Game shader details unresolved.'
     return action

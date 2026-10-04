@@ -72,10 +72,15 @@ def read_display(path, part_count):
                 raise FormatError('Unreasonable native display range count')
             c.at = start
             c.take(204 + 4 * ranges)
-        if clip >= len(clips) or not all(math.isfinite(v) for v in matrix):
+        # The all-ones clip index is an empty named locator, observed on
+        # accessory VFX anchors. Keep its position in the specials table:
+        # native layer/attachment indices still refer to that table.
+        locator_only = dx and clip == 0xffffffff
+        if (not locator_only and clip >= len(clips)) or not all(math.isfinite(v) for v in matrix):
             raise FormatError('Invalid native display instance')
         bindings, unsupported = [], []
-        for material, command in zip(clips[clip]['materials'], clips[clip]['items']):
+        draw_list = [] if locator_only else zip(clips[clip]['materials'], clips[clip]['items'])
+        for material, command in draw_list:
             opcode, command_flags, part = commands[command]
             if opcode in (0x80, 0xb3):
                 if part >= part_count:
@@ -84,6 +89,7 @@ def read_display(path, part_count):
             else:
                 unsupported.append({'opcode': opcode, 'flags': command_flags, 'value': part})
         specials.append(dict(index=index, name=name, matrix=matrix, clip=clip,
-                             flags=flags, parts=bindings, unsupported_commands=unsupported))
+                             flags=flags, parts=bindings, unsupported_commands=unsupported,
+                             locator_only=locator_only))
     return dict(version=version, specials=specials, commands=commands,
                 clips=clips, end_offset=c.at)

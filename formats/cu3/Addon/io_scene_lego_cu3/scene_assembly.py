@@ -4,13 +4,12 @@ Every omitted resource/system is recorded in a Blender text report. This is
 an incremental importer, not a claim of complete engine reconstruction.
 """
 import json
-import re
 from pathlib import Path
 import bpy
 from mathutils import Matrix
 from .cu3 import FormatError
 from .asset_index import AssetIndex
-from .definitions import character_definition
+from .dependencies import ResourceResolver, dependency_report, actor_resource
 from .native_model_blender import load_model, create_model
 from .costume_materials import CostumeMaterials
 from .cinematic_blender import import_cameras
@@ -35,27 +34,22 @@ def rollback(before):
 def assemble(cut, asset_root, profile, context):
     if cut.version == 30:
         raise FormatError('DCSV ANI-E and cinematic assembly remain unverified; use reference inspection')
-    if cut.version != {'LB3':19, 'LMSH1':18}[profile]:
-        raise FormatError('Cutscene version does not match the selected game profile')
-    suffix = {'LB3':'_DX11', 'LMSH1':'_NXG'}[profile]
     assets = AssetIndex(asset_root)
+    resolver = ResourceResolver(assets, profile)
+    resolver.validate_cutscene(cut)
+    dependencies = dependency_report(cut, resolver)
+    suffix = resolver.suffix
     initial, original = snapshot(), context.scene
     report = {'source':str(cut.path), 'profile':profile, 'actors':[], 'materials':[], 'issues':[],
+              'dependencies':dependencies,
               'limitations':['Environment, rigid props, audio, source lighting, events and VFX are not yet automatically assembled.',
                              'Shared texture slots, layered materials and some native layouts remain unresolved.',
                              'Camera framing and native shaders still need comparison against game playback.']}
-    models, definitions = {}, {}
+    models = {}
     materials = CostumeMaterials(assets, suffix, report['materials'])
     def resource(reference):
-        definition_path = assets.find(reference, extension='.CD', required=False)
-        definition = None
-        if definition_path:
-            if definition_path not in definitions:
-                definitions[definition_path] = character_definition(definition_path)
-            definition = definitions[definition_path]
-            fields = definition['character']
-            reference = fields.get('Override Model File') or fields['Skeleton Name']
-        path = assets.find(reference, suffix, '.GHG', required=False) or assets.find(reference, suffix, '.GSC')
+        resolved = resolver.resolve(reference)
+        path, definition = resolved['model'], resolved['definition']
         if path not in models:
             models[path] = load_model(path)
         return models[path], definition
@@ -174,7 +168,7 @@ def assemble(cut, asset_root, profile, context):
             rows_before = len(report['actors'])
             imported_before = imported.copy()
             try:
-                reference = re.sub(r'^instance[^_]*_', '', actor['name'], flags=re.I)
+                reference = actor_resource(actor['name'])
                 model, definition = resource(reference)
                 build(actor, model, definition, actor['name'])
             except (ValueError, OSError, KeyError, RuntimeError) as error:

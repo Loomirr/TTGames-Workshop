@@ -74,11 +74,12 @@ class Animation:
             raise FormatError('ANI-E sampling is not yet verified; structural inventory only')
         if self.descriptors is not None:
             return
-        if morph_channels and (self.nodes != 1 or self.curves != 53 or self.flags != 0xa4 or self.magic != b'DINA'):
+        if morph_channels and (self.nodes != 1 or self.curves != 53 or self.flags not in (0xa4, 0xac)
+                               or tuple(self.node_flags) != (0,) or self.magic != b'DINA'):
             raise FormatError('Facial scalar layout not verified for this animation')
         if (not scene_channels and not morph_channels and (self.curves != 6 or self.flags & 0xe0 != 0xe0)) or self.flags & 1:
             raise FormatError(f'Pose sampling not yet supported: curves={self.curves}, flags=0x{self.flags:02x}')
-        if scene_channels and (self.curves not in (1, 3, 6, 7, 8, 9, 10) or not self.flags & 0x80):
+        if scene_channels and (self.curves not in (1, 2, 3, 6, 7, 8, 9, 10) or not self.flags & 0x80):
             raise FormatError('Unsupported scene scalar layout')
         if not math.isfinite(self.ratio) or self.ratio <= 0 or not math.isfinite(self.first):
             raise FormatError('Invalid compressed animation timing')
@@ -93,11 +94,17 @@ class Animation:
                           tuple(self.types) in ((14,)*6+(8,8), (14,)*6+(8,10,10), (14,)*6+(8,8,10,10)))
         if scene_channels and self.curves == 8 and not discrete_scene:
             raise FormatError('Unverified eight-channel scene control layout')
+        attachment_controls = (scene_channels and self.flags in (0xa4, 0xac) and
+                               self.nodes == 1 and tuple(self.node_flags) == (0,) and
+                               tuple(self.types) in ((8,), (8,8)))
+        if scene_channels and self.curves == 2 and not attachment_controls:
+            raise FormatError('Unverified two-channel attachment control layout')
+        self.control_visibility_channel = 0 if attachment_controls else 6 if discrete_scene else None
         self.discrete_scene_controls = discrete_scene
         for node in range(self.nodes):
             for channel in range(self.curves):
                 kind = self.types[node * self.curves + channel] & 0x7fff
-                active = (True if morph_channels or discrete_scene and channel>=6 else bool(self.node_flags[node] & 8) if self.curves in (9,10) and 6<=channel<9 else
+                active = (True if morph_channels or attachment_controls or discrete_scene and channel>=6 else bool(self.node_flags[node] & 8) if self.curves in (9,10) and 6<=channel<9 else
                           True if self.curves == 1 or channel >= 6 else bool(self.node_flags[node] & (2 if channel < 3 else 1)))
                 desc = dict(kind=kind, active=active, step=bool(self.types[node * self.curves + channel] & 0x8000))
                 if active and kind in (6, 7):

@@ -257,6 +257,25 @@ need to be selected separately; automatic sequence assembly is not implemented.
 
 ## Next decoding targets
 
+The broader October 4 sample added these bounded cases:
+
+- One-node attachment controls with flags `0xA4`/`0xAC`, node flags zero and
+  type arrays `(8,)` or `(8,8)`. Channel zero is used for visibility only when
+  every sampled value is boolean. The second field is retained but has no
+  assigned meaning. One single-channel Sinestro face track contains values
+  up to 255 and remains rejected for visibility; a type code alone does not
+  identify a channel's purpose.
+- BSA 53-channel scalar tracks with flags `0xAC` as well as `0xA4`, with node
+  flags zero. These use the existing bounded type-6/type-7 and constant readers.
+  Other BSA channel counts remain unsupported for automatic morph application.
+- DISP 32 clip index `0xFFFFFFFF` denotes a named record with no draw list in
+  the observed Flash helmet. Its matrix, flags and table index are retained;
+  later references are not shifted by deleting the record. This does not
+  reconstruct the associated VFX.
+- UMTL 198 passed record-count, prefix and footer checks on Star Sapphire's
+  face, alongside the earlier UMTL 195 Sinestro face. This enables material
+  data reading, not exact game shader reproduction.
+
 1. Expand typed scene associations to remaining locator and event records.
 2. Verify camera transform/FOV/focus conventions, shot selection and actor
    visibility against game playback, including cutscene instance origins.

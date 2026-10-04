@@ -28,7 +28,7 @@ def main():
             json.loads(path.read_text(encoding='utf-8-sig'));counts['json']+=1
         elif path.suffix=='.csproj':
             ET.parse(path);counts['projects']+=1
-    for name in ['test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py']:
+    for name in ['test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py','test_native_display.py','test_morph_controls.py','test_dependencies.py']:
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     manifest=ROOT/'builds/manifest.json'
     if manifest.exists():

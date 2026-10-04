@@ -7,8 +7,8 @@ properly. **LEGO DC Super-Villains** now has partial structural support too.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current development source: **0.1.7** (experimental); packaged build: **0.1.6**.
-The development source adds an opt-in extracted-asset-folder assembly mode for
+Current source and packaged build: **0.1.7** (experimental).
+This version adds an opt-in extracted-asset-folder assembly mode for
 supported actors, attachments, costume materials and source cameras. It is still
 in visual testing. Environments, rigid props, audio, lights and effects are not
 automatically assembled by that mode, and the resulting scene is marked incomplete.
@@ -35,8 +35,8 @@ still separate work; see the [workflow audit](../../docs/WORKFLOW.md).
 
 ## Blender addon
 
-Download the [0.1.6 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.6.zip)
-for an existing build, or use the source build command below.
+Download the [0.1.7 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.7.zip)
+or use the source build command below.
 
 1. Run `python scripts/build_addon.py` to make
    a ZIP matching the version in the source addon.
@@ -48,7 +48,7 @@ The addon declares Blender 4.4+ support. Testing so far has been in Blender
 5.2.2; other versions still need checking. Building the ZIP only needs Python's
 standard library.
 
-The packaged build has three import modes:
+The addon has these import modes:
 
 - **Inspect scene references:** shows actor markers, names and a report in
   Blender's Text Editor. Markers aren't character meshes.
@@ -63,12 +63,27 @@ The character and its face or attachments can have different skeletons.
 Matching bone counts alone don't mean two rigs are compatible. This tool
 doesn't retarget animations to unrelated rigs.
 
-Development source also offers **Assemble available scene assets**. Select an
+Also available: **Check companion files** and **Assemble available scene assets**. Select an
 extracted game asset folder and the matching LB3 or LMSH1 profile. Supply the
 uncompressed GHG/GSC, character definitions, TEX and NXG_TEXTURES companions.
 The import report lists missing resources and unsupported systems. Automatic
 actor construction is not a guarantee of correct appearance or a complete
 cutscene; DCSV assembly remains disabled. See [progress](docs/PROGRESS.md).
+
+**Check companion files** creates a Text Editor report without building geometry.
+It follows character definitions, active attachments and declared costume texture
+references, including shared body models. Missing files, conflicting matches and
+unsupported definitions are reported separately. File presence does not prove
+that its mesh, animation or shader can be reconstructed. This check covers
+character companions; it does not discover the level environment or unpack DATs.
+The same check can run outside Blender:
+
+```sh
+python scripts/check_dependencies.py scene.CU3 --assets extracted-assets --game LB3 --report companions.json
+```
+
+Choose a new report filename. The assembly mode embeds this dependency report
+alongside its actual decoder/import results.
 
 Some files are control/audio-only parts with no actor records. For example,
 LB3's base `15FORTRESS_INTRO_NXG.CU3` and `16GAME_OUTRO_NXG.CU3` contain no
