@@ -1,0 +1,16 @@
+# Changelog
+
+## First consolidated source snapshot — 4 October 2026
+
+- Added central game/format indexes and per-project documentation.
+- Imported CU3 0.1.5 source, including native face rendering and GHG target tools.
+- Imported original LSW1 HGP importer 0.1.2 with native normals and face alpha.
+- Imported LIJ1 Xbox 360 prototype DDS extractor 0.1.0 and its layout notes.
+- Included original Marvel animation decoder/sampler/BVH helpers.
+- Added a portable BTGA converter and bounded FUSE payload helper based on the
+  verified Universe in Peril 3DS investigation.
+- Kept character-specific scripts, suit profiles, LOTDK mapping and Fortnite
+  experiments in the private local archive rather than the public repo.
+- Kept private game assets, scenes, external dependencies and historical logs
+  outside Git. Preserved existing component licenses and AI acknowledgment.
+- Added AI working instructions and manual source checks; no CI automation.
