@@ -35,7 +35,12 @@ internal static class Program
             if (paths.Count == 0) { Console.WriteLine("No GHG/GSC inputs found."); return 1; }
             foreach (string p in paths)
             {
-                try { var result = Extractor.Export(p, output); Console.WriteLine($"OK: {result.TextureCount} texture(s) -> {result.OutputDirectory}"); }
+                try
+                {
+                    var result = Extractor.Export(p, output);
+                    foreach (string warning in result.Warnings) Console.WriteLine($"WARNING: {p}: {warning}");
+                    Console.WriteLine($"OK: {result.TextureCount} texture(s) -> {result.OutputDirectory}");
+                }
                 catch (Exception ex) { Console.WriteLine($"ERROR: {p}: {ex.Message}"); failed = true; }
             }
             return failed ? 1 : 0;

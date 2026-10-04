@@ -7,7 +7,7 @@ below, then use GitHub's **Download raw file** button to save the ZIP.
 | --- | --- | --- |
 | Original LSW1 HGP importer 0.1.3 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.3.zip) | Native character meshes/rigs, corrected palette colors, textures, alpha and normals |
 | CU3 importer 0.1.5 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.5.zip) | Experimental cutscene/source animation import and facial editing/render helpers |
-| LIJ1 Xbox 360 prototype extractor 0.1.0 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.0-win64.zip) | Our drag-and-drop GHG/GSC texture-to-DDS tool |
+| LIJ1 Xbox 360 prototype extractor 0.1.1 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.1-win64.zip) | Our drag-and-drop GHG/GSC texture-to-DDS tool; alternate descriptors and legacy icon recovery |
 
 Checksums and exact download sizes are in [manifest.json](manifest.json).
 

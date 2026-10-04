@@ -1,5 +1,16 @@
 # Changelog
 
+## LIJ1 prototype texture extraction fixes — 4 October 2026
+
+- Updated the Windows extractor to 0.1.1 with validated layout 0 secondary
+  resource descriptors and the observed 32x32 single-level BC1 4 KiB allocation.
+- Added bounded recovery for the on-disc legacy Indiana Jones icon's mixed
+  byte order and inconsistent chunk lengths, with window/CLI/manifest warnings.
+- Verified all five reported GSCs against independent DDS references; retained
+  byte-identical output for all 387 previously accepted containers in the ISO.
+- Added portable parser checks and regression scripts with explicit output
+  paths. Game inputs, reference textures and ISO access remain local.
+
 ## LSW1 colors and downloadable builds — 4 October 2026
 
 - Corrected solid LSW1 palette colors to match the texture color-space convention.

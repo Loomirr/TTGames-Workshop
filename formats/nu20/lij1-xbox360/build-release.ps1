@@ -6,7 +6,9 @@ dotnet publish $projectPath -c Release -o $publishPath --ignore-failed-sources
 if ($LASTEXITCODE -ne 0) { throw 'Build failed.' }
 
 $releaseRoot = Join-Path $toolRoot 'Release'
-$packageName = 'LIJ1_360_Texture_Extractor_v0.1.0_win64'
+$projectXml = [xml](Get-Content -LiteralPath $projectPath -Raw)
+$toolVersion = $projectXml.Project.PropertyGroup.Version
+$packageName = "LIJ1_360_Texture_Extractor_v${toolVersion}_win64"
 $packagePath = Join-Path $releaseRoot $packageName
 if (Test-Path -LiteralPath $packagePath) { throw "Package folder already exists: $packagePath. Use a new package/version or move the existing package first." }
 New-Item -ItemType Directory -Path $packagePath -Force | Out-Null
@@ -20,6 +22,12 @@ Get-ChildItem -LiteralPath (Join-Path $toolRoot 'Source') -File | Where-Object {
 $testsDestination = Join-Path $packagePath 'Tests'
 New-Item -ItemType Directory -Path $testsDestination | Out-Null
 Copy-Item -LiteralPath (Join-Path $toolRoot 'Tests\verify_samples.py') -Destination $testsDestination
+Copy-Item -LiteralPath (Join-Path $toolRoot 'Tests\verify_variants.py') -Destination $testsDestination
+$parserTestsDestination = Join-Path $testsDestination 'ParserChecks'
+New-Item -ItemType Directory -Path $parserTestsDestination | Out-Null
+foreach ($name in @('ParserChecks.csproj', 'Program.cs')) {
+    Copy-Item -LiteralPath (Join-Path $toolRoot "Tests\ParserChecks\$name") -Destination $parserTestsDestination
+}
 $researchDestination = Join-Path $packagePath 'Research'
 New-Item -ItemType Directory -Path $researchDestination | Out-Null
 Copy-Item -LiteralPath (Join-Path $toolRoot 'Research\probe.py') -Destination $researchDestination

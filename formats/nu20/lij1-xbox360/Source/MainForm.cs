@@ -11,7 +11,7 @@ public sealed class MainForm : Form
 
     public MainForm(IEnumerable<string> initialInputs, string? initialOutput)
     {
-        Text = "LIJ1 Xbox 360 Prototype Texture Extractor 0.1.0";
+        Text = "LIJ1 Xbox 360 Prototype Texture Extractor " + Extractor.Version;
         Size = new(840, 540); MinimumSize = new(640, 400);
         StartPosition = FormStartPosition.CenterScreen; AllowDrop = true;
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new(18), ColumnCount = 1, RowCount = 5 };
@@ -84,7 +84,13 @@ public sealed class MainForm : Form
                 if (paths.Count == 0) Append("No GHG/GSC files found in the supplied folder.");
                 foreach (string p in paths)
                 {
-                    try { var result = Extractor.Export(p, destination); Append($"OK: {Path.GetFileName(p)} — {result.TextureCount} texture(s)\r\n    {result.OutputDirectory}"); success++; }
+                    try
+                    {
+                        var result = Extractor.Export(p, destination);
+                        foreach (string warning in result.Warnings) Append($"WARNING: {Path.GetFileName(p)} — {warning}");
+                        Append($"OK: {Path.GetFileName(p)} — {result.TextureCount} texture(s)\r\n    {result.OutputDirectory}");
+                        success++;
+                    }
                     catch (Exception ex) { Append($"ERROR: {Path.GetFileName(p)} — {ex.Message}"); errors++; }
                 }
             });

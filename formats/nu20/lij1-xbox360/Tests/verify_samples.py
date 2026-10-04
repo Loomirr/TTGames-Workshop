@@ -1,15 +1,18 @@
 """Local regression/visual-decoder checks. Requires Pillow; the shipped EXE does not."""
 from pathlib import Path
+import argparse
 import hashlib, io, json, struct, subprocess, sys
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
-EXE = ROOT / 'dist' / 'LIJ1_360_Texture_Extractor.exe'
-if len(sys.argv) != 2:
-    raise SystemExit('Usage: python Tests/verify_samples.py <folder containing the two original samples>')
-INPUT = Path(sys.argv[1])
-WORK = ROOT / 'Tests' / 'RunOutput'
-WORK.mkdir(parents=True, exist_ok=True)
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('samples', type=Path, help='Folder containing the two original samples')
+parser.add_argument('--work', type=Path, default=ROOT / 'Tests' / 'RunOutput', help='New validation output directory')
+parser.add_argument('--reference', type=Path, default=ROOT / 'SampleOutput', help='Independent Python DDS output directory')
+parser.add_argument('--exe', type=Path, default=ROOT / 'dist' / 'LIJ1_360_Texture_Extractor.exe')
+args = parser.parse_args()
+EXE, INPUT, WORK = args.exe.resolve(), args.samples, args.work
+WORK.mkdir(parents=True, exist_ok=False)
 samples = [INPUT / 'CAPTAIN_KATANGA_360.GHG', INPUT / 'ICON_ARMYINTELMAN_A_360.GSC']
 sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
 before = {p.name: sha(p) for p in samples}
@@ -30,7 +33,7 @@ for folder in folders:
     for p in folder.glob('*.dds'):
         data = p.read_bytes()
         assert data[:4] == b'DDS ' and len(data) > 128
-        reference = ROOT / 'SampleOutput' / p.name
+        reference = args.reference / p.name
         assert data == reference.read_bytes(), f'Independent Python untile mismatch: {p.name}'
         fields = list(struct.unpack('<31I', data[4:128]))
         height, width, mips = fields[2], fields[3], fields[6]
@@ -82,7 +85,7 @@ run([bad / 'UnknownFormat.GSC', samples[1]], WORK / 'MixedBatch', expected=1)
 assert len(list((WORK / 'MixedBatch').rglob('*.dds'))) == 1
 run([samples[1].parent / 'does-not-exist.GSC'], WORK / 'Rejected', expected=1)
 assert {p.name: sha(p) for p in samples} == before, 'Source files must remain unchanged.'
-report = dict(version='0.1.0', sourceHashes=before, textures=results,
+report = dict(version=manifest['version'], sourceHashes=before, textures=results,
               summary=dict(sampleFiles=2, textures=4, decodedMips=decoded_count,
                            byteIdenticalToPythonReference=True, originalsUnchanged=True,
                            repeatExportDoesNotOverwrite=True, malformedCasesRejected=8,

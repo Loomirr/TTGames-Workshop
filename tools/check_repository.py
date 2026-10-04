@@ -2,6 +2,7 @@
 import ast
 import hashlib
 import json
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -43,7 +44,7 @@ def main():
                     assert not item.is_absolute() and '..' not in item.parts,name
                     assert item.suffix.lower() in {'.py','.md','.txt','.toml','.exe'} or item.name in {'LICENSE','.gitignore'},name
                     if item.suffix.lower()=='.exe':
-                        assert package['path']=='windows/LIJ1_360_Texture_Extractor-0.1.0-win64.zip' and name=='LIJ1_360_Texture_Extractor.exe',name
+                        assert re.fullmatch(r'windows/LIJ1_360_Texture_Extractor-\d+\.\d+\.\d+-win64\.zip',package['path']) and name=='LIJ1_360_Texture_Extractor.exe',name
         print('Build package hashes/integrity and no-game-asset checks passed.')
     print('Source syntax/config checks passed:',counts)
     print('Nine portable CU3 tests passed. Blender and original-file tests are separate.')

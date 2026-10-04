@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 from zipfile import ZipFile,ZIP_DEFLATED
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -43,8 +44,12 @@ def main():
         exe=tool/'dist/LIJ1_360_Texture_Extractor.exe'
         if not exe.is_file():raise ValueError('Compile our LIJ1 extractor first; no external EXE is accepted')
         licenses=args.dotnet_root.resolve()
-        package=windows/'LIJ1_360_Texture_Extractor-0.1.0-win64.zip'
+        version=ET.parse(tool/'Source/LIJ1TextureExtractor.csproj').findtext('./PropertyGroup/Version')
+        if not version or not all(part.isdigit() for part in version.split('.')):
+            raise ValueError('Invalid extractor project version')
+        package=windows/f'LIJ1_360_Texture_Extractor-{version}-win64.zip'
         entries=[(exe,exe.name),(tool/'README.md','README.md'),
+                 (tool/'FORMAT.md','FORMAT.md'),
                  (tool/'LICENSE.txt','LICENSE.txt'),(tool/'THIRD_PARTY_NOTICES.txt','THIRD_PARTY_NOTICES.txt'),
                  (licenses/'LICENSE.txt','Runtime_LICENSE.txt'),
                  (licenses/'ThirdPartyNotices.txt','Runtime_ThirdPartyNotices.txt')]

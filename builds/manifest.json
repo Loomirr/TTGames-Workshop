@@ -14,6 +14,11 @@
       "path": "windows/LIJ1_360_Texture_Extractor-0.1.0-win64.zip",
       "bytes": 45708161,
       "sha256": "47442c4808aacbbbb3ba11fbadefb9823a29decf3343214386adb1f03000b1bb"
+    },
+    {
+      "path": "windows/LIJ1_360_Texture_Extractor-0.1.1-win64.zip",
+      "bytes": 45719678,
+      "sha256": "a9c9537061c1134975a40ae4a541719ab50ab467e554b5a4f044e1036f6ae93a"
     }
   ],
   "notes": "Our source-built tools only; no game assets or external extraction programs."

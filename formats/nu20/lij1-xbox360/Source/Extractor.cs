@@ -7,16 +7,24 @@ namespace Lij1Textures;
 
 public sealed record TextureEntry(int Index, int DescriptorOffset, int Width, int Height,
     string Identifier, int FormatCode, string FourCc, int BlockBytes, int MipCount,
-    int PayloadOffset, int PayloadBytes);
-public sealed record ParsedFile(byte[] Bytes, IReadOnlyList<TextureEntry> Textures);
-public sealed record ExportResult(string Source, string OutputDirectory, int TextureCount);
+    int PayloadOffset, int PayloadBytes, string DescriptorProfile = "standard");
+public sealed record ParsedFile(byte[] Bytes, IReadOnlyList<TextureEntry> Textures,
+    IReadOnlyList<string> Warnings);
+public sealed record ExportResult(string Source, string OutputDirectory, int TextureCount,
+    IReadOnlyList<string> Warnings);
 
 public static class Extractor
 {
     public const int MaxFileBytes = 512 * 1024 * 1024;
+    public const string Version = "0.1.1";
     const int DescriptorBytes = 180;
     static uint U32(byte[] b, int o) => BinaryPrimitives.ReadUInt32BigEndian(b.AsSpan(o, 4));
     static int I32(byte[] b, int o) => BinaryPrimitives.ReadInt32BigEndian(b.AsSpan(o, 4));
+    static uint U32LE(byte[] b, int o) => BinaryPrimitives.ReadUInt32LittleEndian(b.AsSpan(o, 4));
+    static bool Tag(byte[] b, int o, ReadOnlySpan<byte> tag) =>
+        o >= 0 && o <= b.Length - tag.Length && b.AsSpan(o, tag.Length).SequenceEqual(tag);
+    static void Zero(byte[] b, int o, int count) => Require(
+        b.AsSpan(o, count).IndexOfAnyExcept((byte)0) < 0, "Unknown texture descriptor fields; a new sample is needed.");
     static bool IsPowerOfTwo(int n) => n > 0 && (n & (n - 1)) == 0;
     static int Blocks(int pixels) => Math.Max(1, (pixels + 3) / 4);
     static int Align32(int n) => (n + 31) & ~31;
@@ -31,6 +39,9 @@ public static class Extractor
     {
         Require(b.Length >= 24 && b.Length <= MaxFileBytes, "File is too short or exceeds the 512 MiB limit.");
         Require(b.AsSpan(0, 4).SequenceEqual("02UN"u8), "Not the supported big-endian NU20 prototype container (02UN). PC/NXG files are different.");
+        // One on-disc legacy icon has stale chunk lengths and mixed-endian metadata.
+        // Recognize its bounded envelope explicitly; never scan arbitrary signatures.
+        if (IsLegacyIconEnvelope(b)) return ParseLegacyIcon(b);
         int chunk = 16, textureChunk = -1, end = -1;
         while (chunk <= b.Length - 8)
         {
@@ -54,11 +65,10 @@ public static class Extractor
             int width = checked((int)U32(b, cursor)), height = checked((int)U32(b, cursor + 4));
             Require(IsPowerOfTwo(width) && IsPowerOfTwo(height) && width >= 32 && height >= 32 && width <= 8192 && height <= 8192,
                 $"Unsupported dimensions {width}x{height}. This version supports power-of-two textures from 32 through 8192 pixels.");
-            Require(U32(b, cursor + 44) == 0x08000000 && U32(b, cursor + 80) == 3 && U32(b, cursor + 84) == 1,
+            uint layout = U32(b, cursor + 84);
+            Require(U32(b, cursor + 44) == 0x08000000 && U32(b, cursor + 80) == 3 && layout is 0 or 1,
                 $"Unrecognized resource/layout flags in texture {textures.Count}. Refusing to guess a different layout.");
-            foreach (var (start, count) in new[] { (24, 20), (48, 8), (72, 8), (88, 92) })
-                Require(b.AsSpan(cursor + start, count).IndexOfAnyExcept((byte)0) < 0,
-                    $"Unknown descriptor fields in texture {textures.Count}; a new sample is needed.");
+            foreach (var (start, count) in new[] { (24, 20), (48, 8), (72, 8) }) Zero(b, cursor + start, count);
             int format = checked((int)U32(b, cursor + 56));
             Require(format is 1 or 6, $"Unsupported texture format code {format} at 0x{cursor + 56:X}. Supported codes: 1 (DXT1), 6 (DXT5).");
             long payloadLong = (long)cursor + 60 + I32(b, cursor + 60);
@@ -69,12 +79,21 @@ public static class Extractor
             int payload = (int)payloadLong;
             Require(allocated > 0 && allocated <= end - payload, "Texture payload runs outside TST0.");
             int blockBytes = format == 1 ? 8 : 16;
-            Require(ExpectedAllocation(width, height, blockBytes, mips) == allocated,
+            if (layout == 1) Zero(b, cursor + 88, 92);
+            else
+            {
+                Zero(b, cursor + 88, 40);
+                Zero(b, cursor + 132, 4);
+                Zero(b, cursor + 152, 28);
+                ValidateSecondary(b, cursor, width, height, format, mips, allocated, payload);
+            }
+            Require(ValidAllocation(width, height, blockBytes, mips, allocated),
                 $"Texture {textures.Count} has an unrecognized mip allocation ({allocated} bytes). Refusing to produce a corrupt DDS.");
             firstPayload = Math.Min(firstPayload, payload);
             textures.Add(new(textures.Count, cursor, width, height,
                 Convert.ToHexString(b.AsSpan(cursor + 8, 16)).ToLowerInvariant(),
-                format, format == 1 ? "DXT1" : "DXT5", blockBytes, mips, payload, allocated));
+                format, format == 1 ? "DXT1" : "DXT5", blockBytes, mips, payload, allocated,
+                layout == 0 ? "secondary-resource" : "standard"));
             cursor += DescriptorBytes;
         }
         Require(textures.Count > 0 && cursor <= firstPayload, "TST0 contains no supported textures.");
@@ -87,7 +106,58 @@ public static class Extractor
             payloadEnd = checked(t.PayloadOffset + t.PayloadBytes);
         }
         Require(payloadEnd == end, "Unrecognized trailing data inside TST0.");
-        return new(b, textures);
+        return new(b, textures, Array.Empty<string>());
+    }
+
+    static void ValidateSecondary(byte[] b, int d, int width, int height, int format,
+        int mips, int allocated, int payload)
+    {
+        Require(U32(b, d + 128) == ((uint)width << 16 | (uint)height)
+            && U32(b, d + 136) == (format == 1 ? 0x1a200152u : 0x1a200154u)
+            && (long)d + 140 + I32(b, d + 140) == payload
+            && U32(b, d + 144) == mips && U32(b, d + 148) == allocated,
+            "Secondary texture metadata disagrees with the primary descriptor or uses an unknown format.");
+    }
+
+    static bool ValidAllocation(int w, int h, int bytes, int mips, int allocated) =>
+        ExpectedAllocation(w, h, bytes, mips) == allocated
+        // Observed single-level 32x32 BC1 resources occupy one 4 KiB page.
+        || (w == 32 && h == 32 && bytes == 8 && mips == 1 && allocated == 4096);
+
+    static bool IsLegacyIconEnvelope(byte[] b) => b.Length >= 0x13c
+        && Tag(b, 0x10, "DAEH"u8) && U32(b, 0x14) == 16
+        && Tag(b, 0x20, "LBTN"u8) && U32(b, 0x24) == 0x41 && U32(b, 0x28) == 0x35
+        && Tag(b, 0x61, "FERT"u8) && U32(b, 0x65) == 12 && U32(b, 0x69) == 0
+        && Tag(b, 0x6d, "0TS"u8)
+        && Tag(b, 0x70, "FERT"u8) && U32(b, 0x74) == 12 && U32(b, 0x78) == 0
+        && Tag(b, 0x80, "0TST"u8);
+
+    static ParsedFile ParseLegacyIcon(byte[] b)
+    {
+        const int d = 0x88, width = 64, height = 64, mips = 7, allocated = 0xc000;
+        Require(U32(b, 0x84) == 8 + DescriptorBytes + allocated
+            && U32LE(b, d) == width && U32LE(b, d + 4) == height
+            && U32LE(b, d + 56) == 0x1a200154 && U32LE(b, d + 60) == 0x270f0129
+            && U32LE(b, d + 64) == mips && U32LE(b, d + 68) == allocated
+            && U32(b, d + 124) == 0x1a200154,
+            "Unknown mixed-endian legacy icon layout. Refusing recovery.");
+        Zero(b, d + 24, 32);
+        Zero(b, d + 72, 52);
+        Zero(b, d + 132, 4);
+        Zero(b, d + 152, 28);
+        long pointer = (long)d + 140 + I32(b, d + 140);
+        Require(pointer == 0x1000 && pointer + allocated <= b.Length - 8,
+            "Legacy icon payload is truncated or has an unknown pointer.");
+        int payload = (int)pointer, next = payload + allocated;
+        ValidateSecondary(b, d, width, height, 6, mips, allocated, payload);
+        Require(ExpectedAllocation(width, height, 16, mips) == allocated
+            && Tag(b, next, "DXAT"u8) && U32(b, next + 4) == 24 && next + 24 <= b.Length,
+            "Legacy icon allocation has no verified following chunk. Refusing recovery.");
+        var texture = new TextureEntry(0, d, width, height,
+            Convert.ToHexString(b.AsSpan(d + 8, 16)).ToLowerInvariant(),
+            6, "DXT5", 16, mips, payload, allocated, "legacy-mixed-endian-icon");
+        return new(b, new[] { texture }, new[] {
+            "Recovered textures from the observed legacy icon layout with inconsistent chunk lengths. Verify the exported images." });
     }
 
     static long ExpectedAllocation(int w, int h, int bytes, int mips)
@@ -196,15 +266,15 @@ public static class Extractor
             outputs.Add(new { file = name, texture = t, ddsBytes = dds.Length,
                 sha256 = Convert.ToHexString(SHA256.HashData(dds)).ToLowerInvariant() });
         }
-        var manifest = new { tool = "LIJ1 Xbox 360 Prototype Texture Extractor", version = "0.1.0",
+        var manifest = new { tool = "LIJ1 Xbox 360 Prototype Texture Extractor", version = Version,
             source = Path.GetFileName(path), sourceBytes = bytes.Length,
             sourceSha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(),
             conversion = "Xbox 360 2D untile, 8-in-16 byte swap, original BC1/BC3 blocks and mip chain; no recompression",
-            outputs };
+            warnings = parsed.Warnings, outputs };
         File.WriteAllText(Path.Combine(stage, "Extraction.json"), JsonSerializer.Serialize(manifest,
             new JsonSerializerOptions { WriteIndented = true }));
         Directory.Move(stage, target);
-        return new(path, target, converted.Length);
+        return new(path, target, converted.Length, parsed.Warnings);
     }
 
     public static IReadOnlyList<string> ExpandInputs(IEnumerable<string> inputs, Action<string>? warning = null)
