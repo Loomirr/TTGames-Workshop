@@ -1,5 +1,12 @@
 # Changelog
 
+## LSW1 colors and downloadable builds — 4 October 2026
+
+- Corrected solid LSW1 palette colors to match the texture color-space convention.
+- Updated HGP importer to 0.1.3 with original-color metadata and material-role checks.
+- Added builds/download instructions for the HGP addon, CU3 addon and our LIJ1
+  prototype DDS extractor. No game assets, scenes or external extraction tools.
+
 ## First consolidated source snapshot — 4 October 2026
 
 - Added central game/format indexes and per-project documentation.

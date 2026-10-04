@@ -4,6 +4,7 @@
 formats/       Readers, importers, exporters and their format-specific docs
 games/         Game-specific entry points
 tools/         Manual repository check tools
+builds/        Our packaged addons and Windows extractor, with install notes
 docs/          Overall support, licensing and local workspace notes
 AGENTS.md      Instructions for AI-assisted work in this repository
 local/         Private game assets, scenes, dependencies and historical projects

@@ -8,7 +8,8 @@ all formats or games are now supported.
   Full scene assembly is still a private research pipeline. The V5 face helper
   requires actual companion meshes and verified material flags.
 - LSW1 HGP: original PC character reader; ten headers in the prior local sample
-  remain unsupported. Normal/material checks cover readable samples only.
+  remain unsupported. Version 0.1.3 corrects palette color-space handling;
+  color/material-role checks cover 1,827 records in 139 readable files.
 - LIJ1 prototype: two original files verified, four DDS textures and 38 stored
   mip levels. Unsupported formats and layouts are refused.
 - AN4: observed ANI-D six-channel layouts, constants and packed type-6/7 curves.

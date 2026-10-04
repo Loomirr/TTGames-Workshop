@@ -9,6 +9,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 from .hgp import HGP
+from .colour import diffuse_to_linear
 
 C=Matrix(((1,0,0,0),(0,0,1,0),(0,1,0,0),(0,0,0,1)))
 DATA_TYPES=('objects','meshes','armatures','materials','images','collections')
@@ -55,6 +56,7 @@ def make_materials(h, label, load_textures):
                 path=Path(temp)/f'texture_{i:02d}.dds';path.write_bytes(raw)
                 image=bpy.data.images.load(str(path),check_existing=False)
                 image.name=f'{label} texture {i:02d}'
+                image.colorspace_settings.name='sRGB'
                 if not len(image.pixels):raise ValueError(f'Blender cannot decode texture {i}')
                 image.filepath_raw=str(path.with_suffix('.png'))
                 image.file_format='PNG';image.save();image.pack()
@@ -73,7 +75,14 @@ def make_materials(h, label, load_textures):
             image.colorspace_settings.name='Non-Color';image.pack();normal_images[index]=image
     for i,source in enumerate(sources):
         material=bpy.data.materials.new(f'{label} material {i:02d}');material.use_nodes=True
-        material.diffuse_color=(*source['diffuse'],1)
+        # Native palette floats are display RGB, matching the byte texture colors.
+        # Image nodes already convert sRGB to linear; constant sockets must do so
+        # explicitly, otherwise solid plastic becomes much paler than the printing.
+        linear=diffuse_to_linear(source['diffuse'])
+        material.diffuse_color=(*linear,1)
+        material['lsw1_diffuse_srgb']=list(source['diffuse'])
+        material['lsw1_diffuse_linear']=list(linear)
+        material['lsw1_colour_version']=1
         material['lsw1_effect_id']=source['effect'];material['lsw1_attributes']=source['attributes']
         bsdf=material.node_tree.nodes.get('Principled BSDF');bsdf.inputs['Roughness'].default_value=.38
         texture=source['texture']
@@ -84,7 +93,7 @@ def make_materials(h, label, load_textures):
             if source['attributes'] & 15 in (1,10):
                 material.node_tree.links.new(node.outputs['Alpha'],bsdf.inputs['Alpha'])
                 if hasattr(material,'surface_render_method'):material.surface_render_method='DITHERED'
-        else:bsdf.inputs['Base Color'].default_value=(*source['diffuse'],1)
+        else:bsdf.inputs['Base Color'].default_value=(*linear,1)
         normal=source['normal_texture']
         material['lsw1_linked_material']=source['linked_material']
         material['lsw1_normal_texture']=normal if normal is not None else -1

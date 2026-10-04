@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "lsw1_hgp_importer"
-version = "0.1.2"
+version = "0.1.3"
 name = "LEGO Star Wars 1 Character Importer"
 tagline = "Import original 2005 PC characters with native bones and weights"
 maintainer = "LSW1 Importer Contributors"
@@ -13,4 +13,4 @@ license = ["SPDX:GPL-3.0-or-later"]
 files = "Read HGP files and decode embedded textures in temporary files"
 
 [build]
-paths_exclude_pattern = ["__pycache__/", "*.pyc", ".git/", "tests/", "*.blend", "*.hgp", "dist/", "tools/", "CHANGELOG.md"]
+paths_exclude_pattern = ["__pycache__/", "*.pyc", ".git/", "tests/", "*.blend", "*.hgp", "*.zip", "dist/", "tools/", "CHANGELOG.md"]

@@ -4,7 +4,10 @@ A small drag-and-drop tool for extracting DDS textures from the Xbox 360 LEGO In
 
 ## Use it
 
-1. Build the source below, or use an existing private local build. This repository does not include a compiled EXE.
+Download [our Windows x64 build](../../../builds/windows/LIJ1_360_Texture_Extractor-0.1.0-win64.zip),
+then extract it before running the EXE.
+
+1. Extract the Windows package, or build the source below.
 2. Drag `.GHG` / `.GSC` files onto `LIJ1_360_Texture_Extractor.exe`. You can drag several files or a folder at once.
 3. The window shows the result for each input. Each gets a new `<filename>_DDS` folder beside it, with the textures and an `Extraction.json` manifest.
 
@@ -56,7 +59,7 @@ python .\Research\probe.py "C:\My Prototype Samples"
 python .\Tests\verify_samples.py "C:\My Prototype Samples"
 ```
 
-The two game files themselves are not included. The separate sample DDS archive contains the exported results for inspection.
+The two game files and exported sample DDS files are not included.
 
 See `FORMAT.md` for the descriptor, byte order and mip-layout findings. Xbox tiling and packed-mip addressing were cross-checked against Xenia's public implementation; see `THIRD_PARTY_NOTICES.txt` for attribution. DDS headers follow Microsoft's DDS documentation.
 

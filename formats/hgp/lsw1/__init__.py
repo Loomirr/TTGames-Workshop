@@ -12,7 +12,7 @@ from .importer import import_character, remove_created_data, snapshot_data
 bl_info = {
     'name': 'LEGO Star Wars 1 Character Importer',
     'author': 'LSW1 Importer Contributors',
-    'version': (0, 1, 2),
+    'version': (0, 1, 3),
     'blender': (4, 2, 0),
     'location': 'File > Import > LEGO Star Wars 1 Character (.hgp)',
     'description': 'Original 2005 LSW1 PC meshes, textures, native skeletons and weights',

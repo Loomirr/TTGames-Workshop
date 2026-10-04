@@ -16,7 +16,7 @@ game does not mean support for every TT game that uses the same extension.
 | Area | What is here | Current status |
 | --- | --- | --- |
 | [CU3 cutscenes](formats/cu3/README.md) | Blender addon, name editor, source animation, face target editing and render helpers | 0.1.5 source; experimental LMSH1/LB3 support, partial DCSV structure |
-| [LSW1 HGP models](formats/hgp/lsw1/README.md) | Character meshes, native skeletons, textures, face alpha and normal maps | 0.1.2; original 2005 PC game only |
+| [LSW1 HGP models](formats/hgp/lsw1/README.md) | Character meshes, native skeletons, corrected palette colors, textures, face alpha and normal maps | 0.1.3; original 2005 PC game only |
 | [LIJ1 Xbox 360 prototype textures](formats/nu20/lij1-xbox360/README.md) | Drag-and-drop Windows DDS extractor and format notes | 0.1.0; two supplied prototype samples verified |
 | [LMSH1 AN4 animation](formats/an4/lmsh1/README.md) | Scalar decoder, corrected rotation sampler and experimental BVH export | Observed ANI-D layouts and original Marvel rig |
 | [3DS BTGA / FUSE](formats/btga/3ds/README.md) | PICA texture decoding, PNG/DDS export and FUSE payload reader | Universe in Peril USA build research |
@@ -26,6 +26,9 @@ See the [game index](games/README.md), [format index](formats/README.md),
 [next steps](docs/ROADMAP.md).
 
 ## Using the tools
+
+Ready-to-use packages are in [builds/](builds/README.md), with download and
+installation notes. The packages contain only our tools and their licenses.
 
 Each folder has its own requirements and commands. There is no single install
 that enables everything. Blender addons are built from their own folders;

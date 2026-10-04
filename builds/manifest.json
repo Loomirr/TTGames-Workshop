@@ -1,0 +1,20 @@
+{
+  "packages": [
+    {
+      "path": "blender/lsw1_hgp_importer-0.1.3.zip",
+      "bytes": 26091,
+      "sha256": "6466cc3864b2a5ed3c1447951264112c4dabe929a4edd83fbd269f043fd5a583"
+    },
+    {
+      "path": "blender/TT_Cutscene_Importer_0.1.5.zip",
+      "bytes": 33039,
+      "sha256": "45e18099af6577ce7c9d3b68e04c12f2236f1bdc8bf6af419c5a91d7499a6faa"
+    },
+    {
+      "path": "windows/LIJ1_360_Texture_Extractor-0.1.0-win64.zip",
+      "bytes": 45708161,
+      "sha256": "47442c4808aacbbbb3ba11fbadefb9823a29decf3343214386adb1f03000b1bb"
+    }
+  ],
+  "notes": "Our source-built tools only; no game assets or external extraction programs."
+}

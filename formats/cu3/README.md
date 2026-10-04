@@ -26,6 +26,9 @@ look much cleaner, but they still aren't exact copies of the game's rendering.
 
 ## Blender addon
 
+Download the [0.1.5 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.5.zip)
+for an existing build, or use the source build command below.
+
 1. Run `python scripts/build_addon.py` to make
    `dist/TT_Cutscene_Importer_0.1.5.zip`.
 2. In Blender, open **Preferences → Add-ons → Install from Disk**, select that
@@ -182,6 +185,7 @@ and [OpenSaga](https://github.com/opensagadev/saga). OpenSaga targets older
 games, so its structures are research references rather than proof that these
 PC games use exactly the same layouts.
 
-The repository contains source code and documentation only. You'll need your
+This component contains source code and documentation; packaged tools are in
+the central builds folder. You'll need your
 own game files. The addon and name editor run locally without network access
 or bundled extraction executables.

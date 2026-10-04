@@ -65,3 +65,6 @@ local/
 *.log
 *.pdb
 *.rename.json
+
+# Reviewed packages built from our own source; game assets remain forbidden.
+!builds/**/*.zip
