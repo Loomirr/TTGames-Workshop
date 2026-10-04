@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../Source/Extractor.cs" Link="Extractor.cs" />
+    <Compile Include="../../Source/ResourceProfiles.cs" Link="ResourceProfiles.cs" />
   </ItemGroup>
 </Project>

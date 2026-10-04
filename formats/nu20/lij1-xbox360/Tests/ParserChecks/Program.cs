@@ -79,7 +79,7 @@ Reject("unknown resource flag", Sample(), b => Put(b, 24 + 44, 0x10000000));
 Reject("unknown format", Sample(), b => Put(b, 24 + 56, 4));
 Reject("unknown reserved data", Sample(), b => b[24 + 100] = 1);
 Reject("non power of two", Sample(), b => Put(b, 24, 31));
-Reject("small dimension", Sample(), b => Put(b, 24, 8));
+Reject("zero dimension", Sample(), b => Put(b, 24, 0));
 Reject("invalid mip count", Sample(), b => Put(b, 24 + 64, 20));
 Reject("invalid chunk length", Sample(), b => Put(b, 20, uint.MaxValue));
 Reject("descriptor padding", Sample(), b => b[0x300] = 1);
@@ -105,6 +105,7 @@ Reject("legacy following chunk size", Legacy(), b => Put(b, 0xd004, 32));
 Reject("legacy truncated allocation", Legacy()[..0xc000]);
 Reject("legacy truncated following chunk", Legacy()[..0xd010]);
 Reject("truncated ordinary payload", Sample()[..5000]);
+checks += AdvancedChecks.Run();
 Console.WriteLine($"{checks} synthetic parser/converter checks passed.");
 
 if (args.Length == 0) return;
@@ -113,21 +114,24 @@ if (args.Length is < 3 or > 4 || args[0] != "--survey" || (args.Length == 4 && a
 string input = Path.GetFullPath(args[1]), report = Path.GetFullPath(args[2]);
 Check(!File.Exists(report), "Use a new survey report path.");
 var results = new List<object>();
-int accepted = 0, rejected = 0, textures = 0, mips = 0;
+int accepted = 0, rejected = 0, textures = 0, mips = 0, rawResources = 0, emptyFiles = 0;
 var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
 foreach (string path in Directory.EnumerateFiles(input, "*", options).Order())
 {
-    if (!new[] { ".ghg", ".gsc" }.Contains(Path.GetExtension(path).ToLowerInvariant())) continue;
+    if (!Extractor.InputExtensions.Contains(Path.GetExtension(path).ToLowerInvariant())) continue;
     try
     {
         byte[] b = File.ReadAllBytes(path);
-        var parsed = Extractor.Parse(b);
+        var parsed = Extractor.ParseInput(b, Path.GetExtension(path));
         var items = parsed.Textures.Select(t => new {
             texture = t, sha256 = args.Length == 4 ? Convert.ToHexString(
                 SHA256.HashData(Extractor.ConvertTexture(parsed, t))).ToLowerInvariant() : null }).ToArray();
         results.Add(new { file = Path.GetRelativePath(input, path), success = true,
             sourceSha256 = Convert.ToHexString(SHA256.HashData(b)).ToLowerInvariant(), warnings = parsed.Warnings, outputs = items });
-        accepted++; textures += parsed.Textures.Count; mips += parsed.Textures.Sum(t => t.MipCount);
+        accepted++; textures += parsed.Textures.Count(t => !t.RawOnly);
+        rawResources += parsed.Textures.Count(t => t.RawOnly);
+        if (parsed.Textures.Count == 0) emptyFiles++;
+        mips += parsed.Textures.Where(t => !t.RawOnly).Sum(t => t.MipCount * t.Faces);
     }
     catch (Exception ex) when (ex is InvalidDataException or OverflowException or IOException)
     {
@@ -136,5 +140,5 @@ foreach (string path in Directory.EnumerateFiles(input, "*", options).Order())
     }
 }
 Directory.CreateDirectory(Path.GetDirectoryName(report)!);
-File.WriteAllText(report, JsonSerializer.Serialize(new { accepted, rejected, textures, mips, results }, new JsonSerializerOptions { WriteIndented = true }));
+File.WriteAllText(report, JsonSerializer.Serialize(new { accepted, rejected, textures, mips, rawResources, emptyFiles, results }, new JsonSerializerOptions { WriteIndented = true }));
 Console.WriteLine($"Survey: {accepted} accepted, {rejected} rejected, {textures} textures, {mips} mip levels.");

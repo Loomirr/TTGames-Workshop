@@ -1,126 +1,124 @@
 # LIJ1 Xbox 360 Prototype Texture Extractor
 
-A small drag-and-drop tool for extracting DDS textures from the Xbox 360 LEGO Indiana Jones 1 prototype samples supplied for this project. Version **0.1.1**, Windows 10/11 x64.
+A drag-and-drop DDS extractor for the supplied March 20, 2008 Xbox 360
+LEGO Indiana Jones prototype. Version **0.1.2**, Windows 10/11 x64.
 
 ## Use it
 
-Download [our Windows x64 build](../../../builds/windows/LIJ1_360_Texture_Extractor-0.1.1-win64.zip),
-then extract it before running the EXE.
+Download [the Windows x64 package](../../../builds/windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip),
+extract the ZIP, then run `LIJ1_360_Texture_Extractor.exe`.
+Drag `.GHG`, `.GSC`, `.TEX`, `.FNT` or `.DDS` files onto the EXE or its window.
+Several files or a folder can be supplied together. Folder scans include
+subfolders, skip directory links and skip previous extraction folders.
 
-1. Extract the Windows package, or build the source below.
-2. Drag `.GHG` / `.GSC` files onto `LIJ1_360_Texture_Extractor.exe`. You can drag several files or a folder at once.
-3. The window shows the result for each input. Each gets a new `<filename>_DDS` folder beside it, with the textures and an `Extraction.json` manifest.
+Each input gets a new `<filename>_DDS` directory and `Extraction.json`.
+Existing output is preserved by numbering new directories. Choose an output
+folder in the window, or leave it empty to save beside each input.
+The source files stay unchanged. The self-contained EXE needs no separate
+.NET installation, Python, Blender or network connection. It is unsigned.
 
-You can also open the EXE first and use the buttons or drop files into its window. Leave the output field empty for the default, or choose your own output folder. Folder drops scan subfolders, skipping directory links. If an output folder already exists, a numbered new folder is used.
+## Supported textures
 
-The tool reads source files without modifying them. It does not download anything or contact a server. The executable includes its .NET runtime, so Python, Blender and a separate .NET install are not needed. It is an unsigned local build.
-
-## What works so far
-
-The original two samples remain verified:
-
-| File | DDS textures | Original mip levels |
+| Stored texture | DDS output | Coverage |
 | --- | --- | --- |
-| `CAPTAIN_KATANGA_360.GHG` | 1024x1024 DXT1, 128x128 DXT1, 512x512 DXT5 | 11, 8, 10 |
-| `ICON_ARMYINTELMAN_A_360.GSC` | 256x256 DXT5 | 9 |
+| BC1 | DXT1 | Standard and observed legacy descriptors |
+| BC2 | DXT3 | Legacy descriptors whose GPU word explicitly identifies BC2 |
+| BC3 | DXT5 | Standard, legacy, standalone and font textures |
+| DXN / BC5 | DX10 BC5_UNORM | Two compressed channels, preserved without reconstructing a normal map |
+| RGBA32 float | DX10 R32G32B32A32_FLOAT | Original floating-point values; no color conversion or clamping |
+| Six-face BC1 cubemap | DXT1 cubemap | Native face order and all six DDS face flags |
+| Existing PC DDS | Unchanged DDS | Observed DXT1/DXT3/DXT5 and BGRA8 files |
 
-These are extracted from the container's texture descriptors, untiled from the Xbox 360 GPU layout, byte-swapped and written as ordinary DDS. **The original compressed blocks and mipmaps are preserved, without recompression.** Alpha is retained. The output can include material masks or other maps as well as body/portrait colors; the extractor does not guess which map is which.
+Power-of-two dimensions from 1 through 8192 are accepted when the validated
+allocation and addressing fit. Original compressed blocks, alpha and declared
+mip chains are retained without recompression. Texture identifiers, descriptor
+profiles, dimensions, exported mip counts, warnings and output hashes are in
+the manifest. The tool does not assign material roles or apply shader swizzles.
 
-All four DDS files matched a separate Python implementation byte for byte. Pillow successfully decoded all 38 exported mip levels, and the main textures were checked visually. Tests also confirmed unchanged input hashes, numbered repeat outputs, failure on eight malformed/unsupported inputs, and continued extraction of good files in a mixed batch. Launching the GUI with an input path also produced the expected DDS. Explorer's physical drag gesture was not separately automated.
+The GPU word distinguishes BC2 from BC5 in older serializers: their game-side
+format code can both be 4. A format number alone is not enough to identify that
+legacy layout. Unknown GPU words and incompatible metadata remain errors.
 
-Version 0.1.1 also verifies these five reported GSC files:
+## Validation and remaining limits
 
-| File | DDS textures | Original mip levels |
-| --- | --- | --- |
-| `ICON_COLONEL_DIETRITCH_360.GSC` | 32x32 DXT1, 256x256 DXT5 | 1, 9 |
-| `ICON_THUGGEE_SLAVEDRIVERCHIEF_360.GSC` | 32x32 DXT1, 256x256 DXT5 | 1, 9 |
-| `ICON_ENEMY_GUARD_360.GSC` | 256x256 DXT5 | 9 |
-| `ICON_ENEMY_PILOT_360.GSC` | 256x256 DXT5 | 9 |
-| `INDIANAJONES_ICON_360.GSC` | 64x64 DXT5, recovered legacy layout | 7 |
+The full **757 GHG/GSC files** from the supplied ISO now process successfully:
+**11,182 DDS resources and 92,820 face/mip images**, plus **nine raw allocations**.
+Ninety containers contain no texture payload; their manifests correctly report
+zero outputs. Twenty-four files report recovery or raw-payload warnings.
+All **2,898 DDS outputs** previously accepted by 0.1.1 remain byte-identical.
 
-These seven DDS files match an independent Python reference byte for byte;
-Pillow decoded all 45 mip levels and the portraits were checked visually.
-The two 32x32 textures are solid gray maps; their material purpose is unknown.
-Repeat exports, input hashes, inconsistent secondary metadata rejection and
-continued mixed-batch processing were also checked. All five GSCs match files
-in the supplied March 20, 2008 prototype ISO byte for byte.
+The other supplied texture files also pass: **344 TEX files, seven Xbox 360 FNT
+files and 347 existing PC DDS files** (698 resources, 5,056 exported mip levels).
+The ISO archive inventory was checked separately: its 323 TEX members are
+byte-identical copies of loose TEX files.
 
-Across the ISO's **757 GHG/GSC containers**, the parser and converter accepted
-**437 files, 2,898 textures and 24,609 stored mip levels**. The other 320 files
-were refused, including empty texture chunks and unsupported dimensions,
-formats, resource flags or container layouts. All 387 files accepted by 0.1.0
-still produce byte-identical DDS output. This broad check validates parsing,
-allocation bounds and compressed output; it is not a visual check of every
-texture or in-game validation. No game files are modified by these checks.
+These totals are parser, allocation-bound and output-hash checks, not a visual
+check of every texture. Selected extended samples matched an independent
+Python conversion for **143 resources / 1,142 face/mip images**. Pillow decoded
+1,140 of those images; the two float images were checked byte for byte across
+131,072 pixels. Selected cubemap faces, BC2/BC5 maps and font atlases were viewed.
+The original two samples and five reported icons have separate regression
+checks covering 11 DDS files and 83 mip levels. No in-game validation or
+replacement-container writing is claimed.
 
-## Current limits
+Two limits are reported explicitly:
 
-This tool supports **observed prototype layouts**, not every TT game or Xbox
-build. The parser accepts big-endian NU20 (`02UN`) containers with 180-byte TST0
-descriptors and the verified tiled packed-mip layout. It supports format codes
-**1 = BC1/DXT1** and **6 = BC3/DXT5**, power-of-two dimensions from 32 to 8192,
-and files up to 512 MiB. Square and rectangular resources occur in the broad
-parser/converter check; visual validation remains sample-specific.
+- Compact standalone/font GPU objects have no stored mip count. The verified
+  base image is exported; the tool does not infer a complete chain from the
+  allocation size. Some legacy descriptors likewise contain zero mip/allocation
+  metadata; their pointer-bounded base images are exported with warnings.
+- Nine 128x64 BC1 resources across three level files declare only 4 KiB, although
+  the tiled image requires a 6 KiB address span. Their original allocations are
+  preserved as `.x360.bin` with metadata, while the other textures export to DDS.
+  Those nine allocations are not claimed as decoded textures.
 
-Both the original layout flag 1 descriptors and observed layout flag 0
-descriptors with matching secondary resource metadata are supported. The
-observed 32x32, one-level BC1 allocation of 4 KiB is accepted explicitly.
-Unknown duplicate fields or disagreements between descriptors remain errors.
+This is texture extraction for observed prototype layouts. Models, animations,
+audio, ISO/archive unpacking, other-platform font/CSC layouts and game-ready
+replacement files are outside its scope. Other games or builds may have
+different layouts even when their extensions match. Unknown layouts are refused.
+An interrupted save can leave `.lij1_partial_*`, which is not a completed export.
 
-The observed legacy Indiana Jones icon has inconsistent chunk lengths and
-mixed-endian texture metadata. A separate, narrowly validated recovery path
-uses its secondary payload pointer and checks the following chunk. Recovery
-is reported in the window/CLI and `Extraction.json`; check those images.
-Other malformed chunk chains are refused. The tool never searches arbitrary
-file data for a texture signature or repairs the source container.
-
-Other formats, layouts, flags, dimensions or descriptor structures are refused with an error instead of being guessed. More prototype files are needed to extend support. This does not export models, animations or game-ready replacement containers. Texture identifiers are retained in the JSON manifest; meaningful original texture names were not present in the parsed descriptors.
-
-Conversion completes and validates before writing. An I/O interruption during saving can leave a `.lij1_partial_*` folder, which should not be mistaken for a completed export.
-
-## Command line
+## Command line and build
 
 ```powershell
-.\LIJ1_360_Texture_Extractor.exe --cli --out "C:\My DDS" "C:\My Prototype\CAPTAIN_KATANGA_360.GHG"
+.\LIJ1_360_Texture_Extractor.exe --cli --out "C:\My DDS" "C:\My Prototype\C3PO_360.GHG"
 ```
 
-You can pass multiple input files/folders. Exit code 0 means all supplied inputs succeeded; 1 means at least one failed or no files were found; 2 means invalid/missing arguments. Omit `--out` to use folders beside the input files.
+Files and folders can be mixed. Exit code 0 means all supplied files processed;
+1 means an input failed or no files were found; 2 means missing arguments.
+Warnings, including raw allocations and base-only exports, also appear in the
+window/CLI and manifests. Inspect them before treating an export as complete.
 
-## Source and build
-
-The repository's `Source` folder contains the complete C# parser, DDS writer
-and Windows Forms interface. Build with a .NET 10 SDK:
+Build the source with a .NET 10 SDK:
 
 ```powershell
 dotnet publish .\Source\LIJ1TextureExtractor.csproj -c Release -o .\dist
 ```
 
-`Research/probe.py` is the original sample-specific Python reference, not the
-end-user converter. `Tests/verify_samples.py` checks the original pair, and
-`Tests/verify_variants.py` checks the five reported GSCs against independent DDS
-references. Both regression scripts require Pillow, supplied files and a new
-work directory. Keep game data and validation output under ignored `local/`.
-To run the original regression from this component directory:
-
-```powershell
-python .\Tests\verify_samples.py "C:\My Prototype Samples" --work "C:\My New Validation" --reference "C:\My Reference DDS"
-```
-
-For the five GSCs, use `Tests/verify_variants.py` with the same `--work` and
-`--reference` options. The old probe writes its references to `SampleOutput`;
-run a viewing/reference copy under `local/` when generating game output.
-
-The portable C# checks need no game files or Pillow:
+Portable synthetic checks require no game files or Pillow:
 
 ```powershell
 dotnet run --project .\Tests\ParserChecks\ParserChecks.csproj
-dotnet run --project .\Tests\ParserChecks\ParserChecks.csproj -- --survey "C:\My Extracted Files" "C:\My New Report.json" --convert
 ```
 
-The first command runs 36 synthetic parser/converter checks. The optional
-survey hashes converted DDS data without saving game textures. The game files,
-reference DDS files and private ISO sample access script are not included.
+This runs 57 parser/converter checks. The optional
+`--survey input-folder new-report.json --convert` arguments hash converted
+resources without saving game textures. `Tests/verify_samples.py` checks the
+original pair and `Tests/verify_variants.py` checks the five reported GSCs against
+verified reference DDS files; each takes a sample folder, `--work`, `--reference`
+and optional `--exe`. Both require Pillow and a new work directory.
 
-See `FORMAT.md` for the descriptor, byte order and mip-layout findings. Xbox tiling and packed-mip addressing were cross-checked against Xenia's public implementation; see `THIRD_PARTY_NOTICES.txt` for attribution. DDS headers follow Microsoft's DDS documentation.
+For independently checking extended sample exports:
 
-AI was used to help investigate the samples, write this tool and check the outputs. It is not an official LEGO, Lucasfilm, TT Games or Microsoft tool. No game files are bundled with the tool.
+```powershell
+python .\Tests\verify_extended.py --sources "C:\My Samples" --exports "C:\My Exports" --report "C:\My New Validation\report.json"
+```
+
+Keep supplied game data, previews and validation output under ignored `local/`
+when working in this repository. No game files are bundled. The original
+sample-specific `Research/probe.py` is a development reference, not the shipped
+converter. See [FORMAT.md](FORMAT.md) for storage details and references.
+
+AI assisted the research, code and validation. Xbox addressing derives from
+Xenia's BSD-licensed equations; attribution is in `THIRD_PARTY_NOTICES.txt`.
+This is not an official LEGO, Lucasfilm, TT Games or Microsoft tool.

@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import struct
 import subprocess
+import xml.etree.ElementTree as ET
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,7 +45,7 @@ decoded = 0
 for p in sources:
     folder = out/(p.stem+'_DDS')
     manifest = json.loads((folder/'Extraction.json').read_text())
-    assert manifest['sourceSha256'] == before[p.name] and manifest['version'] == '0.1.1'
+    assert manifest['sourceSha256'] == before[p.name] and manifest['version'] == ET.parse(ROOT/'Source/LIJ1TextureExtractor.csproj').findtext('./PropertyGroup/Version')
     assert bool(manifest['warnings']) == (p.name == 'INDIANAJONES_ICON_360.GSC')
     assert len(manifest['outputs']) == len(expected[p.name])
     for item, (w,h,fmt,mips) in zip(manifest['outputs'],expected[p.name]):

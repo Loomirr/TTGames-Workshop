@@ -4,7 +4,7 @@ public sealed class MainForm : Form
 {
     readonly TextBox output = new() { Dock = DockStyle.Fill, PlaceholderText = "Default: a new <filename>_DDS folder beside each input" };
     readonly TextBox log = new() { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Both, WordWrap = false };
-    readonly Button files = new() { Text = "Choose GHG / GSC files", AutoSize = true };
+    readonly Button files = new() { Text = "Choose texture files", AutoSize = true };
     readonly Button folder = new() { Text = "Choose a folder", AutoSize = true };
     readonly Label status = new() { Text = "Ready. Drop files or a folder into this window.", Dock = DockStyle.Fill, AutoSize = true };
     bool busy;
@@ -20,7 +20,7 @@ public sealed class MainForm : Form
         layout.RowStyles.Add(new(SizeType.Absolute, 44));
         layout.RowStyles.Add(new(SizeType.Percent, 100));
         layout.RowStyles.Add(new(SizeType.Absolute, 30));
-        layout.Controls.Add(new Label { Dock = DockStyle.Fill, Text = "Drop prototype .GHG / .GSC files here, or onto the EXE.\nExports original DXT1 / DXT5 textures and mipmaps to DDS. Source files stay unchanged.", AutoSize = true }, 0, 0);
+        layout.Controls.Add(new Label { Dock = DockStyle.Fill, Text = "Drop prototype .GHG / .GSC / .TEX / .FNT files or folders here.\nExports textures to DDS, including cubemaps, BC5 and float data. Source files stay unchanged.", AutoSize = true }, 0, 0);
         var buttons = new FlowLayoutPanel { Dock = DockStyle.Fill };
         buttons.Controls.Add(files); buttons.Controls.Add(folder);
         layout.Controls.Add(buttons, 0, 1);
@@ -34,12 +34,12 @@ public sealed class MainForm : Form
         output.Text = initialOutput ?? "";
         files.Click += async (_, _) =>
         {
-            using var dialog = new OpenFileDialog { Filter = "Prototype GHG/GSC|*.ghg;*.gsc|All files|*.*", Multiselect = true };
+            using var dialog = new OpenFileDialog { Filter = "Prototype textures|*.ghg;*.gsc;*.tex;*.fnt;*.dds|All files|*.*", Multiselect = true };
             if (dialog.ShowDialog(this) == DialogResult.OK) await ProcessInputs(dialog.FileNames);
         };
         folder.Click += async (_, _) =>
         {
-            using var dialog = new FolderBrowserDialog { Description = "Select a folder to scan for GHG/GSC files (including subfolders)." };
+            using var dialog = new FolderBrowserDialog { Description = "Select a folder to scan for texture files (including subfolders)." };
             if (dialog.ShowDialog(this) == DialogResult.OK) await ProcessInputs(new[] { dialog.SelectedPath });
         };
         browse.Click += (_, _) =>
@@ -81,7 +81,7 @@ public sealed class MainForm : Form
             await Task.Run(() =>
             {
                 var paths = Extractor.ExpandInputs(inputs, message => { Append(message); errors++; });
-                if (paths.Count == 0) Append("No GHG/GSC files found in the supplied folder.");
+                if (paths.Count == 0) Append("No texture files found in the supplied folder.");
                 foreach (string p in paths)
                 {
                     try

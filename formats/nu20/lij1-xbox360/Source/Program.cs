@@ -32,7 +32,7 @@ internal static class Program
             }
             bool failed = false;
             var paths = Extractor.ExpandInputs(inputs, message => { Console.WriteLine("ERROR: " + message); failed = true; });
-            if (paths.Count == 0) { Console.WriteLine("No GHG/GSC inputs found."); return 1; }
+            if (paths.Count == 0) { Console.WriteLine("No supported texture inputs found."); return 1; }
             foreach (string p in paths)
             {
                 try

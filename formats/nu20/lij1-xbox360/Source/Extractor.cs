@@ -7,24 +7,28 @@ namespace Lij1Textures;
 
 public sealed record TextureEntry(int Index, int DescriptorOffset, int Width, int Height,
     string Identifier, int FormatCode, string FourCc, int BlockBytes, int MipCount,
-    int PayloadOffset, int PayloadBytes, string DescriptorProfile = "standard");
+    int PayloadOffset, int PayloadBytes, string DescriptorProfile = "standard", int Faces = 1, bool PackedMips = true,
+    bool RawOnly = false);
 public sealed record ParsedFile(byte[] Bytes, IReadOnlyList<TextureEntry> Textures,
     IReadOnlyList<string> Warnings);
 public sealed record ExportResult(string Source, string OutputDirectory, int TextureCount,
     IReadOnlyList<string> Warnings);
 
-public static class Extractor
+public static partial class Extractor
 {
     public const int MaxFileBytes = 512 * 1024 * 1024;
-    public const string Version = "0.1.1";
+    public const string Version = "0.1.2";
     const int DescriptorBytes = 180;
     static uint U32(byte[] b, int o) => BinaryPrimitives.ReadUInt32BigEndian(b.AsSpan(o, 4));
     static int I32(byte[] b, int o) => BinaryPrimitives.ReadInt32BigEndian(b.AsSpan(o, 4));
     static uint U32LE(byte[] b, int o) => BinaryPrimitives.ReadUInt32LittleEndian(b.AsSpan(o, 4));
     static bool Tag(byte[] b, int o, ReadOnlySpan<byte> tag) =>
         o >= 0 && o <= b.Length - tag.Length && b.AsSpan(o, tag.Length).SequenceEqual(tag);
-    static void Zero(byte[] b, int o, int count) => Require(
-        b.AsSpan(o, count).IndexOfAnyExcept((byte)0) < 0, "Unknown texture descriptor fields; a new sample is needed.");
+    static void Zero(byte[] b, int o, int count)
+    {
+        Require(o >= 0 && count >= 0 && o <= b.Length - count, "Invalid descriptor/padding bounds.");
+        Require(b.AsSpan(o, count).IndexOfAnyExcept((byte)0) < 0, "Unknown texture descriptor fields; a new sample is needed.");
+    }
     static bool IsPowerOfTwo(int n) => n > 0 && (n & (n - 1)) == 0;
     static int Blocks(int pixels) => Math.Max(1, (pixels + 3) / 4);
     static int Align32(int n) => (n + 31) & ~31;
@@ -42,6 +46,7 @@ public static class Extractor
         // One on-disc legacy icon has stale chunk lengths and mixed-endian metadata.
         // Recognize its bounded envelope explicitly; never scan arbitrary signatures.
         if (IsLegacyIconEnvelope(b)) return ParseLegacyIcon(b);
+        if (TryAlignedLegacy(b, out var recovered)) return recovered;
         int chunk = 16, textureChunk = -1, end = -1;
         while (chunk <= b.Length - 8)
         {
@@ -63,14 +68,16 @@ public static class Extractor
             Require(textures.Count < 4096 && cursor <= Math.Min(firstPayload, end) - DescriptorBytes,
                 "Texture descriptor count or descriptor bounds are invalid.");
             int width = checked((int)U32(b, cursor)), height = checked((int)U32(b, cursor + 4));
-            Require(IsPowerOfTwo(width) && IsPowerOfTwo(height) && width >= 32 && height >= 32 && width <= 8192 && height <= 8192,
-                $"Unsupported dimensions {width}x{height}. This version supports power-of-two textures from 32 through 8192 pixels.");
+            Require(IsPowerOfTwo(width) && IsPowerOfTwo(height) && width >= 1 && height >= 1 && width <= 8192 && height <= 8192,
+                $"Unsupported dimensions {width}x{height}. This version supports power-of-two textures from 1 through 8192 pixels.");
             uint layout = U32(b, cursor + 84);
-            Require(U32(b, cursor + 44) == 0x08000000 && U32(b, cursor + 80) == 3 && layout is 0 or 1,
+            int faces = U32(b, cursor + 44) == 0x10000000 ? 6 : 1;
+            Require((U32(b, cursor + 44) == 0x08000000 || faces == 6) && U32(b, cursor + 80) == 3 && layout is 0 or 1,
                 $"Unrecognized resource/layout flags in texture {textures.Count}. Refusing to guess a different layout.");
-            foreach (var (start, count) in new[] { (24, 20), (48, 8), (72, 8) }) Zero(b, cursor + start, count);
+            foreach (var (start, count) in new[] { (24, 20), (48, 4), (72, 8) }) Zero(b, cursor + start, count);
+            Require(U32(b, cursor + 52) == (faces == 6 ? 1u : 0u) && (faces == 1 || (width == height && layout == 1)), "Invalid cubemap fields.");
             int format = checked((int)U32(b, cursor + 56));
-            Require(format is 1 or 6, $"Unsupported texture format code {format} at 0x{cursor + 56:X}. Supported codes: 1 (DXT1), 6 (DXT5).");
+            Require(format is 1 or 4 or 6 or 9, $"Unsupported texture format code {format} at 0x{cursor + 56:X}. Supported codes: 1 (BC1), 4 (BC5), 6 (BC3), 9 (RGBA32 float).");
             long payloadLong = (long)cursor + 60 + I32(b, cursor + 60);
             int mips = checked((int)U32(b, cursor + 64)), allocated = checked((int)U32(b, cursor + 68));
             Require(mips >= 1 && mips <= Log2(Math.Max(width, height)) + 1, "Invalid mip count.");
@@ -87,16 +94,26 @@ public static class Extractor
                 Zero(b, cursor + 152, 28);
                 ValidateSecondary(b, cursor, width, height, format, mips, allocated, payload);
             }
-            Require(ValidAllocation(width, height, blockBytes, mips, allocated),
+            Require(faces == 1 ? ValidResourceAllocation(width, height, format, mips, allocated)
+                : mips == 1 && allocated == ExpectedAllocation(width, height, blockBytes, 1) * 6,
                 $"Texture {textures.Count} has an unrecognized mip allocation ({allocated} bytes). Refusing to produce a corrupt DDS.");
             firstPayload = Math.Min(firstPayload, payload);
             textures.Add(new(textures.Count, cursor, width, height,
                 Convert.ToHexString(b.AsSpan(cursor + 8, 16)).ToLowerInvariant(),
-                format, format == 1 ? "DXT1" : "DXT5", blockBytes, mips, payload, allocated,
-                layout == 0 ? "secondary-resource" : "standard"));
-            cursor += DescriptorBytes;
+                format, FourCc(format), blockBytes, mips, payload, allocated,
+                layout == 0 ? "secondary-resource" : "standard", faces, true,
+                format == 1 && width == 128 && height == 64 && mips == 1 && allocated == 4096));
+            if (faces == 6)
+            {
+                Require(cursor + DescriptorBytes * 6 <= firstPayload, "Truncated cubemap descriptor slots.");
+                Zero(b, cursor + 180, 180 * 4);
+                Zero(b, cursor + 900, 44);
+                Require(U32(b, cursor + 944) == 0x10000000, "Unknown cubemap closing slot.");
+                Zero(b, cursor + 948, 132);
+            }
+            cursor += DescriptorBytes * faces;
         }
-        Require(textures.Count > 0 && cursor <= firstPayload, "TST0 contains no supported textures.");
+        Require(cursor <= firstPayload, "Invalid TST0 descriptor bounds.");
         Require(b.AsSpan(cursor, firstPayload - cursor).IndexOfAnyExcept((byte)0) < 0,
             "Texture descriptor padding contains unknown data.");
         int payloadEnd = firstPayload;
@@ -106,23 +123,19 @@ public static class Extractor
             payloadEnd = checked(t.PayloadOffset + t.PayloadBytes);
         }
         Require(payloadEnd == end, "Unrecognized trailing data inside TST0.");
-        return new(b, textures, Array.Empty<string>());
+        return new(b, textures, textures.Where(t => t.RawOnly).Select(t =>
+            $"Texture {t.Index} declares 128x64 BC1 in only 4096 bytes, but the tiled address span is 6144 bytes. Preserved its allocation as .x360.bin; no DDS was fabricated.").ToArray());
     }
 
     static void ValidateSecondary(byte[] b, int d, int width, int height, int format,
         int mips, int allocated, int payload)
     {
         Require(U32(b, d + 128) == ((uint)width << 16 | (uint)height)
-            && U32(b, d + 136) == (format == 1 ? 0x1a200152u : 0x1a200154u)
+            && U32(b, d + 136) == GpuFormat(format)
             && (long)d + 140 + I32(b, d + 140) == payload
             && U32(b, d + 144) == mips && U32(b, d + 148) == allocated,
             "Secondary texture metadata disagrees with the primary descriptor or uses an unknown format.");
     }
-
-    static bool ValidAllocation(int w, int h, int bytes, int mips, int allocated) =>
-        ExpectedAllocation(w, h, bytes, mips) == allocated
-        // Observed single-level 32x32 BC1 resources occupy one 4 KiB page.
-        || (w == 32 && h == 32 && bytes == 8 && mips == 1 && allocated == 4096);
 
     static bool IsLegacyIconEnvelope(byte[] b) => b.Length >= 0x13c
         && Tag(b, 0x10, "DAEH"u8) && U32(b, 0x14) == 16
@@ -160,13 +173,13 @@ public static class Extractor
             "Recovered textures from the observed legacy icon layout with inconsistent chunk lengths. Verify the exported images." });
     }
 
-    static long ExpectedAllocation(int w, int h, int bytes, int mips)
+    static long ExpectedAllocation(int w, int h, int bytes, int mips, int unit = 4)
     {
         int tail = Math.Max(0, Math.Min(Log2(w), Log2(h)) - 4);
         long size = 0;
         for (int level = 0; level < mips; level++)
         {
-            size += (long)Align32(Blocks(Math.Max(1, w >> level))) * Align32(Blocks(Math.Max(1, h >> level))) * bytes;
+            size += (long)Align32(Units(Math.Max(1, w >> level), unit)) * Align32(Units(Math.Max(1, h >> level), unit)) * bytes;
             if (level >= tail) break;
         }
         return size;
@@ -186,41 +199,54 @@ public static class Extractor
 
     public static byte[] ConvertTexture(ParsedFile file, TextureEntry t)
     {
+        if (t.FormatCode == -1) return (byte[])file.Bytes.Clone();
+        if (t.RawOnly) return file.Bytes.AsSpan(t.PayloadOffset, t.PayloadBytes).ToArray();
         using var stream = new MemoryStream();
         using var writer = new BinaryWriter(stream, Encoding.ASCII, true);
         writer.Write("DDS "u8);
         writer.Write(124u);
-        writer.Write(t.MipCount > 1 ? 0xa1007u : 0x81007u);
+        int unit = t.FormatCode == 9 ? 1 : 4;
+        uint flags = t.FormatCode == 9 ? 0x100fu : 0x81007u;
+        writer.Write(flags | (t.MipCount > 1 ? 0x20000u : 0));
         writer.Write(t.Height); writer.Write(t.Width);
-        writer.Write(Blocks(t.Width) * Blocks(t.Height) * t.BlockBytes);
+        writer.Write(t.FormatCode == 9 ? t.Width * 16 : Blocks(t.Width) * Blocks(t.Height) * t.BlockBytes);
         writer.Write(0); writer.Write(t.MipCount);
         for (int i = 0; i < 11; i++) writer.Write(0);
-        writer.Write(32); writer.Write(4); writer.Write(Encoding.ASCII.GetBytes(t.FourCc));
+        writer.Write(32); writer.Write(4); writer.Write(Encoding.ASCII.GetBytes(t.FormatCode is 4 or 9 ? "DX10" : t.FourCc));
         for (int i = 0; i < 5; i++) writer.Write(0);
-        writer.Write(t.MipCount > 1 ? 0x401008u : 0x1000u);
-        for (int i = 0; i < 4; i++) writer.Write(0);
+        writer.Write(t.MipCount > 1 ? 0x401008u : t.Faces == 6 ? 0x1008u : 0x1000u);
+        writer.Write(t.Faces == 6 ? 0xfe00u : 0u);
+        for (int i = 0; i < 3; i++) writer.Write(0);
         Require(stream.Length == 128, "Internal DDS header size error.");
 
-        int tail = Math.Max(0, Math.Min(Log2(t.Width), Log2(t.Height)) - 4);
-        int storage = 0;
+        if (t.FormatCode is 4 or 9)
+        {
+            writer.Write(t.FormatCode == 4 ? 83u : 2u); writer.Write(3u);
+            writer.Write(t.Faces == 6 ? 4u : 0u); writer.Write(1u); writer.Write(0u);
+        }
+        int tail = t.MipCount == 1 || !t.PackedMips ? int.MaxValue : Math.Max(0, Math.Min(Log2(t.Width), Log2(t.Height)) - 4);
+        int faceBytes = t.PayloadBytes / t.Faces;
+        for (int face = 0; face < t.Faces; face++)
+        {
+        int storage = face * faceBytes;
         for (int level = 0; level < t.MipCount; level++)
         {
-            int bw = Blocks(Math.Max(1, t.Width >> level)), bh = Blocks(Math.Max(1, t.Height >> level));
+            int bw = Units(Math.Max(1, t.Width >> level), unit), bh = Units(Math.Max(1, t.Height >> level), unit);
             int pitch = Align32(bw), x0 = 0, y0 = 0;
             if (level >= tail)
             {
-                pitch = Align32(Blocks(t.Width >> tail));
+                pitch = Align32(Units(t.Width >> tail, unit));
                 int packed = level - tail;
                 if (packed < 3)
                 {
-                    if (t.Width > t.Height) y0 = (16 >> packed) / 4;
-                    else x0 = (16 >> packed) / 4;
+                    if (t.Width > t.Height) y0 = (16 >> packed) / unit;
+                    else x0 = (16 >> packed) / unit;
                 }
                 else
                 {
                     int offset = (Math.Max(t.Width, t.Height) >> tail) >> (packed - 2);
-                    if (t.Width > t.Height) x0 = offset / 4;
-                    else y0 = offset / 4;
+                    if (t.Width > t.Height) x0 = offset / unit;
+                    else y0 = offset / unit;
                 }
             }
             byte[] linear = new byte[checked(bw * bh * t.BlockBytes)];
@@ -228,16 +254,16 @@ public static class Extractor
             for (int x = 0; x < bw; x++)
             {
                 long relative = storage + TiledAddress(x + x0, y + y0, pitch, t.BlockBytes == 8 ? 3 : 4);
-                Require(relative >= 0 && relative + t.BlockBytes <= t.PayloadBytes, "Tiled mip address is outside the resource.");
+                Require(relative >= face * faceBytes && relative + t.BlockBytes <= (face + 1) * faceBytes,
+                    $"Texture {t.Index}, mip {level}, face {face}: tiled address 0x{relative:X} is outside its {faceBytes}-byte allocation.");
                 int source = checked(t.PayloadOffset + (int)relative), dest = (y * bw + x) * t.BlockBytes;
-                for (int k = 0; k < t.BlockBytes; k += 2)
-                {
-                    linear[dest + k] = file.Bytes[source + k + 1];
-                    linear[dest + k + 1] = file.Bytes[source + k];
-                }
+                int swap = t.FormatCode == 9 ? 4 : 2;
+                for (int k = 0; k < t.BlockBytes; k++)
+                    linear[dest + k] = file.Bytes[source + (k / swap) * swap + swap - 1 - k % swap];
             }
             writer.Write(linear);
             if (level < tail) storage += checked(pitch * Align32(bh) * t.BlockBytes);
+        }
         }
         return stream.ToArray();
     }
@@ -247,10 +273,15 @@ public static class Extractor
         path = Path.GetFullPath(path);
         Require(new FileInfo(path).Length <= MaxFileBytes, "Input exceeds the 512 MiB limit.");
         byte[] bytes = File.ReadAllBytes(path);
-        var parsed = Parse(bytes);
+        return ExportBytes(path, bytes, outputRoot ?? Path.GetDirectoryName(path)!);
+    }
+
+    static ExportResult ExportBytes(string path, byte[] bytes, string outputRoot)
+    {
+        var parsed = ParseInput(bytes, Path.GetExtension(path));
         // Validate and convert every resource before creating any output folder.
         var converted = parsed.Textures.Select(t => (Texture: t, Dds: ConvertTexture(parsed, t))).ToArray();
-        string root = outputRoot is null ? Path.GetDirectoryName(path)! : Path.GetFullPath(outputRoot);
+        string root = Path.GetFullPath(outputRoot);
         Directory.CreateDirectory(root);
         string stem = Path.GetFileNameWithoutExtension(path);
         string target = Path.Combine(root, stem + "_DDS");
@@ -261,20 +292,23 @@ public static class Extractor
         var outputs = new List<object>();
         foreach (var (t, dds) in converted)
         {
-            string name = $"{stem}_{t.Index:00}_{t.Width}x{t.Height}_{t.FourCc}.dds";
+            string name = $"{stem}_{t.Index:00}_{t.Width}x{t.Height}_{t.FourCc}{(t.RawOnly ? ".x360.bin" : ".dds")}";
             File.WriteAllBytes(Path.Combine(stage, name), dds);
-            outputs.Add(new { file = name, texture = t, ddsBytes = dds.Length,
+            outputs.Add(new { file = name, texture = t, outputBytes = dds.Length,
+                ddsBytes = t.RawOnly ? (int?)null : dds.Length,
                 sha256 = Convert.ToHexString(SHA256.HashData(dds)).ToLowerInvariant() });
         }
         var manifest = new { tool = "LIJ1 Xbox 360 Prototype Texture Extractor", version = Version,
             source = Path.GetFileName(path), sourceBytes = bytes.Length,
             sourceSha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(),
-            conversion = "Xbox 360 2D untile, 8-in-16 byte swap, original BC1/BC3 blocks and mip chain; no recompression",
+            conversion = parsed.Textures.Count == 0 ? "No texture payload present"
+                : parsed.Textures.All(t => t.FormatCode == -1) ? "Existing DDS preserved byte for byte; no Xbox conversion"
+                : "Xbox 360 untile and format-specific endian swap; original blocks/values and exported mip levels, no recompression",
             warnings = parsed.Warnings, outputs };
         File.WriteAllText(Path.Combine(stage, "Extraction.json"), JsonSerializer.Serialize(manifest,
             new JsonSerializerOptions { WriteIndented = true }));
         Directory.Move(stage, target);
-        return new(path, target, converted.Length, parsed.Warnings);
+        return new(path, target, converted.Count(x => !x.Texture.RawOnly), parsed.Warnings);
     }
 
     public static IReadOnlyList<string> ExpandInputs(IEnumerable<string> inputs, Action<string>? warning = null)
@@ -285,10 +319,10 @@ public static class Extractor
             try
             {
                 foreach (string p in Directory.EnumerateFiles(directory))
-                    if (Path.GetExtension(p).Equals(".ghg", StringComparison.OrdinalIgnoreCase) ||
-                        Path.GetExtension(p).Equals(".gsc", StringComparison.OrdinalIgnoreCase)) paths.Add(Path.GetFullPath(p));
+                    if (InputExtensions.Contains(Path.GetExtension(p), StringComparer.OrdinalIgnoreCase)) paths.Add(Path.GetFullPath(p));
                 foreach (string p in Directory.EnumerateDirectories(directory))
-                    if ((File.GetAttributes(p) & FileAttributes.ReparsePoint) == 0) Visit(p);
+                    if ((File.GetAttributes(p) & FileAttributes.ReparsePoint) == 0 && !Path.GetFileName(p).StartsWith(".lij1_partial_", StringComparison.OrdinalIgnoreCase)
+                        && !File.Exists(Path.Combine(p, "Extraction.json")) && !File.Exists(Path.Combine(p, "BatchExtraction.json"))) Visit(p);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { warning?.Invoke($"Cannot scan {directory}: {ex.Message}"); }
         }
