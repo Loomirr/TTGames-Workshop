@@ -7,7 +7,7 @@ properly. **LEGO DC Super-Villains** now has partial structural support too.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current local source version: **0.1.5** (unreleased). It can inspect CU3 files and import
+Current source/addon version: **0.1.5** (experimental). It can inspect CU3 files and import
 supported character animation onto the matching source skeleton. Full cutscene
 reconstruction is still being worked on: automatic models, materials, cameras,
 facial animation, audio and effects aren't automatically assembled through the addon yet.
@@ -23,6 +23,8 @@ This pass fixes static faces stacking every expression at once, and adds
 tools for native depth masks and packed normal textures. See
 [the facial rendering notes](docs/FACIAL_RENDERING.md). The private V5 scenes
 look much cleaner, but they still aren't exact copies of the game's rendering.
+The revised private V6 viewing copies retain those repairs and add fresh
+composited playback caches plus isolated facial-target controls.
 
 ## Blender addon
 

@@ -43,6 +43,13 @@ with a packed still for immediate inspection. That still is not a cached movie.
 Their source watch scenes retain editable camera cuts and audio; rendering
 scene strips during playback can be slow. Older cached videos remain old previews.
 
+The revised private V6 viewing copies render new Cycles/compositor movie caches
+from those repaired source stages, with recovered audio and editable scenes
+retained. A separate inspection scene drives matching face parts together with
+Target/Strength controls. Its copied meshes, keys and rigs are independent of
+the original cutscene tracks. This is a viewing workflow, not new game-side
+facial animation export or a solution to the remaining camera/VFX issues.
+
 `material_preview.attach_normal_map` supports RGB and the observed alpha-X
 normal packing, with a selectable green-channel flip. The research builder
 checks the native texture slot, channels and texture name before applying it.

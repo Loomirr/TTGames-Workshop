@@ -33,14 +33,18 @@ preview controls; they do not change the exported native target coordinates.
 
 The private inspection scene has four scenes: Batman, Robin, Hulk and Sandman.
 Each uses one original highest-detail FACE display variant. It is deliberately
-separate from the current cutscene scenes. Native helper parts are available
-for inspection; the displayed face still lacks the game's proper masking.
+separate from the current cutscene scenes. The revised private V6 lab includes
+the approximate native depth-mask compositor and synchronized Target/Strength
+controls. Press F12 for the composed result; solid viewport shading does not
+reproduce that masking. The game shader is still not matched exactly.
 
 1. Build/install the source addon ZIP and open a **copy** of the editing lab.
 2. Choose a character using Blender's Scene dropdown.
 3. Select a mesh in that character's **editable native face** collection.
 4. In **Object Data Properties → Shape Keys**, select a `TT_Target_###` key.
-   Set its value to 1 for inspection; edit that key's vertices in Edit Mode.
+   In the older lab, set its value to 1 for inspection. In V6, select the face
+   armature and use **Object Properties → Custom Properties → Target/Strength**
+   to drive matching parts together. Edit the selected key's vertices in Edit Mode.
 5. Save your edited blend copy. In the 3D View, open **N → TT Cutscene** and
    choose **Export edited face GHG copy**. Choose a new filename.
 
@@ -95,6 +99,8 @@ duplicates. All 11 no-op exports were byte-for-byte identical. A strength edit
 in each asset passed a fresh full target extraction using the original log.
 
 The saved Blender lab passed no-op checks for all four character collections.
+The V6 lab also passed four byte-identical native no-op exports after reloading,
+and its composed previews were rendered for each character.
 Batman and Hulk vertex edits passed the native writer and fresh extraction.
 Changes to Basis and key names were rejected. The actual Blender export operator
 produced the same verified native output and rejected an existing output name.
@@ -102,8 +108,8 @@ Blender testing used 5.2.2 LTS; other versions still need checking.
 
 These are decoded-data and preservation checks. They do not prove game-side
 deformation, lighting or facial rendering. Unknown companion fields may carry
-additional requirements for edited shapes. Mouth/eye helper masking, shaders
-and normal handling remain unresolved. Static head appearance is separate from
+additional requirements for edited shapes. Exact mouth/eye depth behaviour,
+shaders and normal handling remain unresolved. Static head appearance is separate from
 the animated FACE GHG layers and may require another asset edit.
 
 DCSV facial export is not supported. CU3 facial weight writing is also not

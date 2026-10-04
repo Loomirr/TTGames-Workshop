@@ -1,19 +1,30 @@
-# Local research archive
+# Local workspace
 
-The research workstation keeps historical projects under ignored
-`local/Batcomputer/`. The original directory layout is preserved there so
-relative dependencies continue to resolve. This directory is not uploaded.
+Use ignored `local/` for game inputs, extracted assets, experiments and preview
+scenes. A fresh clone includes the public tools and documentation, not these
+private files. Each tool accepts user-supplied paths; this layout is optional.
 
-It contains extracted assets, editable scenes, render evidence, private
-character experiments, mapping drafts, build outputs, external reference
-tools and historical repository checkouts. The detailed workstation-only
-inventory is in `local/README.md`; a fresh clone does not include that archive.
+| Local folder | Purpose |
+| --- | --- |
+| `research/cu3/` | Cutscene, facial target and NXG/DX11 investigations |
+| `research/hgp/lsw1/` | Original 2005 PC HGP investigation |
+| `research/an4/lmsh1/` | Original Marvel animation investigation |
+| `research/nu20/lij1-xbox360/` | Xbox 360 prototype texture investigation |
+| `previews/` | Viewing copies, renders and character galleries |
+| `validation/` | Format, animation, material and package verification results |
+| `private-projects/` | Asset-specific experiments and conversions |
+| `build-cache/` | Local compiler and dependency caches |
 
-Old research locations have compatibility junctions pointing to the new
-archive. Shared native rig references were copied so the separate application
-project can still use its originals. Unrelated application source was not moved.
+Keep games and platforms separate within each format area. Preserve original
+inputs and validated scenes; write edits and new preview passes to separate
+outputs. Keep external research dependencies private and out of downloadable
+builds. Never stage extracted models, textures, audio or Blender scenes.
 
-Migration inventory, SHA-256 manifests and completion records remain in
-ignored `.migration/`. Historical paths inside private logs and manifests were
-preserved rather than rewritten. Make public changes in the top-level source
-folders, not in the archived checkouts.
+Public changes belong in top-level `formats/`, `games/`, `tools/` and `docs/`.
+Reviewed packages made from the project's source belong in `builds/`.
+Historical checkouts under `local/` are reference copies, not the public source.
+
+On a research workstation, `local/README.md` and `local/PATHS.json` record its
+private project locations. Relocation inventories and integrity checks stay
+under ignored `.migration/`. These records are not required to use the tools
+and are not included in Git.
