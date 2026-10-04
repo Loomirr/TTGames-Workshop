@@ -78,16 +78,26 @@ class Animation:
             raise FormatError('Facial scalar layout not verified for this animation')
         if (not scene_channels and not morph_channels and (self.curves != 6 or self.flags & 0xe0 != 0xe0)) or self.flags & 1:
             raise FormatError(f'Pose sampling not yet supported: curves={self.curves}, flags=0x{self.flags:02x}')
-        if scene_channels and (self.curves not in (1, 3, 6, 7, 9, 10) or not self.flags & 0x80):
+        if scene_channels and (self.curves not in (1, 3, 6, 7, 8, 9, 10) or not self.flags & 0x80):
             raise FormatError('Unsupported scene scalar layout')
         if not math.isfinite(self.ratio) or self.ratio <= 0 or not math.isfinite(self.first):
             raise FormatError('Invalid compressed animation timing')
         descriptors, key_cursor, scale_cursor = [], 0, self.at + self.offsets[0]
         r = self.reader
+        # Observed LB3 actor-control tracks: six absent transform channels,
+        # visibility followed by discrete resource-control fields. These are
+        # not a scale triplet. Retain the extra integers without interpreting
+        # their resource/variant semantics. Unknown layouts still fail.
+        discrete_scene = (scene_channels and self.flags == 0xac and self.nodes == 1 and
+                          tuple(self.node_flags) == (0,) and
+                          tuple(self.types) in ((14,)*6+(8,8), (14,)*6+(8,10,10), (14,)*6+(8,8,10,10)))
+        if scene_channels and self.curves == 8 and not discrete_scene:
+            raise FormatError('Unverified eight-channel scene control layout')
+        self.discrete_scene_controls = discrete_scene
         for node in range(self.nodes):
             for channel in range(self.curves):
                 kind = self.types[node * self.curves + channel] & 0x7fff
-                active = (True if morph_channels else bool(self.node_flags[node] & 8) if self.curves in (9,10) and 6<=channel<9 else
+                active = (True if morph_channels or discrete_scene and channel>=6 else bool(self.node_flags[node] & 8) if self.curves in (9,10) and 6<=channel<9 else
                           True if self.curves == 1 or channel >= 6 else bool(self.node_flags[node] & (2 if channel < 3 else 1)))
                 desc = dict(kind=kind, active=active, step=bool(self.types[node * self.curves + channel] & 0x8000))
                 if active and kind in (6, 7):
@@ -95,7 +105,7 @@ class Animation:
                     desc['scale'], desc['minimum'] = r.get('2f', scale_cursor, '<')
                     key_cursor += 4 if kind == 6 else 8
                     scale_cursor += 8
-                elif active and kind == 8 and scene_channels:
+                elif active and scene_channels and (kind == 8 or kind == 10 and discrete_scene):
                     desc['key_offset'] = key_cursor
                     key_cursor += 4
                     desc['step'] = True
@@ -139,7 +149,7 @@ class Animation:
                 value = 1.0
             elif kind >= 16:
                 value = desc.get('constant', kind * self.scale + self.minimum)
-            elif kind == 8:
+            elif kind in (8, 10):
                 cursor = self.at + self.offsets[3] + group * self.stride + desc['key_offset']
                 index = r.get('B', cursor + quarter)
                 if index >= self.integer_constant_count:

@@ -21,6 +21,11 @@
       "sha256": "a9c9537061c1134975a40ae4a541719ab50ab467e554b5a4f044e1036f6ae93a"
     },
     {
+      "path": "blender/TT_Cutscene_Importer_0.1.6.zip",
+      "bytes": 39578,
+      "sha256": "2b789606d39ff03e41a61412effa90ec4bdd8ce73f3c6c843c94c1779c520b92"
+    },
+    {
       "path": "windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip",
       "bytes": 45724622,
       "sha256": "b12cc665f9d436b8afb4436e19f9fbdbc1ee5a5b46df0b166540e693c38a558e"

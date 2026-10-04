@@ -100,8 +100,11 @@ def visibility(cut, actor):
         # Six transform channels have no visibility channel. Character scene
         # tracks use channel 6; channel 9 on 10-channel rigid tracks follows
         # their scale triplet. Never interpret rotation Z as visibility.
-        channel = 6 if anim.curves == 7 else 9 if anim.curves == 10 else None
-        own = [bool(round(anim.sample(f)[0][channel])) for f in range(cut.frames)] if channel is not None else [True] * cut.frames
+        channel = 6 if anim.curves == 7 or getattr(anim,'discrete_scene_controls',False) else 9 if anim.curves == 10 else None
+        values = [anim.sample(f)[0][channel] for f in range(cut.frames)] if channel is not None else None
+        if values is not None and getattr(anim,'discrete_scene_controls',False) and any(v not in (0,1) for v in values):
+            raise FormatError('Non-boolean scene-control values are not verified as visibility. Disable source visibility to inspect the compatible skeletal pose separately.')
+        own = [bool(round(value)) for value in values] if values is not None else [True] * cut.frames
     if actor['parent'] is not None:
         parent = visibility(cut, cut.actors[actor['parent']])
         own = [a and b for a, b in zip(own, parent)]

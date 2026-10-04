@@ -7,6 +7,9 @@ all formats or games are now supported.
   name rebuilding, hash/layout-locked GHG face target editing. DCSV is partial.
   Full scene assembly is still a private research pipeline. The V5 face helper
   requires actual companion meshes and verified material flags.
+  Version 0.1.6 adds live camera preview copies of assembled scenes, with
+  approximate post-skinning facial clipping and preserved native export data.
+  The workflow/dependency audit is in [WORKFLOW.md](WORKFLOW.md).
 - LSW1 HGP: original PC character reader; ten headers in the prior local sample
   remain unsupported. Version 0.1.3 corrects palette color-space handling;
   color/material-role checks cover 1,827 records in 139 readable files.

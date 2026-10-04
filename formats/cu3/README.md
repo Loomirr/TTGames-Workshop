@@ -7,10 +7,11 @@ properly. **LEGO DC Super-Villains** now has partial structural support too.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source/addon version: **0.1.5** (experimental). It can inspect CU3 files and import
-supported character animation onto the matching source skeleton. Full cutscene
-reconstruction is still being worked on: automatic models, materials, cameras,
-facial animation, audio and effects aren't automatically assembled through the addon yet.
+Current development source: **0.1.7** (experimental); packaged build: **0.1.6**.
+The development source adds an opt-in extracted-asset-folder assembly mode for
+supported actors, attachments, costume materials and source cameras. It is still
+in visual testing. Environments, rigid props, audio, lights and effects are not
+automatically assembled by that mode, and the resulting scene is marked incomplete.
 The local research scenes have companion assets and playback previews, but
 those game assets and scenes aren't included in this repo.
 
@@ -26,13 +27,19 @@ look much cleaner, but they still aren't exact copies of the game's rendering.
 The revised private V6 viewing copies retain those repairs and add fresh
 composited playback caches plus isolated facial-target controls.
 
+The new [live playback setup](docs/LIVE_PLAYBACK.md) makes a separate EEVEE
+camera-view copy of an assembled scene. Space plays in the viewport; recovered
+facial masks follow their animation without F12, with approximate edges. The
+original composed preview remains available. Automatic asset extraction is
+still separate work; see the [workflow audit](../../docs/WORKFLOW.md).
+
 ## Blender addon
 
-Download the [0.1.5 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.5.zip)
+Download the [0.1.6 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.6.zip)
 for an existing build, or use the source build command below.
 
 1. Run `python scripts/build_addon.py` to make
-   `dist/TT_Cutscene_Importer_0.1.5.zip`.
+   a ZIP matching the version in the source addon.
 2. In Blender, open **Preferences → Add-ons → Install from Disk**, select that
    ZIP and enable **LEGO CU3 Cutscene Importer (Experimental)**.
 3. Use **File → Import → LEGO CU3 cutscene (.cu3) [experimental]**.
@@ -41,7 +48,7 @@ The addon declares Blender 4.4+ support. Testing so far has been in Blender
 5.2.2; other versions still need checking. Building the ZIP only needs Python's
 standard library.
 
-There are three import modes:
+The packaged build has three import modes:
 
 - **Inspect scene references:** shows actor markers, names and a report in
   Blender's Text Editor. Markers aren't character meshes.
@@ -53,8 +60,23 @@ There are three import modes:
 
 Inspect first, then use an exact actor name to pick the instance you want.
 The character and its face or attachments can have different skeletons.
-Matching bone counts alone don't mean two rigs are compatible. This version
-doesn't retarget animations to LOTDK or import character meshes from GHG.
+Matching bone counts alone don't mean two rigs are compatible. This tool
+doesn't retarget animations to unrelated rigs.
+
+Development source also offers **Assemble available scene assets**. Select an
+extracted game asset folder and the matching LB3 or LMSH1 profile. Supply the
+uncompressed GHG/GSC, character definitions, TEX and NXG_TEXTURES companions.
+The import report lists missing resources and unsupported systems. Automatic
+actor construction is not a guarantee of correct appearance or a complete
+cutscene; DCSV assembly remains disabled. See [progress](docs/PROGRESS.md).
+
+Some files are control/audio-only parts with no actor records. For example,
+LB3's base `15FORTRESS_INTRO_NXG.CU3` and `16GAME_OUTRO_NXG.CU3` contain no
+actors; open their named A/B/etc. segments for character animation. A different
+joint count means a different source skeleton is needed, rather than a failed
+mesh import. Version 0.1.6 also fixes observed nine/ten-channel discrete outer
+tracks that previously blocked the level-15 midtro and game-outro segment E.
+Non-boolean control values remain unverified as visibility and are rejected.
 
 Use extracted, uncompressed CU3 files. The optional **Use source scene
 movement** setting applies static or animated actor placement separately from

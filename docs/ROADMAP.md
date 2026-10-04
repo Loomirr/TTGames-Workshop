@@ -1,5 +1,8 @@
 # Next steps
 
+See the [workflow audit and milestones](WORKFLOW.md) for the current public
+readers, remaining mesh-extraction dependencies and native editing limits.
+
 - Improve native CU3 meshes, faces, materials, environments and shot playback.
 - Extend verified cutscene character/object replacement and investigate custom
   animation writing without losing native skeleton or event semantics.

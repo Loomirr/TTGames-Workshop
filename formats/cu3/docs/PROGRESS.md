@@ -1,7 +1,149 @@
-# Progress — local 0.1.5 (unreleased)
+# Progress — local 0.1.7 development (unreleased)
 
 Updated October 4, 2026. This records the current implementation and checks;
 it isn't a promise that every cutscene or game is supported.
+
+## Native asset assembly and visual investigation
+
+New original readers recover MESH 169/175 geometry, DISP 18/21/23/32 display
+bindings, CD 25/28/29 character definitions and observed UMTL material fields.
+They do not require OBJ files, extractor logs or a bundled external extractor.
+Native stream attributes and triangles matched 31 local reference assets;
+display bindings matched those same 31 assets. Twenty-seven character
+definitions decoded. These are data comparisons, not visual fidelity checks.
+
+The opt-in assembly mode creates supported source rigs, meshes, selected
+definition layers, attachments, facial targets and source cameras from an
+extracted asset folder. An LB3 sewer test constructs 18 actor/attachment models
+and four cameras, with no remaining actor-node references in that test. Its
+environment, rigid props, audio, source lighting and effects remain absent.
+Materials report unresolved shared slots and shader features. The scene is
+always explicitly marked incomplete. Broader assembly results are recorded below.
+
+TXTS 1/12 inventories retain empty shared slots and VTF indices, so omitted
+images do not shift later texture references. UMTL version-specific prefixes
+fix the older hardcoded texture-table offset for Croc's version-199 materials.
+The local V8 inspection copies replace selected provisional Croc/environment
+materials with native texture and vertex-color bindings. Croc's 26 recovered
+targets are available at zero weight; his facial timing is still unresolved.
+
+The LB3 rigid-prop investigation found duplicate rotation/scale composition.
+All seven first-sample orientations and scales match their stored anchors.
+A gated helper replaces those components and applies anchored translation
+deltas; it rejects tracks outside that observed convention. Local V8 copies
+use it for seven props. This requires an in-game motion comparison before
+being generalized. Cape definitions also disable a top mesh that the earlier
+manual scene selection incorrectly included; four instances were corrected.
+
+The new images still show major framing, surface, cape-deformation and scene
+completeness issues. Missing floor/geometry and exact character appearance are
+not declared fixed. V8 remains a work-in-progress copy, not a fidelity milestone.
+Eighteen portable tests pass, including five texture-inventory regression tests.
+No 0.1.7 package has been published; the 0.1.6 ZIP remains the prior build.
+
+## Broader assembly samples
+
+Six additional files were exercised through the same asset-root assembly path
+on October 4. Five produced saved actor scenes and midpoint images; the sixth
+contains no actor nodes. This is a selected coverage sample, not an exhaustive
+or statistically random test. Counts below include child animation nodes such
+as faces and hair, not just whole characters. A constructed node does not mean
+that its appearance or placement is correct.
+
+| Game / file | Constructed actor nodes | Result |
+| --- | ---: | --- |
+| LB3 `0GAME_INTROA_NXG` | 3 / 7 | Three root actors, five model instances and eleven cameras; face/hair tracks still rejected |
+| LB3 `2BATCAVEFIGHT_INTRO_NXG` | 9 / 22 | Partial actors; missing character and prop dependencies |
+| LB3 `15FORTRESS_MIDTRO1D_NXG` | 4 / 11 | Partial Flash actors; helmet display layout rejected and tentacle dependencies missing |
+| LB3 `16GAME_OUTROE_NXG` | 9 / 25 | Partial Batman actors; other costume dependencies missing |
+| LMSH1 `GAME_INTRO_C_NXG` | 0 / 0 | Camera/control segment, no actor geometry in this CU3 |
+| LMSH1 `GRANDCENTRAL_INTRO_B_NXG` | 6 / 104 | Small subset of actors; most dependencies unavailable in this test root |
+
+Actual images show missing character parts, incorrect face composition and
+framing problems. All six tests omit environment geometry, original lighting,
+audio and effects. None is a complete or visually faithful cutscene preview.
+Missing extracted dependencies and unsupported decoding are reported separately;
+these counts must not be presented as coverage for a complete game installation.
+
+The opening sequence exposed an eight-channel actor-control layout. The
+observed flags/type pattern is now supported; other eight-channel patterns are
+rejected. Visibility was boolean across both 1,017-frame source tracks. The
+additional integer channel is retained without assigning it an unverified
+meaning. Synthetic tests cover visibility, extra fields and unknown patterns.
+Sinestro's version-195 material table also passed the bounded record/count and
+footer checks and is enabled. Its face still fails separate animation-layout
+validation; enabling the material reader does not fix that face.
+
+`scripts/check_assembly_corpus_blender.py` runs this manual audit on user-supplied
+files with optional saved scenes and midpoint renders. It records missing
+dependencies, unassembled nodes and render errors rather than treating an
+operator completion as full support. Choose a new output folder for each run:
+
+```text
+blender -b --factory-startup --python-exit-code 1 --python scripts/check_assembly_corpus_blender.py -- example.CU3 --assets extracted-assets --game LB3 --output audit-output --save-scenes --render-midpoint
+```
+
+## Live playback
+
+Added a copy-based EEVEE camera preview and sidebar viewing controls. Native
+depth-only helpers remain evaluated dependencies for post-skinning Geometry
+Nodes raycasts, so facial clipping follows recovered morphs and camera cuts
+without requiring F12. Stored source geometry and native target coordinates
+remain unchanged. Mask edges are approximate; the original composed scenes
+and fixed movie caches remain available. See [live playback](LIVE_PLAYBACK.md).
+
+The [workflow audit](../../../docs/WORKFLOW.md) separates portable readers and
+writers from the log/companion-dependent mesh reconstruction work. Automatic
+asset-root character/cutscene assembly remains an extraction milestone.
+
+The V7 live LB3 sequence samples the existing edit's source frames onto one
+252-frame timeline. All 6,497 curves passed sample-value comparisons; visible
+rig/camera matrices matched the source at seven checked times. The Marvel
+live stages retain their 385/1,350-frame source timelines. Reopened scenes
+retain the composed movie, packed sound and independent face drivers. The
+four live face editors preserve every native mask part in their export
+collections and passed byte-identical GHG no-op checks.
+
+Added native-flag-controlled vertex albedo/opacity helpers. The local live
+stages correct texture-backed albedo modulation and cloud/light-ray vertex
+fades. Synthetic Cycles/EEVEE checks cover actual baked colors and opacity,
+including preservation of texture alpha and disabled flags. Material/lighting
+fidelity remains incomplete; those changes do not update the fixed V6 movie.
+
+Actual GUI viewport captures were checked through Blender's OpenGL preview
+path, without calling the final renderer. This verifies viewing, not real-time
+FPS on every scene. The copy operator also preserves excluded collections so
+hidden variants are not revived, and rolls back failed setups.
+
+Thirteen portable CU3 tests pass. Separate Blender checks cover live-copy
+setup, mask motion, camera cuts, rollback, baked material colors and alpha.
+The 0.1.6 ZIP contains the same 16 source modules as the addon directory, with
+no game assets or private paths. The build manifest records its size and hash.
+
+## Level 15 and game outro imports
+
+Reproduced the LB3 `15FORTRESS_MIDTRO1D` and `16GAME_OUTROE` failure with the
+actual Blender operator: body pose decoding passed, but the outer ANI-D track
+failed with `key stride mismatch: 0 != 12`. Added the observed `0xac` control
+layout with six absent transform channels and three/four discrete channels.
+The indexed integer fields are retained instead of being treated as scale.
+Boolean channel 6 drives visibility; auxiliary control semantics remain unknown.
+
+All 68 observed tracks passed bounded sampling across 77,924 frames. Sixty-four
+have boolean control values; four have non-boolean control values and remain
+rejected for visibility rather than guessed. Disabling source visibility allows
+separate inspection of a compatible pose. Unknown descriptor patterns fail.
+
+The original-file Blender retest imported a compatible source actor in 17 of
+22 level-15/outro/credits samples. The other five contain no actor records or
+require a different skeleton. A separate reference-mode check inspected all
+258 selected LB3 files. These are reference/rig checks, not automatic
+full model/material/camera assembly or in-game verification.
+
+The base `15FORTRESS_INTRO` and `16GAME_OUTRO` files contain no actor records;
+their named A/B/etc. files contain the animated segments. The addon now reports
+this explicitly and shows source-versus-record joint counts when a rig doesn't
+match. It also rejects non-pose channel layouts before applying skeletal motion.
 
 ## Facial shapes and native editing
 

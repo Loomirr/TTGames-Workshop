@@ -1,10 +1,10 @@
 # Observed CU3 / AN4 / GHG layout
 
-These are observations used by source version 0.1.2. The parser
+These are observations used by source version 0.1.6. The parser
 and research readers cover more data than the Blender operator currently
 applies. Complete cinematic reconstruction remains experimental.
 
-Research updated: 2026-10-03. Local inputs: Steam PC LMSH1, Batman 3 and DCSV.
+Research updated: 2026-10-04. Local inputs: Steam PC LMSH1, Batman 3 and DCSV.
 These are working observations, not a complete public CU3 specification.
 
 ## CU3 envelope — big endian
@@ -233,6 +233,27 @@ Batman 3's installed NXG and DX11 executables both reference `_nxg.cu3`.
 Its main CU3 files have that suffix even when the companion minifig model is
 `SUPER_MINIFIG_DX11.GHG`. This is evidence for these installed builds, not a
 guarantee that all NXG/DX11 games share one complete cutscene layout.
+
+## Discrete outer scene controls
+
+Some LB3 outer ANI-D records use flags `0xAC`, one node with node flags zero,
+and nine or ten channels: six type-14 channels, one or two type-8 channels,
+then two type-10 channels. In this exact observed layout, the extra channels
+are stepped integer controls. They use four bytes per key group and indexed
+16-bit constant-table entries; they are not the scale channels of a skeletal
+nine-channel transform. Other type-10 layouts remain rejected.
+
+Across 68 records, 77,924 frames decoded within the declared buffers. Slot 6
+was boolean in 64 records and is accepted as visibility there. Four records
+had non-boolean values, including 25 and 125; their meaning is unresolved and
+source visibility is rejected rather than inferred. Other integer controls
+are retained without assigning resource or gameplay semantics. Disable source
+visibility to inspect a compatible skeletal pose independently.
+
+This fixes reproduced skeletal import failures in `15FORTRESS_MIDTRO1D`
+and `16GAME_OUTROE`. The unsuffixed `15FORTRESS_INTRO` and `16GAME_OUTRO`
+files inspected here contain no actors. Their animated lettered segments
+need to be selected separately; automatic sequence assembly is not implemented.
 
 ## Next decoding targets
 

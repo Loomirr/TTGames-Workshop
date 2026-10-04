@@ -43,6 +43,12 @@ with a packed still for immediate inspection. That still is not a cached movie.
 Their source watch scenes retain editable camera cuts and audio; rendering
 scene strips during playback can be slow. Older cached videos remain old previews.
 
+Version 0.1.6 also offers a [separate live viewing copy](LIVE_PLAYBACK.md).
+It uses source-camera raycasts to clip masked facial detail after morph/skin
+evaluation in EEVEE. This does not reproduce the exact two-pass operation,
+but permits camera-view playback and scrubbing without F12. The source
+compositor, stored mesh coordinates and native target export bindings remain.
+
 The revised private V6 viewing copies render new Cycles/compositor movie caches
 from those repaired source stages, with recovered audio and editable scenes
 retained. A separate inspection scene drives matching face parts together with
@@ -54,6 +60,21 @@ facial animation export or a solution to the remaining camera/VFX issues.
 normal packing, with a selectable green-channel flip. The research builder
 checks the native texture slot, channels and texture name before applying it.
 Texture packing, layer blending and exact TT lighting still need more work.
+
+`attach_vertex_albedo` and `attach_vertex_opacity` use explicitly decoded
+shader flags and the recovered `SourceColor` attribute. Albedo is multiplied
+with the existing base-color input; already connected vertex-color graphs are
+preserved. Vertex opacity multiplies existing texture alpha only for verified
+blend surfaces that do not ignore vertex opacity. The private V7 live stages
+use this to restore varying albedo on texture-backed Hulk materials and fades
+on cloud/light-ray surfaces. Guessed constant palettes are not multiplied by
+native tint a second time. Exact TT lighting/blend equations remain research.
+
+Shader check using a Cycles albedo bake and EEVEE opacity renders:
+
+```sh
+blender --background --factory-startup --python-exit-code 1 --python scripts/check_material_preview_blender.py -- --output-dir path/to/writable/checks
+```
 
 ## Static targets
 

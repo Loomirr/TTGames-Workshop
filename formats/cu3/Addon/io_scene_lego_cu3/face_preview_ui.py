@@ -50,7 +50,7 @@ class VIEW3D_PT_tt_facial_preview(bpy.types.Panel):
     def draw(self,context):
         if context.scene.get('tt_face_preview'):
             self.layout.label(text='Native depth masks configured.',icon='CHECKMARK')
-            self.layout.label(text='Press F12 to see the composed face.')
+            self.layout.label(text='F12: composed face. Live copy: playback panel.')
         else:self.layout.operator(SCENE_OT_tt_facial_preview.bl_idname)
 
 CLASSES=(SCENE_OT_tt_facial_preview,VIEW3D_PT_tt_facial_preview)

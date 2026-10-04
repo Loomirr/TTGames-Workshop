@@ -28,7 +28,7 @@ def main():
             json.loads(path.read_text(encoding='utf-8-sig'));counts['json']+=1
         elif path.suffix=='.csproj':
             ET.parse(path);counts['projects']+=1
-    for name in ['test_face_targets.py','test_face_edit.py','test_material_flags.py']:
+    for name in ['test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py']:
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     manifest=ROOT/'builds/manifest.json'
     if manifest.exists():
@@ -47,6 +47,6 @@ def main():
                         assert re.fullmatch(r'windows/LIJ1_360_Texture_Extractor-\d+\.\d+\.\d+-win64\.zip',package['path']) and name=='LIJ1_360_Texture_Extractor.exe',name
         print('Build package hashes/integrity and no-game-asset checks passed.')
     print('Source syntax/config checks passed:',counts)
-    print('Nine portable CU3 tests passed. Blender and original-file tests are separate.')
+    print('Portable CU3 tests passed. Blender and original-file tests are separate.')
 
 if __name__=='__main__':main()

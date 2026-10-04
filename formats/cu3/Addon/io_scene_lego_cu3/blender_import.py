@@ -50,6 +50,14 @@ def rotations(anim, frame):
     return result
 
 
+def prepare_pose(anim):
+    if anim.curves not in (6, 9):
+        raise FormatError(f'Not a verified Euler skeletal record: {anim.curves} channels per node. Inspect the actor report and select another record.')
+    anim.prepare(scene_channels=True)
+    if getattr(anim, 'discrete_scene_controls', False):
+        raise FormatError('This is a discrete scene-control track, not skeletal pose data')
+
+
 def apply_scene_placement(cut, actor, record_index, rig):
     """Keep CU3 scene movement on the object, separate from its bone pose."""
     flip = Matrix.Diagonal((1, 1, -1, 1))
@@ -173,7 +181,7 @@ def duplicate_rig(source, name, collection):
 def apply_pose(cut, actor, record_index, rig, rigdata, place_in_scene=False, scene_channels=False):
     rec = actor['records'][record_index]
     anim = rec['animation']
-    anim.prepare(scene_channels=scene_channels)
+    prepare_pose(anim)
     check_rig(rig, rigdata)
     if len(rigdata['joints']) != anim.nodes:
         raise FormatError('Animation and source skeleton joint counts differ')
