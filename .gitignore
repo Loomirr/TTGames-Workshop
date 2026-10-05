@@ -68,3 +68,7 @@ local/
 
 # Reviewed packages built from our own source; game assets remain forbidden.
 !builds/**/*.zip
+
+# Keep locally unzipped downloads out of source control.
+builds/python/*
+!builds/python/*.zip

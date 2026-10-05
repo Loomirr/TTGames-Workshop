@@ -39,6 +39,13 @@ class DependencyTests(unittest.TestCase):
 
     def resolver(self):return ResourceResolver(AssetIndex(self.root),'LB3')
 
+    def test_exact_configuration_lookup_does_not_fall_back_to_basename(self):
+        self.file('CUT/Story/Scene.txt',b'declaration')
+        index=AssetIndex(self.root)
+        self.assertEqual(index.find_exact('cut/story/scene.TXT').read_bytes(),b'declaration')
+        self.assertIsNone(index.find_exact('other/Scene.txt',required=False))
+        with self.assertRaises(FormatError):index.find_exact('Scene.txt')
+
     def cut(self,*names):
         return types.SimpleNamespace(version=19,path=Path('fixture.CU3'),actors=[{'name':n,'parent':None,'records':[{}]} for n in names])
 
@@ -85,5 +92,37 @@ class DependencyTests(unittest.TestCase):
     def test_invalid_attachment_layer_rejected(self):
         for layer in (-1,32):
             with self.assertRaises(FormatError):active_attachments(definition('Hero',[(layer,'Hat')]))
+
+    def test_declared_root_replacement_uses_target_definition_without_renaming_actor(self):
+        self.file('Visible.CD');self.file('VisibleBody_DX11.GHG')
+        self.definitions['visible']=definition('VisibleBody')
+        cut=self.cut('Instance1_Original')
+        resolver=ResourceResolver(AssetIndex(self.root),'LB3',{'Original':'Visible'})
+        report=dependency_report(cut,resolver)
+        row=report['resources'][0]
+        self.assertEqual(row['reference'],'Visible')
+        self.assertTrue(row['definition'].endswith('Visible.CD'))
+        self.assertEqual(row['requested_by'],['Instance1_Original'])
+        self.assertEqual(cut.actors[0]['name'],'Instance1_Original')
+
+    def test_replacement_matches_exact_root_resource_only(self):
+        resolver=ResourceResolver(AssetIndex(self.root),'LB3',{'Original':'Visible'})
+        self.assertEqual(resolver.actor_reference('Instance2_original'),'Visible')
+        self.assertEqual(resolver.actor_reference('Instance2_OriginalArmoured'),'OriginalArmoured')
+        self.assertEqual(resolver.actor_reference('Instance2_SomeOriginal'),'SomeOriginal')
+
+    def test_attachment_resource_with_same_name_is_not_replaced(self):
+        for name in ('Visible.CD','Original.CD','VisibleBody_DX11.GHG','Attachment_DX11.GSC'):self.file(name)
+        self.definitions['visible']=definition('VisibleBody',[(1,'Original')])
+        self.definitions['original']=definition('Attachment')
+        resolver=ResourceResolver(AssetIndex(self.root),'LB3',{'Original':'Visible'})
+        report=dependency_report(self.cut('Instance1_Original'),resolver)
+        self.assertEqual(report['resolved_resources'],2)
+        self.assertEqual([r['reference']for r in report['resources']],['Visible','Original'])
+        self.assertTrue(report['resources'][1]['model'].endswith('Attachment_DX11.GSC'))
+
+    def test_resolver_rejects_unverified_replacement_chain(self):
+        with self.assertRaisesRegex(FormatError,'ordering'):
+            ResourceResolver(AssetIndex(self.root),'LB3',{'Original':'Visible','Visible':'Third'})
 
 if __name__=='__main__':unittest.main()

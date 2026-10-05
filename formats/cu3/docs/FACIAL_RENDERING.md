@@ -49,6 +49,13 @@ evaluation in EEVEE. This does not reproduce the exact two-pass operation,
 but permits camera-view playback and scrubbing without F12. The source
 compositor, stored mesh coordinates and native target export bindings remain.
 
+Live setup now also applies the composed preview's small post-skin depth
+offset to its zero-colour facial raycast targets. Without it, coplanar mask
+surfaces exposed repeated teeth and mouth interiors in the LMSH1 Stark Tower
+example. This remains an explicit rendering approximation: eye/brow clipping
+and fine mouth edges still differ from game rendering. Only mask modifiers
+change; source Basis coordinates and topology remain intact.
+
 The revised private V6 viewing copies render new Cycles/compositor movie caches
 from those repaired source stages, with recovered audio and editable scenes
 retained. A separate inspection scene drives matching face parts together with

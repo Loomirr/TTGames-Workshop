@@ -1,0 +1,61 @@
+# Standalone tool GUI
+
+Version 0.1.1. A small native Tkinter window with browse buttons, forms and a
+live log. No browser, server or extra GUI framework.
+
+**Separate downloads are now available for each tool** in
+[builds](../builds/README.md#separate-gui-downloads). Each includes its own
+backend and opens directly to its form using `Launch.pyw`, without a tool
+selector. The instructions below describe the optional combined toolbox.
+
+For direct character/animation import inside Blender, use the separately
+installable [character addon](../formats/character/README.md), rather than
+the desktop AN4 decoder/BVH exporter. The Blender addon creates native rigs
+and a clip list directly; the desktop utilities write intermediate files.
+
+Install Python 3.10 or newer with Tcl/Tk enabled (included in the usual Windows
+Python installer). Extract the whole download, then double-click
+`Launch Workshop GUI.pyw`. From a terminal you can also run:
+
+```sh
+python tools/workshop_gui.py
+```
+
+For BTGA texture conversion only, install Pillow into that same Python:
+
+```sh
+python -m pip install Pillow
+```
+
+Choose a tool, browse for inputs, enter a **new output name**, then click
+**Run tool**. For output folders, the save-style picker names a new folder;
+do not select an existing one. Keep output/cache folders outside source trees
+and game installations. **Open output folder** opens the result location.
+The UI stays responsive during processing. Wait for the job to finish before
+closing; this first version does not offer cancellation. Failed jobs can leave
+partial output, which is never silently overwritten on retry.
+
+## Included forms
+
+- 3DS BTGA to DDS/PNG: already-decompressed, observed Universe in Peril records.
+- LMSH1 AN4 decoder: exact actor name and original 63-joint skeleton required.
+- Decoded LMSH1 animation to experimental BVH: transformation preview only.
+- LB3/LMSH1 CU3 dependency report: game folder and separate companion cache.
+- Native face target decode: original GHG plus matching extractor log.
+- Native face target write: verified edited-target JSON into a separate GHG.
+- TFA CC8 and DCSV CC4 archive indexes: path listings, not full extraction.
+- A button opens the existing CU3 instance-name editor in its own window.
+
+Format support is unchanged from the command-line tools. A finished process
+does not mean every record was supported: check the log and output manifests.
+Face writing remains experimental, and is not a visual shape-key editor.
+See the included component READMEs/docs for limitations and input preparation.
+
+The **LIJ1 Xbox 360 extractor already has its own GUI**, including file/folder
+drag and drop. Download its Windows ZIP separately from the repository's
+`builds/windows` folder and run `LIJ1_360_Texture_Extractor.exe`.
+This toolbox uses file pickers; shell drag and drop is not implemented here.
+
+Developer checks, Blender-only scripts, raw FUSE access and the PAK helper
+requiring user-supplied external programs are not wrapped in this first GUI.
+No external extraction programs, Python runtime or game assets are bundled.

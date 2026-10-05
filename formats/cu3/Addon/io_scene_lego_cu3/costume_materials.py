@@ -1,6 +1,7 @@
 """Character-definition costume slots, using the user's native TEX files."""
 import tempfile
 import uuid
+import math
 from pathlib import Path
 import bpy
 from .cu3 import FormatError
@@ -10,6 +11,21 @@ from .texture_store import read_texture_store
 SLOTS = {'headfrontgame':1, 'headbackgame':2, 'bodyfrontgame':3, 'bodybackgame':4,
          'hipsgame':5, 'lefthandgame':6, 'leftarmgame':7, 'leftleggame':8,
          'rightarmgame':24, 'rightleggame':25, 'righthandgame':26}
+
+
+def multiply_base_tint(material, tint, label, property_name):
+    if len(tint)!=3 or not all(math.isfinite(v) and v>=0 for v in tint):
+        raise FormatError('Invalid native colour multiplier')
+    if all(abs(v-1)<=1e-6 for v in tint):return
+    nodes,links=material.node_tree.nodes,material.node_tree.links
+    base=nodes['Principled BSDF'].inputs['Base Color']
+    multiply=nodes.new('ShaderNodeMixRGB');multiply.blend_type='MULTIPLY'
+    multiply.label=label;multiply.inputs[0].default_value=1
+    if base.is_linked:links.new(base.links[0].from_socket,multiply.inputs[1])
+    else:multiply.inputs[1].default_value=base.default_value
+    multiply.inputs[2].default_value=tuple(v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in tint)+(1,)
+    links.new(multiply.outputs[0],base)
+    material[property_name]=list(tint)
 
 
 class CostumeMaterials:
@@ -53,7 +69,7 @@ class CostumeMaterials:
         return self.dds_image((path,index), store['data'][entry['offset']:entry['end']],
                               path.stem+f' / texture {index}')
 
-    def __call__(self, model, entry, definition):
+    def __call__(self, model, entry, definition, attachment_tint=None):
         material = bpy.data.materials.new(Path(model['source']).stem+' / '+entry['name'])
         material.use_nodes = True
         nodes, links = material.node_tree.nodes, material.node_tree.links
@@ -108,15 +124,9 @@ class CostumeMaterials:
             attach_vertex_albedo(material, native_vert_albedo=bool(entry['fields']['vertAlbedo']))
         if definition:
             tint = definition['character'].get('Default Tint Colour', (1,1,1))
-            if any(abs(v-1)>1e-6 for v in tint):
-                base = surface.inputs['Base Color']
-                multiply = nodes.new('ShaderNodeMixRGB');multiply.blend_type='MULTIPLY'
-                multiply.label='Character definition default tint';multiply.inputs[0].default_value=1
-                if base.is_linked:links.new(base.links[0].from_socket,multiply.inputs[1])
-                else:multiply.inputs[1].default_value=base.default_value
-                multiply.inputs[2].default_value=tuple(v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in tint)+(1,)
-                links.new(multiply.outputs[0],base)
-                material['tt_definition_default_tint']=list(tint)
+            multiply_base_tint(material,tint,'Character definition default tint','tt_definition_default_tint')
+        if attachment_tint is not None:
+            multiply_base_tint(material,attachment_tint,'Character attachment tint','tt_attachment_tint')
         attach_vertex_opacity(material, native_ignore_vertex_opacity=bool(entry['fields']['ignoreVertexOpacity']),
                               native_can_alpha_blend=bool(entry['fields']['canAlphaBlend']))
         material['tt_material_status'] = 'Costume texture/tint or native vertex color; full shader reconstruction incomplete'

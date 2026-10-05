@@ -36,11 +36,21 @@ class MissingResource(FormatError):
 
 
 class ResourceResolver:
-    def __init__(self, assets, profile):
+    def __init__(self, assets, profile, replacements=None):
         if profile not in PROFILES:raise FormatError('Unsupported game profile')
         self.assets=assets
         self.version,self.suffix=PROFILES[profile]
         self.cache={}
+        from .scene_configuration import compile_character_replacements
+        if replacements is not None and not isinstance(replacements, dict):
+            raise FormatError('Character replacements must be a resource mapping')
+        self.replacements=compile_character_replacements({'character_replacements':[
+            {'original':key,'replacement':value} for key,value in (replacements or {}).items()]})
+
+    def actor_reference(self, actor_name):
+        """Resolve one root actor's resource without renaming its source node."""
+        reference=actor_resource(actor_name)
+        return self.replacements.get(reference.casefold(),reference)
 
     def validate_cutscene(self, cut):
         if cut.version!=self.version:
@@ -71,7 +81,7 @@ class ResourceResolver:
 
 def dependency_report(cut, resolver):
     resolver.validate_cutscene(cut)
-    queue=[(actor_resource(a['name']),a['name']) for a in cut.actors if a['parent'] is None and a['records']]
+    queue=[(resolver.actor_reference(a['name']),a['name']) for a in cut.actors if a['parent'] is None and a['records']]
     resources,rows={},[]
     while queue:
         reference,owner=queue.pop(0)

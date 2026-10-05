@@ -4,6 +4,29 @@ from bpy.props import StringProperty, IntProperty
 from .face_live import prepare_live, copy_layer_flags
 
 
+def configure_camera_view(space):
+    """Set a saved 3D viewport up for live playback without starting a render."""
+    space.region_3d.view_perspective = 'CAMERA'
+    space.shading.type = 'MATERIAL'
+    space.shading.use_scene_lights = True
+    space.shading.use_scene_world = True
+    space.overlay.show_overlays = False
+    space.show_region_ui = True
+
+
+def prepare_saved_preview(context, scene):
+    """Configure the current window's existing viewports for a saved example."""
+    if context.window is None or scene.camera is None:return 0
+    context.window.scene = scene
+    scene.sync_mode = 'FRAME_DROP'
+    count = 0
+    for area in context.window.screen.areas:
+        if area.type == 'VIEW_3D':
+            configure_camera_view(area.spaces.active)
+            count += 1
+    return count
+
+
 def show_scene(context, scene):
     context.window.scene = scene
     area = context.area
@@ -12,9 +35,7 @@ def show_scene(context, scene):
         area.type = 'SEQUENCE_EDITOR'; area.spaces.active.view_type = 'PREVIEW'
     else:
         area.type = 'VIEW_3D'
-        space = area.spaces.active; space.region_3d.view_perspective = 'CAMERA'
-        space.shading.type = 'MATERIAL'; space.shading.use_scene_lights = True; space.shading.use_scene_world = True
-        space.overlay.show_overlays = False; space.show_region_ui = True
+        configure_camera_view(area.spaces.active)
 
 
 class SCENE_OT_tt_live_preview(bpy.types.Operator):

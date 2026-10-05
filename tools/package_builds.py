@@ -72,6 +72,8 @@ def main():
             finally:
                 temporary.unlink(missing_ok=True)
         packages.append(package)
+    # Preserve the separately packaged lightweight Python GUI downloads.
+    packages.extend(sorted((builds/'python').glob('*.zip')))
     records=[]
     for file in packages:
         with ZipFile(file) as archive:

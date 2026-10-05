@@ -1,10 +1,10 @@
 bl_info = {
     'name': 'LEGO CU3 Cutscene Importer (Experimental)',
     'author': 'Loomirr',
-    'version': (0, 1, 7),
+    'version': (0, 1, 8),
     'blender': (4, 4, 0),
     'location': 'File > Import > LEGO CU3 cutscene',
-    'description': 'Inspect PC CU3 scenes and import supported Euler skeletal tracks with a matching source rig',
+    'description': 'Assemble supported cutscene actors, attachments, materials and cameras from native companion assets',
     'category': 'Import-Export',
 }
 
@@ -17,6 +17,29 @@ from .cinematic import visibility
 from .blender_import import inspect_scene, create_rig, duplicate_rig, check_rig, apply_pose, apply_actor_visibility, prepare_pose
 
 
+class TT_CU3_Preferences(bpy.types.AddonPreferences):
+    bl_idname = __package__
+    lb3_asset_root: StringProperty(name='Batman 3 game or asset folder', subtype='DIR_PATH')
+    lmsh1_asset_root: StringProperty(name='Marvel Super Heroes game or asset folder', subtype='DIR_PATH')
+    cache_root: StringProperty(name='Extracted companion cache', subtype='DIR_PATH', description='Optional cache outside installed games; blank uses the local TTGamesWorkshop asset cache')
+
+    def draw(self, context):
+        self.layout.label(text='Saved companion folders for scene imports')
+        self.layout.prop(self,'lb3_asset_root')
+        self.layout.prop(self,'lmsh1_asset_root')
+        self.layout.prop(self,'cache_root')
+        self.layout.label(text='Installed game folders: extracts needed companions automatically.')
+        self.layout.label(text='CU3 stores animation/references; models and textures are separate files.')
+
+
+def assembly_profile(cut, requested):
+    if requested != 'AUTO':return requested
+    profile = {18:'LMSH1',19:'LB3'}.get(cut.version)
+    if profile is None:
+        raise FormatError(f'Full scene assembly is not implemented for CU3 version {cut.version}. Inspect scene references is available separately; it does not create meshes.')
+    return profile
+
+
 class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
     bl_idname = 'import_scene.lego_cu3'
     bl_label = 'Import LEGO CU3 cutscene'
@@ -24,19 +47,20 @@ class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
     filename_ext = '.cu3'
     filter_glob: StringProperty(default='*.cu3;*.CU3', options={'HIDDEN'})
     mode: EnumProperty(name='Import mode', items=[
-        ('ASSEMBLE', 'Assemble available scene assets', 'Find source actors, costume materials and cameras under an extracted asset folder; report missing systems'),
+        ('ASSEMBLE', 'Assemble available scene assets', 'Import actors, costume materials and cameras from an installed game or extracted asset folder; report missing systems'),
         ('DEPENDENCIES', 'Check companion files', 'Report character definitions, models, active attachments and costume textures before building a scene'),
         ('INSPECT', 'Inspect scene references', 'Read actor names, timeline and source data report'),
         ('SKELETONS', 'Create source armatures', 'Create armatures for actors matching the supplied GHG/JSON source skeleton'),
-        ('SELECTED', 'Animate selected source rig', 'Apply one actor track to a compatible source armature')], default='INSPECT')
+        ('SELECTED', 'Animate selected source rig', 'Apply one actor track to a compatible source armature')], default='ASSEMBLE')
     skeleton_path: StringProperty(name='Source skeleton GHG / JSON', subtype='FILE_PATH', description='Uncompressed matching GHG or extracted source skeleton JSON')
     actor_filter: StringProperty(name='Actor name / filter', description='Exact actor name, or substring; required to identify one actor when animating a selected rig')
     record_index: IntProperty(name='Animation record', default=0, min=0)
     copy_rig: BoolProperty(name='Work on a copy', default=True)
     place_in_scene: BoolProperty(name='Use source scene movement', default=False, description='Apply static or animated actor placement separately from skeletal motion')
     source_visibility: BoolProperty(name='Use source visibility', default=True, description='Hide shot-specific character instances and their children according to source tracks')
-    asset_root: StringProperty(name='Extracted game assets', subtype='DIR_PATH')
-    game_profile: EnumProperty(name='Game / asset format', items=[('LB3','LEGO Batman 3 PC DX11','Observed DX11 models'),('LMSH1','LEGO Marvel Super Heroes PC NXG','Observed NXG models')], default='LB3')
+    asset_root: StringProperty(name='Game or extracted asset folder', subtype='DIR_PATH')
+    static_environment: BoolProperty(name='Recovered static environment (experimental)', default=True, description='Build bounded static stage draws from declared level resources; visibility, nested scenes and source lighting remain incomplete')
+    game_profile: EnumProperty(name='Game / asset format', items=[('AUTO','Detect from CU3','Detect the verified LMSH1/LB3 versions; other games remain reference-only'),('LB3','LEGO Batman 3 PC DX11','Observed DX11 models'),('LMSH1','LEGO Marvel Super Heroes PC NXG','Observed NXG models')], default='AUTO')
     cameras: BoolProperty(name='Import source cameras', default=False, description='Import observed source camera tracks and shot markers into the current scene')
 
     def draw(self, context):
@@ -45,8 +69,10 @@ class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
         if self.mode in ('ASSEMBLE','DEPENDENCIES'):
             layout.prop(self, 'game_profile')
             layout.prop(self, 'asset_root')
+            if self.mode=='ASSEMBLE':layout.prop(self,'static_environment')
+            layout.label(text='Blank uses the saved folder for the detected game.')
             layout.label(text='Checks declared character companion files.' if self.mode=='DEPENDENCIES' else 'Creates a new scene and a missing-assets report.', icon='INFO')
-            layout.label(text='Environments, audio and effects still need work.')
+            layout.label(text='Stage visibility, props, lighting, audio and effects still need work.')
         elif self.mode != 'INSPECT':
             layout.prop(self, 'skeleton_path')
             layout.prop(self, 'actor_filter')
@@ -61,23 +87,37 @@ class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
         try:
             cut = Cutscene(self.filepath)
             source = context.view_layer.objects.active
+            if self.mode in ('ASSEMBLE','DEPENDENCIES'):
+                profile = assembly_profile(cut,self.game_profile)
+                addon = context.preferences.addons.get(__package__)
+                preferences = addon.preferences if addon else None
+                preference_field = 'lb3_asset_root' if profile=='LB3' else 'lmsh1_asset_root'
+                asset_root = self.asset_root.strip() or (getattr(preferences,preference_field,'') if preferences else '')
+                if not asset_root:
+                    raise FormatError('Choose the installed game or extracted asset folder once; it is remembered for this game. CU3 alone does not contain the companion meshes and textures.')
+                asset_root = bpy.path.abspath(asset_root)
+                from .asset_index import open_assets
+                cache_root = getattr(preferences,'cache_root','') if preferences else ''
+                assets = open_assets(asset_root, profile, bpy.path.abspath(cache_root) if cache_root else None)
+                if preferences and self.asset_root.strip():
+                    setattr(preferences,preference_field,asset_root)
             if self.mode == 'DEPENDENCIES':
-                if not self.asset_root.strip():
-                    raise FormatError('Choose the extracted game asset folder before checking companions')
                 import json
-                from .asset_index import AssetIndex
-                from .dependencies import ResourceResolver, dependency_report
-                report = dependency_report(cut, ResourceResolver(AssetIndex(bpy.path.abspath(self.asset_root)), self.game_profile))
+                from .dependencies import dependency_report
+                from .scene_inputs import prepare_resources
+                resolver, configuration = prepare_resources(cut, assets, profile)
+                report = dependency_report(cut, resolver)
+                report['configuration'] = configuration
+                if hasattr(assets,'get_info'):report['asset_source'] = assets.get_info()
                 text = bpy.data.texts.new(cut.name+' / companion files')
                 text.write(json.dumps(report,indent=2))
                 self.report({'INFO'}, f'{report["resolved_resources"]} resources found; {report["missing_resources"]} missing, {report["unresolved_resources"]} unresolved. See "{text.name}" in Text Editor.')
                 return {'FINISHED'}
             if self.mode == 'ASSEMBLE':
-                if not self.asset_root.strip():
-                    raise FormatError('Choose the extracted game asset folder before assembling a scene')
                 from .scene_assembly import assemble
-                from .playback_ui import show_scene
-                scene, report = assemble(cut, bpy.path.abspath(self.asset_root), self.game_profile, context)
+                from .playback_ui import show_scene, prepare_saved_preview
+                scene, report = assemble(cut, asset_root, profile, context, assets=assets, static_environment=self.static_environment)
+                prepare_saved_preview(context,scene)
                 if context.area and context.area.type=='VIEW_3D':show_scene(context, scene)
                 self.report({'WARNING'}, f'Imported {len(report["actors"])} model instances; see "{scene["tt_import_report"]}" for missing assets and systems')
                 return {'FINISHED'}
@@ -140,6 +180,7 @@ def menu_import(self, context):
 
 def register():
     from . import face_edit_ui, face_preview_ui, playback_ui
+    bpy.utils.register_class(TT_CU3_Preferences)
     bpy.utils.register_class(IMPORT_SCENE_OT_lego_cu3)
     bpy.types.TOPBAR_MT_file_import.append(menu_import)
     face_edit_ui.register()
@@ -154,3 +195,4 @@ def unregister():
     face_edit_ui.unregister()
     bpy.types.TOPBAR_MT_file_import.remove(menu_import)
     bpy.utils.unregister_class(IMPORT_SCENE_OT_lego_cu3)
+    bpy.utils.unregister_class(TT_CU3_Preferences)

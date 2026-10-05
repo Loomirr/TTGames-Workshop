@@ -34,6 +34,66 @@
       "path": "windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip",
       "bytes": 45724622,
       "sha256": "b12cc665f9d436b8afb4436e19f9fbdbc1ee5a5b46df0b166540e693c38a558e"
+    },
+    {
+      "path": "blender/TT_Cutscene_Importer_0.1.8.zip",
+      "bytes": 88396,
+      "sha256": "3af6031655e412c62d0f780e97e6054ce9d3b200026d5230d77fc0da0e9666d7"
+    },
+    {
+      "path": "python/TTGames_Workshop_GUI-0.1.0.zip",
+      "bytes": 159905,
+      "sha256": "bf09bdd9695cf83fb80914f5497c1108641e57fadedd342a6cbd97f4924cae80"
+    },
+    {
+      "path": "blender/TT_Character_Importer_0.1.0.zip",
+      "bytes": 65212,
+      "sha256": "8140d3c6777983d725cb4476693da8f7b3c6b272ca6090437de53f492818d916"
+    },
+    {
+      "path": "python/BTGA_Texture_Converter_GUI-0.1.1.zip",
+      "bytes": 9297,
+      "sha256": "774b1074a28e13d200d8918cf3c7947a20d01a0bf1557043162220e6506de2d9"
+    },
+    {
+      "path": "python/LMSH1_AN4_Decoder_GUI-0.1.1.zip",
+      "bytes": 10345,
+      "sha256": "9e17785ade20e6b1a216b872077c1cbdbc42164d3f31b9eccc7911cc1abd4a9e"
+    },
+    {
+      "path": "python/LMSH1_BVH_Exporter_GUI-0.1.1.zip",
+      "bytes": 8195,
+      "sha256": "42648f0993b3d3ac82c683eb82c7d7b2a0b41e344f38f754cb1ccc45512791f4"
+    },
+    {
+      "path": "python/CU3_Dependency_Checker_GUI-0.1.1.zip",
+      "bytes": 32241,
+      "sha256": "dd78bd94ba230864273b57a130691ff891400615464b60ead171f9bb804f234e"
+    },
+    {
+      "path": "python/Face_Target_Decoder_GUI-0.1.1.zip",
+      "bytes": 16820,
+      "sha256": "5f7d3e344e5f6d6e320bbff462abfd2f3d5a372ffa8d0a4c9231bd014e088818"
+    },
+    {
+      "path": "python/Face_Target_Writer_GUI-0.1.1.zip",
+      "bytes": 19538,
+      "sha256": "5641e7159ae0780581fc32613d90387f566b36eec591a250f8f5f78d4f5e7d59"
+    },
+    {
+      "path": "python/TFA_Archive_Index_GUI-0.1.1.zip",
+      "bytes": 8822,
+      "sha256": "4b3a3dd81d8d838f6212c813b507db43579f0cb6085e7fb0ec217395c93979bc"
+    },
+    {
+      "path": "python/DCSV_Archive_Index_GUI-0.1.1.zip",
+      "bytes": 7634,
+      "sha256": "d0c33d0a104ef0ebe2b03455d31790ae5c63904d5791cfb2e955343dbd5e9733"
+    },
+    {
+      "path": "python/CU3_Name_Editor_GUI-0.1.1.zip",
+      "bytes": 18152,
+      "sha256": "0336f3d5b1aef789fe0daa2ffde3da6f07a1a5ff95c51b215e1a82575de1e5d7"
     }
   ],
   "notes": "Our source-built tools only; no game assets or external extraction programs."

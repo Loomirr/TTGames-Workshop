@@ -1,54 +1,73 @@
 # TT Cutscene Importer
 
 An experimental Blender importer and set of tools for TT Games' PC cutscenes.
-I'm starting with **LEGO Marvel Super Heroes** and **LEGO Batman 3: Beyond
-Gotham**, then working towards support for more games once these are working
-properly. **LEGO DC Super-Villains** now has partial structural support too.
+The main scene work is for **LEGO Marvel Super Heroes** and **LEGO Batman 3:
+Beyond Gotham**, with broader game support being added through separate format
+checks. **The Force Awakens** and **DC Super-Villains** currently support
+reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.7** (experimental).
-This version adds an opt-in extracted-asset-folder assembly mode for
-supported actors, attachments, costume materials and source cameras. It is still
-in visual testing. Environments, rigid props, audio, lights and effects are not
-automatically assembled by that mode, and the resulting scene is marked incomplete.
-The local research scenes have companion assets and playback previews, but
-those game assets and scenes aren't included in this repo.
+Current source and packaged build: **0.1.8** (experimental).
+Import now defaults to assembling supported actors, attachments, materials,
+source cameras and experimental static stage geometry. Supply the selected
+CU3 and its installed LB3/LMSH1 game folder or an extracted asset tree. The
+addon loads the needed companions, remembers
+per-game folders and prepares a live camera viewport. **This is still partial
+scene assembly:** stage visibility and render controls are approximate;
+nested scenes, rigid props, original lighting, audio and effects are not
+automatically reconstructed. Faces and native shaders also need more work.
+Game assets and example Blender scenes are not included here.
 
 See [the progress notes](docs/PROGRESS.md) for what's changed and what still needs checking.
 The new [face GHG editing prototype](docs/FACE_GHG_EDITING.md) exports existing
 shape targets into native GHG copies from verified editing collections.
 Its decoded round trips pass; edited face files still need an in-game test.
 
-This pass fixes static faces stacking every expression at once, and adds
-tools for native depth masks and packed normal textures. See
-[the facial rendering notes](docs/FACIAL_RENDERING.md). The private V5 scenes
-look much cleaner, but they still aren't exact copies of the game's rendering.
-The revised private V6 viewing copies retain those repairs and add fresh
-composited playback caches plus isolated facial-target controls.
+Native layer-special selection prevents ordinary, robot and skeleton body
+variants—or both cape shapes—from being drawn together. Attachment tint colors
+are also applied. See [layer selection](docs/NATIVE_LAYERS.md) and the
+[facial rendering notes](docs/FACIAL_RENDERING.md).
 
-The new [live playback setup](docs/LIVE_PLAYBACK.md) makes a separate EEVEE
-camera-view copy of an assembled scene. Space plays in the viewport; recovered
-facial masks follow their animation without F12, with approximate edges. The
-original composed preview remains available. Automatic asset extraction is
-still separate work; see the [workflow audit](../../docs/WORKFLOW.md).
+[Live playback](docs/LIVE_PLAYBACK.md) follows source cameras and recovered
+facial masks in the viewport without F12. Facial depth bias and mask edges are
+approximations; they do not establish exact game rendering. The
+[workflow audit](../../docs/WORKFLOW.md) separates the supported systems from
+the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.7 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.7.zip)
+Download the [0.1.8 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.8.zip)
 or use the source build command below.
 
-1. Run `python scripts/build_addon.py` to make
-   a ZIP matching the version in the source addon.
-2. In Blender, open **Preferences → Add-ons → Install from Disk**, select that
+1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the
    ZIP and enable **LEGO CU3 Cutscene Importer (Experimental)**.
-3. Use **File → Import → LEGO CU3 cutscene (.cu3) [experimental]**.
+2. Use **File → Import → LEGO CU3 cutscene (.cu3) [experimental]**.
+3. Choose an extracted CU3 file. Keep **Assemble available scene assets** and
+   **Detect from CU3** selected for LMSH1/LB3.
+4. Set **Game or extracted asset folder** to the matching installed game folder
+   or extracted asset tree. Later imports can leave it blank to reuse that
+   game's saved folder. The addon preferences also expose both folders and an
+   optional extraction-cache location.
+5. **Recovered static environment (experimental)** is enabled by default.
+   It loads supported static geometry from the cutscene's declared primary and
+   shared level resources. Disable it for an actor-only scene.
+6. Press **Space** in the camera viewport to play. **NumPad 0** restores camera
+   view. Read the scene's import report in Blender's Text Editor for omissions.
+
+Automatic profile selection is limited to the verified LMSH1 CU3 version 18
+and LB3 version 19. For TFA/DCSV, choose **Inspect scene references** explicitly;
+that mode creates markers and reports, not character geometry. CU3 alone does
+not contain its companion meshes and textures.
 
 The addon declares Blender 4.4+ support. Testing so far has been in Blender
 5.2.2; other versions still need checking. Building the ZIP only needs Python's
 standard library.
 
-The addon has these import modes:
+To build the ZIP from source, run `python scripts/build_addon.py` from this
+component folder.
+
+The addon also has these inspection and animation modes:
 
 - **Inspect scene references:** shows actor markers, names and a report in
   Blender's Text Editor. Markers aren't character meshes.
@@ -58,32 +77,48 @@ The addon has these import modes:
   armature. It checks the bone names, hierarchy and rest matrices. **Work on a
   copy** is enabled by default.
 
-Inspect first, then use an exact actor name to pick the instance you want.
+For source-rig work, inspect first, then use an exact actor name to pick the
+instance you want.
 The character and its face or attachments can have different skeletons.
 Matching bone counts alone don't mean two rigs are compatible. This tool
 doesn't retarget animations to unrelated rigs.
 
-Also available: **Check companion files** and **Assemble available scene assets**. Select an
-extracted game asset folder and the matching LB3 or LMSH1 profile. Supply the
-uncompressed GHG/GSC, character definitions, TEX and NXG_TEXTURES companions.
-The import report lists missing resources and unsupported systems. Automatic
-actor construction is not a guarantee of correct appearance or a complete
-cutscene; DCSV assembly remains disabled. See [progress](docs/PROGRESS.md).
+**Check companion files** uses the same lookup as assembly without building
+geometry. Installed LB3/LMSH1 archives are read-only; the addon's Python readers
+decode requested companions into a cache outside the installation. No separate
+extraction executable is needed for the supported archive layouts. Extracted
+folders should contain uncompressed GHG/GSC, CD, TEX and NXG_TEXTURES companions.
+See [archive loading](docs/ARCHIVE_ASSETS.md).
 
-**Check companion files** creates a Text Editor report without building geometry.
-It follows character definitions, active attachments and declared costume texture
-references, including shared body models. Missing files, conflicting matches and
+The companion report follows character definitions, active attachments and
+declared costume texture references, including shared body models. Missing
+files, conflicting matches and
 unsupported definitions are reported separately. File presence does not prove
-that its mesh, animation or shader can be reconstructed. This check covers
-character companions; it does not discover the level environment or unpack DATs.
+that its mesh, animation or shader can be reconstructed. The report also
+records exact stage associations from the game registries, but does not
+decode stage geometry. Assembly handles that separately.
 The same check can run outside Blender:
 
 ```sh
 python scripts/check_dependencies.py scene.CU3 --assets extracted-assets --game LB3 --report companions.json
+python scripts/check_dependencies.py scene.CU3 --assets "path/to/installed-game" --game LB3 --cache "path/to/cache" --report companions.json
 ```
 
 Choose a new report filename. The assembly mode embeds this dependency report
 alongside its actual decoder/import results.
+
+Static stage loading uses bounded native draw, matrix and material bindings.
+Named-special draws are excluded so prop geometry is not blindly duplicated.
+Visibility and render-pass semantics remain approximate, and the current
+inspection light is not the game's lighting. Nested LED scenes, their props
+and source lights still need reconstruction. See
+[scene configuration and stage loading](docs/SCENE_CONFIGURATION.md).
+
+Simple `replace_character` declarations now select the root actor's resource
+before loading its definition. The Stark Tower intro, for example, selects
+Tony Stark's intended outfit and hair through this mapping. Replacements
+must be exact, unchained resource mappings; native rig compatibility checks
+still apply. Other registry commands are retained as unapplied declarations.
 
 Some files are control/audio-only parts with no actor records. For example,
 LB3's base `15FORTRESS_INTRO_NXG.CU3` and `16GAME_OUTRO_NXG.CU3` contain no
@@ -158,7 +193,7 @@ doesn't handle those.
 ## What's supported so far
 
 - Observed PC CU3 envelope versions 16–19 and embedded AN4 versions 13–16;
-  partial CU3 v30 / AN4 v20 structural support for DCSV.
+  structural TFA CU3 22–27 and partial DCSV CU3 30 support.
 - Actor hierarchy, animation records, timing and placement matrices.
 - Supported six/nine-channel Euler skeletal animation with compressed curves and
   constants. Rotation endpoints are interpolated as normalized quaternions.
@@ -177,7 +212,13 @@ The local research scenes have more companion model and scene work than this
 public addon. Those scenes and game assets aren't included here. A successful
 decode or bounded mesh doesn't prove the scene matches the game frame for frame.
 
-## DC Super-Villains and archive readers
+## Later games and archive readers
+
+All **426** extracted TFA CU3 files passed structural reading and Blender's
+reference-inspection mode. Two private examples verify supported ANI-D motion
+on source armatures only; they have no imported meshes, materials or source
+cameras. ANI-E sampling, HGOL17 model binding and TFA scene assembly remain
+disabled. See [TFA research](docs/TFA_RESEARCH.md).
 
 Of **324 extracted DCSV CU3 files**, **297 parse structurally**. The remaining
 27 fail explicit layout checks. Name-growth checks passed in all 216
@@ -185,19 +226,19 @@ actor-bearing files that parsed. **DCSV ANI-E animation playback, camera
 decoding and rigid-object editing are deliberately disabled** until verified.
 This isn't full DCSV cutscene import yet.
 
-Two read-only archive readers are included:
+Standalone archive inventory tools are also included:
 
 ```sh
 python scripts/archive_index.py path/to/GAME0.DAT output_folder
 python scripts/archive_index.py path/to/GAME0.DAT output_folder --extract-cutscenes
 python scripts/archive_index_cc4.py path/to/GAME4.DAT index.json
+python scripts/archive_index_cc8.py path/to/GAME2.DAT tfa-index.json
 ```
 
-The first covers the observed LB3 `-6` index and can extract raw/DFLT/ZLIB
-entries. Other compression types require a separate extractor. The second
-indexes the observed DCSV `.CC40TAD` v2/`-12` format using 64-bit file offsets
-and path hashes; it does not extract files itself. Neither reader modifies an
-archive or downloads/runs extraction programs.
+The older `archive_index.py` utility covers LB3 `-6` and has a more limited
+compression path than the addon's new companion loader. The CC4 and CC8 tools
+inventory DCSV type `-12` and TFA type `-8` archives; they do not reconstruct
+scenes. All remain read-only and do not download or run external extractors.
 
 ## Manual checks
 

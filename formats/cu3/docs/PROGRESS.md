@@ -1,7 +1,115 @@
-# Progress — 0.1.7 experimental
+# Progress — 0.1.8 experimental
 
 Updated October 4, 2026. This records the current implementation and checks;
 it isn't a promise that every cutscene or game is supported.
+
+## 0.1.8: game-folder imports and recovered static stages
+
+The Blender importer now defaults to **Assemble available scene assets**.
+Previously its default reference mode created actor markers without models,
+which made a normal import look broken even when scene assembly was available.
+The default profile detects the verified LMSH1 CU3 version 18 and LB3 version
+19. Other versions require an explicit supported inspection mode.
+
+For those two games, select the installed game folder or an extracted asset
+tree once. Separate addon preferences remember the folders. The installed-game
+provider reads the observed -5/-6 DAT indices and extracts only requested
+registry, CD, model and texture companions to an external cache. Its original
+Python LZ2K decoder removes the previous dependency on a separate extraction executable
+for these assets. Cache hashes, atomic writes, path checks and bounded decoding
+protect against damaged inputs/cache files; installed archives stay read-only.
+See [archive loading](ARCHIVE_ASSETS.md).
+
+The LB3 Batcave hub dialogue and LMSH1 Stark Tower intro resolved their actor
+dependency closures with no missing resources or costume textures. Forty-nine
+cache files matched the existing reference bytes exactly, totaling 14.4 MB.
+The archive/provider checks include 23 synthetic tests, independent of game
+assets. These are extraction and discovery results; successful dependency
+resolution alone does not establish correct Blender rendering.
+
+Character Layer Special records now select the proper alternative within a
+visible layer. This prevents ordinary, robot and skeleton limbs from drawing
+together, and selects regular versus bat capes from the shared source model.
+All 52 available resolvable LB3/LMSH1 definitions passed this selection audit;
+10 portable layer tests pass. Attachment tint colors now reach the material
+nodes. Full layered shaders and exact source lighting remain incomplete.
+
+The shared configuration reader now follows the selected cutscene's exact
+primary and shared level declarations. **Recovered static environment
+(experimental)** is enabled by default and builds supported static GSC draws
+with native matrices and material indices. Named-special draws are excluded,
+so the importer does not blindly draw every prop in the command pool. Source
+render controls are retained in the report; their visibility and pass semantics
+remain approximate. Nested LED scenes, their props and source lighting are not
+reconstructed. The stage preview uses explicitly labeled inspection lighting.
+
+Six portable `test_stage_geometry.py` tests check command bounds, native
+material ownership and static/special separation. The synthetic Blender check
+`check_stage_blender.py` passed native positions/matrices, UVs, topology,
+vertex colors and material bindings; it also verified named-special exclusion,
+unchanged input data and malformed-input rejection before scene mutation.
+These are decoder and builder checks, not packaged full-scene or in-game
+fidelity validation.
+
+The packaged 0.1.8 operator was also exercised with its normal defaults and
+installed-game folders. The saved scenes were reopened with the installed
+addon and their packed images checked:
+
+| Example | Character/attachment models | Static stage draws | Source cameras | Packed images |
+| --- | ---: | ---: | ---: | ---: |
+| LB3 `1SEWERS_MIDTRO1B` | 18 | 127 | 4 | 33 |
+| LMSH1 `STARKTOWER_INTRO` | 7 | 399 | 13 | 52 |
+
+Both assemble all recovered actor nodes. Eight material warnings remain in
+the sewer example and six in Stark Tower. Rendered samples show the recovered
+architecture in place around the source actors; lighting, visibility, props
+and game-frame matching remain incomplete. The Green Lantern hub example
+imports its actors/cameras but rejects an unverified stage rendering-control
+value. This is reported rather than widening the format gate by assumption.
+
+Additional default-operator checks imported level-15 midtro 1D and outro E.
+The midtro still has shared tentacle texture warnings; outro E still has six
+unassembled child nodes and two glass material warnings. A completed import
+operation is not a claim that those cutscenes are complete. The current manual
+repository check passes 121 portable tests; Blender checks remain separate.
+
+Simple declared character replacements now select root resources through the
+shared dependency resolver. In the Stark Tower intro, `TonyStarkPants` maps to
+`TonyStark`, selecting the intended outfit and hair on the same native body
+rig. Exact resource IDs are required; duplicate sources and chains/cycles are
+rejected. Actor labels, animation records and rig checks remain intact. Other
+registry commands are reported without being applied. See
+[configuration and stage notes](SCENE_CONFIGURATION.md).
+
+New scenes open in a prepared camera viewport: Space plays, and NumPad 0
+restores camera view. Source facial masks remain evaluated during live playback.
+The small post-skinning depth bias is a preview approximation; faces still
+need visual work. No native Basis, topology or rest transforms are changed by
+these preview modifiers.
+
+A camera audit compared 58 initial animated matrices with independently
+stored CU3 camera matrices across six LB3/LMSH1 cuts. Their maximum element
+difference was 0.001568. Shot times and the inspected Flash visibility change
+agree without adding an extra frame. Missing actors explained some previously
+empty or misleading shots. These findings support the decoded transforms;
+they do not prove frame-for-frame game composition, and no guessed camera
+re-aiming was added.
+
+TFA CU3 versions 22–27 now support structural/reference inspection. All 426
+extracted files passed the reader and Blender reference operator. Two private
+ANI-D examples verify source-rig motion only, with no meshes/materials/source
+cameras. TFA ANI-E playback and full scene assembly remain unavailable. Camera
+footer decoding is explicitly limited to the verified older versions 16–19.
+See [TFA research](TFA_RESEARCH.md).
+
+Automatic assembly still omits nested environments, rigid props, source lights,
+audio and effects, and static stage visibility remains approximate. Every
+assembled scene reports missing/unsupported systems and remains marked
+incomplete. The following sections retain the earlier
+validation history; their sample counts are not a claim of current whole-game
+coverage.
+
+## 0.1.7 and earlier validation history
 
 ## Native asset assembly and visual investigation
 
@@ -12,7 +120,7 @@ Native stream attributes and triangles matched 31 local reference assets;
 display bindings matched those same 31 assets. Twenty-seven character
 definitions decoded. These are data comparisons, not visual fidelity checks.
 
-The opt-in assembly mode creates supported source rigs, meshes, selected
+The 0.1.7 opt-in assembly mode created supported source rigs, meshes, selected
 definition layers, attachments, facial targets and source cameras from an
 extracted asset folder. An LB3 sewer test constructs 18 actor/attachment models
 and four cameras, with no remaining actor-node references in that test. Its
@@ -112,8 +220,10 @@ resources. A missing CD can redirect a character to a shared model, so the
 report no longer incorrectly implies that every character must have its own
 same-named GHG/GSC. The level-15 preflight finds three resources and identifies
 one missing shared tentacle resource requested by seven actor instances.
-Archive extraction, environment dependencies and effects remain outside this
-preflight's scope.
+At that release, archive extraction, environment dependencies and effects
+were outside this preflight's scope. Version 0.1.8 adds installed-game actor
+companion extraction and experimental declared static stages; complete
+environments and effects remain separate work.
 
 The packaged 0.1.7 ZIP was loaded directly in Blender 5.2.2. Both companion
 checking and actual scene assembly completed for the opening and level-15
@@ -131,8 +241,8 @@ remain unchanged. Mask edges are approximate; the original composed scenes
 and fixed movie caches remain available. See [live playback](LIVE_PLAYBACK.md).
 
 The [workflow audit](../../../docs/WORKFLOW.md) separates portable readers and
-writers from the log/companion-dependent mesh reconstruction work. Automatic
-asset-root character/cutscene assembly remains an extraction milestone.
+writers from scene reconstruction. Version 0.1.8 now assembles supported actors
+from installed-game companions; complete scene reconstruction remains a goal.
 
 The V7 live LB3 sequence samples the existing edit's source frames onto one
 252-frame timeline. All 6,497 curves passed sample-value comparisons; visible
@@ -153,9 +263,9 @@ path, without calling the final renderer. This verifies viewing, not real-time
 FPS on every scene. The copy operator also preserves excluded collections so
 hidden variants are not revived, and rolls back failed setups.
 
-Thirteen portable CU3 tests pass. Separate Blender checks cover live-copy
+At release 0.1.6, thirteen portable CU3 tests passed. Separate Blender checks covered live-copy
 setup, mask motion, camera cuts, rollback, baked material colors and alpha.
-The 0.1.6 ZIP contains the same 16 source modules as the addon directory, with
+The 0.1.6 ZIP contained the then-current 16 source modules, with
 no game assets or private paths. The build manifest records its size and hash.
 
 ## Level 15 and game outro imports
@@ -272,10 +382,12 @@ Game files, local installer paths and backups aren't distributed here.
 
 ## Still being worked on
 
-Automatic companion meshes/materials, faces, cameras, audio, environments and
-effects remain outside the public addon's complete reconstruction workflow.
-Local research scenes include some of those systems and cached playback, but
-game assets and generated scenes aren't published.
+Supported companion meshes/materials and cameras now assemble through the
+public addon. Remaining model layouts, face composition, full shader behavior,
+stage visibility, nested environments, props, source lighting, audio and
+effects prevent a complete reconstruction. Some private scenes include
+additional hand-prepared systems;
+those assets and generated scenes are not published.
 
 Custom animation export is still research work. Decoding tracks and growing
 names don't establish a safe Blender-to-CU3 writer. Gameplay hit windows,

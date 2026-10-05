@@ -8,7 +8,7 @@ from pathlib import Path
 import bpy
 from mathutils import Matrix
 from .cu3 import FormatError
-from .asset_index import AssetIndex
+from .asset_index import open_assets
 from .dependencies import ResourceResolver, dependency_report, actor_resource
 from .native_model_blender import load_model, create_model
 from .costume_materials import CostumeMaterials
@@ -17,6 +17,7 @@ from .blender_import import C, CI, row_matrix, apply_pose, apply_actor_visibilit
 from .cinematic import visibility
 from .morph import actor_morph_animation, animate_shape_keys
 from .face_live import prepare_live
+from .scene_inputs import prepare_resources
 
 
 STORES = ('scenes','objects','collections','meshes','armatures','cameras','lights',
@@ -31,18 +32,18 @@ def rollback(before):
     bpy.data.batch_remove(ids={item for name in STORES for item in getattr(bpy.data,name) if item not in before[name]})
 
 
-def assemble(cut, asset_root, profile, context):
+def assemble(cut, asset_root, profile, context, *, assets=None, static_environment=True):
     if cut.version == 30:
         raise FormatError('DCSV ANI-E and cinematic assembly remain unverified; use reference inspection')
-    assets = AssetIndex(asset_root)
-    resolver = ResourceResolver(assets, profile)
-    resolver.validate_cutscene(cut)
+    if assets is None:assets = open_assets(asset_root, profile)
+    resolver, configuration = prepare_resources(cut, assets, profile)
     dependencies = dependency_report(cut, resolver)
     suffix = resolver.suffix
     initial, original = snapshot(), context.scene
     report = {'source':str(cut.path), 'profile':profile, 'actors':[], 'materials':[], 'issues':[],
               'dependencies':dependencies,
-              'limitations':['Environment, rigid props, audio, source lighting, events and VFX are not yet automatically assembled.',
+              'configuration':configuration,
+              'limitations':['Recovered static stage draws approximate environment visibility; nested scenes, rigid props, audio, source lighting, events and VFX are not yet automatically assembled.',
                              'Shared texture slots, layered materials and some native layouts remain unresolved.',
                              'Camera framing and native shaders still need comparison against game playback.']}
     models = {}
@@ -68,7 +69,10 @@ def assemble(cut, asset_root, profile, context):
             record = matches[0]
             prepare_pose(actor['records'][record]['animation'])
             visibility(cut, actor)
-        rig, parts = create_model(model, name, collection, definition, materials)
+        attachment_tint = parent[2].get('Tint Colour') if parent else None
+        def model_material(model, entry, definition):
+            return materials(model, entry, definition, attachment_tint=attachment_tint)
+        rig, parts = create_model(model, name, collection, definition, model_material)
         if parent:
             parent_rig, parent_skeleton, attachment = parent
             logical = attachment['Locator']
@@ -168,9 +172,11 @@ def assemble(cut, asset_root, profile, context):
             rows_before = len(report['actors'])
             imported_before = imported.copy()
             try:
-                reference = actor_resource(actor['name'])
+                reference = resolver.actor_reference(actor['name'])
                 model, definition = resource(reference)
                 build(actor, model, definition, actor['name'])
+                if reference != actor_resource(actor['name']):
+                    report.setdefault('applied_character_replacements',[]).append({'actor':actor['name'], 'original':actor_resource(actor['name']), 'resource':reference})
             except (ValueError, OSError, KeyError, RuntimeError) as error:
                 rollback(before)
                 report['actors'] = report['actors'][:rows_before]
@@ -178,12 +184,47 @@ def assemble(cut, asset_root, profile, context):
                 materials.images.clear()
                 report['issues'].append({'actor':actor['name'],'issue':str(error)})
         report['unassembled_actor_nodes'] = [a['name'] for a in cut.actors if a['index'] not in imported]
+        report['stages'] = []
+        if static_environment:
+            from .stage_geometry import read_stage_geometry
+            from .stage_blender import build_static_stage
+            seen = set()
+            for declaration in configuration.get('stages',[]):
+                reference = declaration['resource_prefix']+suffix+'.GSC'
+                if reference.casefold() in seen:continue
+                seen.add(reference.casefold())
+                stage_report = dict(declaration, reference=reference, status='unresolved')
+                before = snapshot()
+                try:
+                    path = assets.find_exact(reference)
+                    model = load_model(path)
+                    inventory = read_stage_geometry(path, len(model['parts']), len(model['materials']))
+                    stage_collection = bpy.data.collections.new('Recovered static stage / '+path.stem)
+                    scene.collection.children.link(stage_collection)
+                    _, stage_parts, detail = build_static_stage(model, inventory, stage_collection, materials)
+                    stage_report.update(detail)
+                    stage_report['status'] = 'imported_static_candidates'
+                    if stage_parts:
+                        # Inspection lighting must reach interior geometry. This
+                        # is deliberately labeled separately from native lights.
+                        light_data.use_shadow = False
+                        stage_report['inspection_lighting'] = 'Unshadowed inspection sun; native lights are not reconstructed.'
+                except (ValueError, OSError, KeyError, RuntimeError) as error:
+                    rollback(before)
+                    materials.images.clear()
+                    stage_report['issue'] = str(error)
+                report['stages'].append(stage_report)
+            if not report['stages']:
+                report['stages'].append({'status':'unresolved','issue':'No selected stage declaration was recovered; see configuration report.'})
+        else:
+            report['stages'].append({'status':'disabled','issue':'Static environment loading was disabled for this import.'})
         if scene.camera:
             report['live_preview'] = prepare_live(scene, detail_level=3)
         scene.frame_set(1)
         scene['cu3_source'] = str(cut.path)
         scene['tt_import_complete'] = False
         report['complete'] = False
+        report['asset_source'] = assets.get_info() if hasattr(assets,'get_info') else {'kind':'extracted-assets','root':str(assets.root)}
         text = bpy.data.texts.new(cut.name+' / import report')
         text.write(json.dumps(report,indent=2))
         scene['tt_import_report'] = text.name

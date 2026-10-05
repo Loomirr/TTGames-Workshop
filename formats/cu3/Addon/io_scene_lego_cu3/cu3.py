@@ -1,7 +1,8 @@
-"""Bounds-checked reader for observed PC CU3 versions 16--19 and partial v30.
+"""Bounds-checked reader for observed PC CU3 v16--19 and partial v22--27/v30.
 
 CU3's envelope is big-endian; its embedded AN4/ANI-D data is little-endian.
-V30/ANI-E support is structural only; its animation sampler is disabled.
+TFA v22--27 and DCSV v30 support includes structural inventory. ANI-E sampling
+is disabled, and their camera/object footers require separate verification.
 This module does not execute game code, extract archives or modify its inputs.
 """
 from pathlib import Path
@@ -43,19 +44,21 @@ class Animation:
     """
     def __init__(self, reader, at, limit):
         self.reader, self.at, self.limit = reader, at, limit
-        self.magic = reader.data[at:at + 4]
+        raw_magic = reader.data[at:at + 4]
+        self.endian = '>' if raw_magic in (b'ANID', b'ANIE') else '<'
+        self.magic = raw_magic[::-1] if self.endian == '>' else raw_magic
         if self.magic not in (b'DINA', b'EINA'):
-            raise FormatError(f'Expected little-endian ANI-D at 0x{at:x}')
-        self.nodes, self.keys, self.stride, self.old_frames, self.curves, self.old_first = reader.get('6H', at + 4, '<')
+            raise FormatError(f'Expected ANI-D/E at 0x{at:x}')
+        self.nodes, self.keys, self.stride, self.old_frames, self.curves, self.old_first = reader.get('6H', at + 4, self.endian)
         self.flags = reader.get('B', at + 19)
         self.integer_constant_count = reader.get('B', at + 17)
-        self.frames = reader.get('H', at + 22, '<')
-        self.minimum, self.scale = reader.get('2f', at + 28, '<')
-        self.offsets = reader.get('9I', at + 36, '<')
-        self.ratio, self.first = reader.get('2f', at + 72, '<')
+        self.frames = reader.get('H', at + 22, self.endian)
+        self.minimum, self.scale = reader.get('2f', at + 28, self.endian)
+        self.offsets = reader.get('9I', at + 36, self.endian)
+        self.ratio, self.first = reader.get('2f', at + 72, self.endian)
         if not 0 < self.nodes <= 2048 or not 0 < self.curves <= 64 or not self.keys or not self.frames:
             raise FormatError('Invalid ANI-D counts')
-        self.types = reader.get(f'{self.nodes * self.curves}H', at + self.offsets[2], '<')
+        self.types = reader.get(f'{self.nodes * self.curves}H', at + self.offsets[2], self.endian)
         if isinstance(self.types, int):
             self.types = (self.types,)
         self.node_flags = reader.get(f'{self.nodes}B', at + self.offsets[4])
@@ -91,7 +94,15 @@ class Animation:
         # their resource/variant semantics. Unknown layouts still fail.
         discrete_scene = (scene_channels and self.flags == 0xac and self.nodes == 1 and
                           tuple(self.node_flags) == (0,) and
-                          tuple(self.types) in ((14,)*6+(8,8), (14,)*6+(8,10,10), (14,)*6+(8,8,10,10)))
+                          tuple(self.types) in ((14,)*6+(10,10), (14,)*6+(8,8), (14,)*6+(8,10,10), (14,)*6+(8,8,10,10)))
+        # LMSH1 Stark Tower also supplies translated placement before the
+        # same visibility/resource controls. Its three type-7 translations
+        # consume 24 bytes per group, followed by 12 bytes of integer indices.
+        # Keep this observed layout narrow; channels 6..8 are not bone scale.
+        translated_controls = (scene_channels and self.flags == 0xac and self.nodes == 1 and
+                               tuple(self.node_flags) == (2,) and
+                               tuple(self.types) == (7,7,7,14,14,14,8,10,10))
+        discrete_scene = discrete_scene or translated_controls
         if scene_channels and self.curves == 8 and not discrete_scene:
             raise FormatError('Unverified eight-channel scene control layout')
         attachment_controls = (scene_channels and self.flags in (0xa4, 0xac) and
@@ -99,7 +110,9 @@ class Animation:
                                tuple(self.types) in ((8,), (8,8)))
         if scene_channels and self.curves == 2 and not attachment_controls:
             raise FormatError('Unverified two-channel attachment control layout')
-        self.control_visibility_channel = 0 if attachment_controls else 6 if discrete_scene else None
+        # The two type-10 resource controls can exist without visibility.
+        # Their -1 sentinels must not hide the actor or become bone scale.
+        self.control_visibility_channel = 0 if attachment_controls else 6 if discrete_scene and self.types[6] == 8 else None
         self.discrete_scene_controls = discrete_scene
         for node in range(self.nodes):
             for channel in range(self.curves):
@@ -109,7 +122,7 @@ class Animation:
                 desc = dict(kind=kind, active=active, step=bool(self.types[node * self.curves + channel] & 0x8000))
                 if active and kind in (6, 7):
                     desc['key_offset'] = key_cursor
-                    desc['scale'], desc['minimum'] = r.get('2f', scale_cursor, '<')
+                    desc['scale'], desc['minimum'] = r.get('2f', scale_cursor, self.endian)
                     key_cursor += 4 if kind == 6 else 8
                     scale_cursor += 8
                 elif active and scene_channels and (kind == 8 or kind == 10 and discrete_scene):
@@ -124,7 +137,7 @@ class Animation:
                     constant_at = self.at + self.offsets[1] + float_start + (kind - 16) * 4
                     if constant_at + 4 > self.at + self.offsets[2]:
                         raise FormatError('Float constant index outside its table')
-                    desc['constant'] = r.get('f', constant_at, '<')
+                    desc['constant'] = r.get('f', constant_at, self.endian)
                 elif active and kind < 16 and kind not in (14, 15):
                     raise FormatError(f'Unsupported skeletal curve type {kind}')
                 descriptors.append(desc)
@@ -161,16 +174,16 @@ class Animation:
                 index = r.get('B', cursor + quarter)
                 if index >= self.integer_constant_count:
                     raise FormatError('Indexed integer curve outside its constant table')
-                value = r.get('h', self.at + self.offsets[1] + index * 2, '<')
+                value = r.get('h', self.at + self.offsets[1] + index * 2, self.endian)
             else:
                 cursor = self.at + self.offsets[3] + group * self.stride + desc['key_offset']
                 if kind == 6:
-                    word, following = r.get('I', cursor, '<'), r.get('I', cursor + self.stride, '<')
+                    word, following = r.get('I', cursor, self.endian), r.get('I', cursor + self.stride, self.endian)
                     v0, v1 = word & 255, following & 255
                     tangents = [((word >> (8 + q * 6)) & 63) / 63 for q in range(4)]
                     next_t0 = ((following >> 8) & 63) / 63
                 else:
-                    word, following = r.get('4H', cursor, '<'), r.get('4H', cursor + self.stride, '<')
+                    word, following = r.get('4H', cursor, self.endian), r.get('4H', cursor + self.stride, self.endian)
                     v0, v1 = word[0], following[0]
                     tangents = [(word[q] & 0xfff) / 4095 for q in (1, 2, 3)]
                     tangents.append(((word[1] >> 12) | ((word[2] & 0xf000) >> 8) | ((word[3] & 0xf000) >> 4)) / 4095)
@@ -183,7 +196,7 @@ class Animation:
                     va = v0 + (v1 - v0) * t0
                     vb = va
                     if frac:
-                        v2 = (r.get('I', cursor + 2 * self.stride, '<') & 255) if kind == 6 else r.get('H', cursor + 2 * self.stride, '<')
+                        v2 = (r.get('I', cursor + 2 * self.stride, self.endian) & 255) if kind == 6 else r.get('H', cursor + 2 * self.stride, self.endian)
                         vb = v1 + (v2 - v1) * next_t0
                     packed = va + (vb - va) * frac
                 value = packed * desc['scale'] + desc['minimum']
@@ -206,7 +219,7 @@ class Cutscene:
         if self.header_shift and self.extended_header_word not in (0,1):
             raise FormatError('Unverified DCSV extended-header flag')
         self.frames, self.fps = r.get('If',12+self.header_shift)
-        if envelope != 1 or self.version not in (16, 17, 18, 19, 30):
+        if envelope != 1 or self.version not in (16, 17, 18, 19, 22, 23, 24, 25, 26, 27, 30):
             raise FormatError(f'Unsupported CU3 envelope/version: {envelope}/{self.version}')
         if not self.frames or self.frames > 100000 or not 0 < self.fps <= 240:
             raise FormatError('Invalid CU3 timeline')
@@ -245,6 +258,21 @@ class Cutscene:
                     meta['switch_tables'].append([r.get('2I', cursor + k * 8) for k in range(count)])
                     cursor += count * 8
                 next_at = cursor + 4
+                if 22 <= self.version <= 27:
+                    # TFA serializes a length-prefixed actor resource name
+                    # here. Empty names use the same four-byte zero field as
+                    # older files. Ignoring nonempty names misaligns every
+                    # following actor. Its runtime override rules are unknown.
+                    name_bytes = r.get('I', cursor)
+                    if name_bytes > 4096 or next_at + name_bytes > len(data):
+                        raise FormatError('TFA actor resource name exceeds bounds')
+                    if name_bytes:
+                        if data[next_at + name_bytes - 1] != 0:
+                            raise FormatError('Unterminated TFA actor resource name')
+                        meta['resource_name'] = r.string(next_at, next_at + name_bytes)
+                        if len(meta['resource_name']) + 1 != name_bytes:
+                            raise FormatError('TFA actor resource name has trailing bytes')
+                    next_at += name_bytes
             self.actor_metadata.append(meta)
             at = next_at
         self.extra_references = []
@@ -296,7 +324,9 @@ class Cutscene:
     def _tree(self):
         r, root = self.reader, self.root
         ver, size = r.get('2I', root, '<')
-        if ver not in ((20,) if self.version == 30 else (13, 14, 15, 16)) or size < 72 or root + size > self.blob_end:
+        tree_versions = {22: (17,), 23: (18,), 24: (18,), 25: (18,),
+                         26: (19,), 27: (20,), 30: (20,)}
+        if ver not in tree_versions.get(self.version, (13, 14, 15, 16)) or size < 72 or root + size > self.blob_end:
             raise FormatError('Unsupported embedded AN4 tree header')
         self.tree_version = ver
         strings, children = r.get('2I', root + 16, '<')
@@ -323,7 +353,7 @@ class Cutscene:
                         raise FormatError('AN4 animation record outside tree')
                     name_offset, ani_offset = r.get('2I', rec + 64, '<')
                     start, end = r.get('2H', rec + 72, '<')
-                    if self.version == 30 and ani_offset == 0:
+                    if self.version in (22, 23, 24, 25, 26, 27, 30) and ani_offset == 0:
                         actor.setdefault('static_records',[]).append(dict(index=i,offset=rec,name=r.string(string_start+max(0,name_offset-1),tree_end),range_start=start,range_end=end,matrix=list(r.get('16f',rec,'<'))))
                         continue
                     anim = Animation(r, root + ani_offset, tree_end)

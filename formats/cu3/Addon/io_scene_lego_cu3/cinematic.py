@@ -32,8 +32,8 @@ def read_rigids(cut, cinematic):
     return records
 
 def read_cameras(cut):
-    if cut.version == 30:
-        raise FormatError('DCSV camera/object footer is not yet verified')
+    if cut.version not in (16, 17, 18, 19):
+        raise FormatError(f'CU3 v{cut.version} camera/object footer is not yet verified; structural support does not establish its camera layout')
     r = cut.reader
     at = cut.footer_start
     count = r.get('I', at)

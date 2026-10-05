@@ -14,6 +14,7 @@ root = Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(root/'Addon'))
 from io_scene_lego_cu3.cu3 import Cutscene
 from io_scene_lego_cu3.scene_assembly import assemble
+from io_scene_lego_cu3.playback_ui import prepare_saved_preview
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('inputs',nargs='+',type=Path)
@@ -38,15 +39,17 @@ for number,path in enumerate(args.inputs,1):
         cut = Cutscene(path)
         scene, report = assemble(cut,args.assets,args.game,bpy.context)
         meshes = [o for o in scene.objects if o.type=='MESH']
-        row.update(status='partial_actor_scene' if meshes else 'no_actor_geometry',
+        row.update(status='partial_scene' if meshes else 'no_geometry',
                    source_actor_nodes=len(cut.actors),
                    assembled_actor_nodes=len(cut.actors)-len(report['unassembled_actor_nodes']),
                    model_instances=len(report['actors']),meshes=len(meshes),
                    camera=report.get('camera'),issues=report['issues'],
                    unresolved_materials=report['materials'],
                    unassembled_actor_nodes=report['unassembled_actor_nodes'],
+                   stages=report.get('stages',[]),
                    limitations=report['limitations'])
         scene.frame_set(max(1,cut.frames//2))
+        row['saved_camera_viewports'] = prepare_saved_preview(bpy.context,scene)
         if args.save_scenes:
             row['blend']=stem+'.blend'
             bpy.ops.wm.save_as_mainfile(filepath=str(args.output/row['blend']))
@@ -58,7 +61,7 @@ for number,path in enumerate(args.inputs,1):
             try:
                 bpy.ops.render.render(write_still=True,scene=scene.name)
                 row['preview']={'file':stem+'.png','frame':scene.frame_current,
-                                'kind':'Source camera, available actors only; inspection lighting; no environment'}
+                                'kind':'Source camera, available actors and recovered static stages; inspection lighting; incomplete scene'}
             except RuntimeError as error:
                 row['preview_error']=str(error)
     except Exception as error:

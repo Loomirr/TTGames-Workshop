@@ -114,6 +114,15 @@ def prepare_live(scene, detail_level=3):
         masks = [o for o in objects if o.get('tt_colour_write_mask') == 0]
         if masks:
             planned.extend((obj, masks) for obj in objects if obj not in masks)
+    # Native masks and facial detail can be coplanar. The composed preview
+    # already offsets these depth-only surfaces after skinning; omitting that
+    # step here creates alternating teeth/skin stripes in raycast clipping.
+    # Keep the same explicit preview approximation, without editing Basis,
+    # topology, source animation, or the visible facial detail meshes.
+    from .face_preview import depth_bias_modifier
+    biased_masks = {mask for _, masks in planned for mask in masks}
+    for mask in biased_masks:
+        depth_bias_modifier(mask, .001)
     # Preserve the source compositor, but don't execute it in this viewing copy.
     scene.render.use_compositing = False; scene.render.use_sequencer = False
     scene.render.engine = 'BLENDER_EEVEE'; scene.render.film_transparent = False
@@ -154,4 +163,6 @@ def prepare_live(scene, detail_level=3):
     scene.sync_mode = 'FRAME_DROP'
     scene['tt_live_preview'] = 'Source camera mask approximation. Orbiting is for mesh inspection; use camera view for facial clipping.'
     scene['tt_preview_kind'] = 'LIVE'
-    return {'detail_parts': len(planned), 'hidden_depth_parts': len(masks), 'subdivision_level': detail_level}
+    return {'detail_parts': len(planned), 'hidden_depth_parts': len(masks), 'subdivision_level': detail_level,
+            'biased_depth_masks': len(biased_masks), 'depth_bias_distance': .001,
+            'depth_bias_note':'Post-skin offset on depth-only raycast targets; preview approximation, not native shader equivalence.'}

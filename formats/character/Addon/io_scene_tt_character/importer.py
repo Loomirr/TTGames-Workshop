@@ -1,0 +1,181 @@
+"""Character assembly and native-skeleton action application for the standalone addon."""
+import json
+from pathlib import Path
+import bpy
+from mathutils import Matrix
+from ._core.cu3 import FormatError
+from ._core.an4 import AnimationFile
+from ._core.asset_index import open_assets
+from ._core.definitions import character_definition
+from ._core.dependencies import ResourceResolver, active_attachments
+from ._core.native_model_blender import load_model, create_model
+from ._core.costume_materials import CostumeMaterials
+from ._core.blender_import import C, CI, row_matrix, apply_pose, prepare_pose
+
+STORES = ('objects', 'collections', 'meshes', 'armatures', 'materials', 'images', 'actions', 'shape_keys', 'node_groups', 'texts')
+
+
+def snapshot():
+    return {name: set(getattr(bpy.data, name)) for name in STORES}
+
+
+def rollback(before):
+    if bpy.context.object and bpy.context.object.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.data.batch_remove(ids={item for name in STORES for item in getattr(bpy.data, name) if item not in before[name]})
+
+
+def find_rig(obj):
+    while obj:
+        if obj.type == 'ARMATURE' and obj.get('tt_character_skeleton'):
+            return obj
+        obj = obj.parent
+    return None
+
+
+def write_report(name, report):
+    text = bpy.data.texts.new(name)
+    text.write(json.dumps(report, indent=2))
+    return text.name
+
+
+def import_character(context, path, assets_root, game, *, definition_path=None, cache=None, attachments=True, assets=None):
+    if context.mode != 'OBJECT':
+        raise FormatError('Switch to Object Mode before importing')
+    if game not in ('LB3', 'LMSH1'):
+        raise FormatError('Select LB3 or LMSH1')
+    assets = assets or open_assets(assets_root, game, cache_root=cache)
+    resolver = ResourceResolver(assets, game)
+    definition = character_definition(path) if path.suffix.lower() == '.cd' else character_definition(definition_path) if definition_path else None
+    if path.suffix.lower() == '.cd':
+        reference = definition['character'].get('Override Model File') or definition['character']['Skeleton Name']
+        model_path = assets.find(reference, resolver.suffix, '.GHG', required=False) or assets.find(reference, resolver.suffix, '.GSC')
+    else:
+        model_path = path
+    report = dict(source=str(path), game=game, models=[], materials=[], issues=[],
+                  limitations=['Native shaders and depth-mask faces remain approximate.',
+                               'Attachments follow native locators; independent attachment animation is not imported with body AN4.',
+                               'A raw GHG without its CD imports display variants for inspection, not a configured costume.'])
+    if not definition:
+        report['issues'].append('No CD selected: costume slots and layer variants cannot be resolved as a complete character.')
+    before = snapshot()
+    original_active = context.view_layer.objects.active
+    original_selected = list(context.selected_objects)
+    materials = CostumeMaterials(assets, resolver.suffix, report['materials'])
+    try:
+        collection = bpy.data.collections.new(path.stem + ' / TT Character')
+        context.scene.collection.children.link(collection)
+        for obj in context.selected_objects:
+            obj.select_set(False)
+
+        def build(source, definition, name, parent=None, chain=()):
+            key = source.resolve()
+            if key in chain or len(chain) > 8:
+                raise FormatError('Cyclic or excessively nested character attachments')
+            model = load_model(source)
+            expected = 175 if game == 'LB3' else 169
+            if model['mesh_version'] != expected:
+                raise FormatError('Model version does not match the selected game')
+            factory = lambda m, e, d: materials(m, e, d, attachment_tint=parent[2].get('Tint Colour') if parent else None)
+            rig, parts = create_model(model, name, collection, definition, factory)
+            skeleton = model['skeleton']
+            if skeleton:
+                rig['tt_character_skeleton'] = json.dumps(skeleton)
+                rig['tt_character_game'] = game
+                rig['cu3_geometry_status'] = 'Native source meshes and skeleton; material reconstruction experimental.'
+            if parent:
+                parent_rig, parent_skeleton, attachment = parent
+                logical = attachment['Locator']
+                remap = parent_skeleton['post_poi_bytes']
+                if not 0 <= logical < len(remap) or remap[logical] >= len(parent_skeleton['points_of_interest']):
+                    raise FormatError('Attachment locator outside native table')
+                point = parent_skeleton['points_of_interest'][remap[logical]]
+                anchor = bpy.data.objects.new(name + ' / locator', None)
+                collection.objects.link(anchor)
+                anchor.parent = parent_rig
+                constraint = anchor.constraints.new('COPY_TRANSFORMS')
+                constraint.target, constraint.subtarget = parent_rig, parent_skeleton['joints'][point['joint']]['name']
+                rig.parent = anchor
+                rig.matrix_parent_inverse = Matrix.Identity(4)
+                rig.matrix_basis = C @ row_matrix(point['matrix']) @ row_matrix(list(attachment['Object Offset'])) @ CI
+            report['models'].append(dict(source=str(source), meshes=len(parts), joints=len(skeleton['joints']) if skeleton else 0))
+            if attachments and skeleton and definition:
+                for attachment in active_attachments(definition):
+                    saved = snapshot()
+                    count = len(report['models'])
+                    try:
+                        resolved = resolver.resolve(attachment['Resource File'])
+                        build(resolved['model'], resolved['definition'], name + ' / ' + attachment['Resource File'],
+                              (rig, skeleton, attachment), chain + (key,))
+                    except (ValueError, OSError, KeyError, RuntimeError) as error:
+                        rollback(saved)
+                        materials.images.clear()
+                        del report['models'][count:]
+                        report['issues'].append(f'Attachment {attachment.get("Resource File", "unknown")}: {error}')
+            return rig
+
+        rig = build(model_path, definition, path.stem)
+        for obj in context.selected_objects:
+            obj.select_set(False)
+        rig.select_set(True)
+        context.view_layer.objects.active = rig
+        rig['tt_character_report'] = write_report('TT Character report / ' + path.stem, report)
+        context.view_layer.update()
+        return rig, report
+    except Exception:
+        rollback(before)
+        for obj in original_selected:
+            obj.select_set(True)
+        context.view_layer.objects.active = original_active
+        raise
+
+
+def import_animations(context, rig, paths, actor_name='', fps=30):
+    report = dict(imported=0, issues=[], clips=[])
+    if rig is None:
+        report['issues'].append('Select an imported native character rig')
+        write_report('TT AN4 report', report)
+        return report
+    skeleton = json.loads(rig['tt_character_skeleton'])
+    original_action = rig.animation_data.action if rig.animation_data else None
+    original_slot = rig.animation_data.action_slot if rig.animation_data else None
+    for path in paths:
+        try:
+            source = AnimationFile(path, fps=fps)
+            actor = source.choose_actor(len(skeleton['joints']), actor_name)
+            for index, record in enumerate(actor['records']):
+                if record['animation'].nodes != len(skeleton['joints']):
+                    report['issues'].append(f'{path.name} / {record["name"]}: different skeleton size; skipped')
+                    continue
+                before = snapshot()
+                old_action = rig.animation_data.action if rig.animation_data else None
+                old_slot = rig.animation_data.action_slot if rig.animation_data else None
+                try:
+                    prepare_pose(record['animation'])
+                    source.frames = record['animation'].frames
+                    action, _ = apply_pose(source, actor, index, rig, skeleton)
+                    action.name = path.stem + ' / ' + record['name']
+                    action['tt_character_status'] = 'Native skeleton AN4 pose; original root translation retained. FPS is a preview assumption; events and attachment tracks are separate.'
+                    item = rig.tt_clips.add()
+                    item.name, item.action = action.name, action
+                    item.slot = rig.animation_data.action_slot.identifier
+                    item.frames, item.fps = source.frames, fps
+                    report['imported'] += 1
+                    report['clips'].append(dict(source=str(path), actor=actor['name'], action=action.name, frames=source.frames))
+                except (ValueError, OSError, KeyError, RuntimeError) as error:
+                    rollback(before)
+                    if rig.animation_data:
+                        rig.animation_data.action = old_action
+                        if old_action:
+                            rig.animation_data.action_slot = old_slot
+                    report['issues'].append(f'{path.name} / {record["name"]}: {error}')
+        except (ValueError, OSError, KeyError, RuntimeError) as error:
+            report['issues'].append(f'{path.name}: {error}')
+    if report['imported']:
+        rig.tt_clip_index = len(rig.tt_clips) - report['imported']
+    elif rig.animation_data:
+        rig.animation_data.action = original_action
+        if original_action:
+            rig.animation_data.action_slot = original_slot
+    write_report('TT AN4 report', report)
+    return report

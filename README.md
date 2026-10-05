@@ -15,7 +15,8 @@ game does not mean support for every TT game that uses the same extension.
 
 | Area | What is here | Current status |
 | --- | --- | --- |
-| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, companion-file checks, name editor, source animation, face target editing and render helpers | 0.1.7 experimental source/build; partial LMSH1/LB3 scene assembly, partial DCSV structure |
+| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.1.0 experimental; observed LMSH1/LB3 models, uncompressed AN4 v13/14; LB3 inner compression still unsupported |
+| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, installed-game actor and static stage loading, name editor, source animation and face tools | 0.1.8 experimental; partial LMSH1/LB3 scene assembly, TFA/DCSV reference inspection |
 | [LSW1 HGP models](formats/hgp/lsw1/README.md) | Character meshes, native skeletons, corrected palette colors, textures, face alpha and normal maps | 0.1.3; original 2005 PC game only |
 | [LIJ1 Xbox 360 prototype textures](formats/nu20/lij1-xbox360/README.md) | Drag-and-drop Windows DDS extractor and format notes | 0.1.2; BC1/2/3/5, float, cubemaps, TEX and font textures |
 | [LMSH1 AN4 animation](formats/an4/lmsh1/README.md) | Scalar decoder, corrected rotation sampler and experimental BVH export | Observed ANI-D layouts and original Marvel rig |
@@ -30,13 +31,25 @@ See the [game index](games/README.md), [format index](formats/README.md),
 Ready-to-use packages are in [builds/](builds/README.md), with download and
 installation notes. The packages contain only our tools and their licenses.
 
+Prefer browse buttons over commands? Pick a [separate GUI download](builds/README.md#separate-gui-downloads)
+for texture conversion, animation export, archive indexes or face/cutscene
+utilities. Each opens directly to its own tool with `Launch.pyw` and works
+independently. Python 3.10+ with Tk is required; BTGA also needs Pillow.
+The LIJ1 Windows extractor already has its own GUI. The combined
+[toolbox](tools/WORKSHOP_GUI.md) remains optional.
+
 Each folder has its own requirements and commands. There is no single install
 that enables everything. Blender addons are built from their own folders;
 Python tools and the .NET extractor run separately.
 
-You supply your own extracted game files. Game meshes, textures, audio, full
-Blender scenes, archive keys and proprietary runtimes are not in Git. On the
-research workstation those files live under ignored `local/`; see
+You supply your own game files. CU3 scene assembly accepts an installed LB3 or
+LMSH1 game folder or an extracted asset tree alongside the selected CU3 file.
+It loads supported actors and source cameras, with experimental static stage
+geometry from declared level resources. Stage visibility, nested scenes,
+props, original lighting, audio and effects still need work.
+Game meshes, textures, audio, full Blender scenes, archive keys and proprietary
+runtimes are not in Git. On the research workstation those files live under
+ignored `local/`; see
 [the local workspace guide](docs/LOCAL_WORKSPACE.md).
 
 Character-specific experiments, suit profiles, LOTDK texture mapping and

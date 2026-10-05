@@ -1,5 +1,4 @@
 """Build native source geometry with preserved vertex order and display bindings."""
-import re
 import math
 import bpy
 from mathutils import Vector
@@ -7,6 +6,7 @@ from .cu3 import FormatError
 from .native_mesh import read_mesh
 from .native_display import read_display
 from .native_materials import read_materials
+from .native_layers import selected_layer_metadata
 from .skeleton import read_skeleton
 from .morph import add_shape_keys
 from .blender_import import C, row_matrix, create_rig
@@ -25,28 +25,13 @@ def selected_draws(model, definition=None):
     skeleton = model['skeleton']
     if skeleton is None:
         return [(special, binding, None) for special in model['display']['specials'] for binding in special['parts']]
-    mask = None
-    if definition:
-        character = definition['character']
-        # Bit 1 selects the default layer mask in the observed cutscene context.
-        mask = character.get('Default Layers') if character.get('Use Default Layers', -1)&2 else character.get('Cutscene Layers')
     draws = []
-    for layer in skeleton['layers']:
-        match = re.match(r'^TT(\d+)_', layer['name'])
-        if mask is not None and match and not (mask & (1 << int(match[1]))):
-            continue
-        first = layer['metadata_index']
-        last = first + layer['rigids'] + layer['skins']
-        if last > len(skeleton['layer_metadata']):
-            raise FormatError('Display layer exceeds native metadata table')
-        for metadata in skeleton['layer_metadata'][first:last]:
-            if metadata['special'] >= len(model['display']['specials']):
-                raise FormatError('Native layer references an absent display instance')
-            special = model['display']['specials'][metadata['special']]
-            if special['unsupported_commands']:
-                raise FormatError('Layer uses unsupported display commands')
-            for binding in special['parts']:
-                draws.append((special, binding, metadata))
+    for metadata in selected_layer_metadata(skeleton, model['display'], definition):
+        special = model['display']['specials'][metadata['special']]
+        if special['unsupported_commands']:
+            raise FormatError('Layer uses unsupported display commands')
+        for binding in special['parts']:
+            draws.append((special, binding, metadata))
     return draws
 
 

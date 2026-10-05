@@ -1,4 +1,4 @@
-"""Portable regression for observed LB3 eight/nine/ten-channel control tracks."""
+"""Portable regression for observed LB3/LMSH1 actor and attachment controls."""
 import importlib.util,struct,sys,types,unittest
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]/'Addon/io_scene_lego_cu3'
@@ -25,6 +25,44 @@ def fixture(channels, flags=0xac):
 
 
 class DiscreteControls(unittest.TestCase):
+    def test_translated_visibility_and_resource_controls(self):
+        # Three compressed translation curves plus visibility and two resource
+        # controls. This is an outer scene track, not a nine-channel pose.
+        kinds=(7,7,7,14,14,14,8,10,10)
+        scales_at,constants_at,types_at,keys_at,stride=80,104,112,132,36
+        flags_at=keys_at+2*stride
+        raw=bytearray(flags_at+1);raw[:4]=b'DINA'
+        struct.pack_into('<6H',raw,4,1,2,stride,2,9,0)
+        raw[17]=4;raw[19]=0xac;raw[flags_at]=2
+        struct.pack_into('<H',raw,22,2)
+        struct.pack_into('<9I',raw,36,scales_at,constants_at,types_at,keys_at,flags_at,0,0,0,0)
+        struct.pack_into('<2f',raw,72,1,0)
+        struct.pack_into('<6f',raw,scales_at,1,0,1,0,1,0)
+        struct.pack_into('<4h',raw,constants_at,1,0,-1,-2)
+        struct.pack_into('<9H',raw,types_at,*kinds)
+        block=b''.join(struct.pack('<4H',v,0,0,0) for v in (10,20,30))+bytes([0,1,0,1]+[2]*4+[3]*4)
+        raw[keys_at:flags_at]=block*2
+        anim=Animation(Reader(raw),0,len(raw));anim.prepare(scene_channels=True)
+        self.assertTrue(anim.discrete_scene_controls)
+        self.assertEqual(anim.sample(0)[0],[10,20,30,0,0,0,1,-1,-2])
+        self.assertEqual(visibility(types.SimpleNamespace(frames=2),{'parent':None,'visibility_animation':anim}),[True,False])
+        # An unknown auxiliary type or flag combination must not gain support.
+        for bad in ('type','flags'):
+            changed=bytearray(raw)
+            if bad=='type':struct.pack_into('<H',changed,types_at+16,11)
+            else:changed[flags_at]=3
+            with self.assertRaises(FormatError):
+                Animation(Reader(changed),0,len(changed)).prepare(scene_channels=True)
+
+    def test_resource_pair_has_no_visibility_channel(self):
+        raw=fixture(8)
+        struct.pack_into('<2H',raw,88+12,10,10)
+        struct.pack_into('<2h',raw,80,-1,-1)
+        anim=Animation(Reader(raw),0,len(raw));anim.prepare(scene_channels=True)
+        self.assertIsNone(anim.control_visibility_channel)
+        self.assertEqual(anim.sample(0)[0][6:],[-1,-2])
+        self.assertEqual(visibility(types.SimpleNamespace(frames=2),{'parent':None,'visibility_animation':anim}),[True,True])
+
     def test_attachment_visibility_and_unknown_auxiliary(self):
         for channels in (1,2):
             for flags in (0xa4,0xac):

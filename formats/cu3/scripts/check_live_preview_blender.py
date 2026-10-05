@@ -12,6 +12,7 @@ for point in target.data:point.co.x+=2
 original=[tuple(v.co) for v in detail.data.vertices]
 bpy.ops.mesh.primitive_plane_add(size=1,location=(0,0,0.1));mask=bpy.context.object
 mask['source_model']='FACE_FIXTURE';mask['tt_colour_write_mask']=0
+original_mask=[tuple(v.co) for v in mask.data.vertices]
 excluded=bpy.data.collections.new('Excluded variant fixture');scene.collection.children.link(excluded)
 bpy.ops.mesh.primitive_cube_add(location=(10,0,0));variant=bpy.context.object
 for collection in list(variant.users_collection):collection.objects.unlink(variant)
@@ -28,6 +29,11 @@ copymask=next(o for o in live.objects if o.type=='MESH' and o.get('tt_colour_wri
 assert copy.data!=detail.data and copy.data.shape_keys!=detail.data.shape_keys
 assert [tuple(v.co) for v in detail.data.vertices]==original
 assert not detail.modifiers and copy.modifiers.get('TT live facial clipping')
+assert not mask.modifiers and copymask.modifiers.get('TT facial depth bias')
+assert not copy.modifiers.get('TT facial depth bias')
+assert [tuple(v.co) for v in mask.data.vertices]==original_mask
+assert [tuple(v.co) for v in copymask.data.vertices]==original_mask
+assert copymask['tt_preview_depth_bias']==.001
 assert copymask.hide_get() and copymask.users_collection[0].hide_render
 assert next(c for c in live.view_layers[0].layer_collection.children if c.name.startswith('Excluded variant fixture')).exclude
 def faces(frame):
