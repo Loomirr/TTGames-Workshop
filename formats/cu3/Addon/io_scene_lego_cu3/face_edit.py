@@ -36,14 +36,26 @@ def original_parts(data, companion):
         raise FormatError('Source hash differs; decode a companion from this exact GHG')
     version = companion.get('mesh_version')
     mesh_at = data.find(b'HSEM')
-    if version not in (0xa9, 0xaf) or mesh_at < 0 or struct.unpack_from('>I', data, mesh_at + 4)[0] != version:
+    if version not in (0xa9, 0xaa, 0xaf) or mesh_at < 0 or struct.unpack_from('>I', data, mesh_at + 4)[0] != version:
         raise FormatError('Unsupported or mismatched MESH version')
     parts = companion.get('parts')
     if not isinstance(parts, dict) or not parts:
         raise FormatError('No editable facial parts')
     result, regions = {}, []
+    native_parts=None
+    if version==0xaa:
+        # MESH 170 uses the observed NXG offset encodings. Require a complete
+        # bounded mesh and exact native part membership before enabling it.
+        from .native_mesh import read_mesh_bytes
+        native_parts={str(p['index']):p['morphs'] for p in read_mesh_bytes(data)['parts'] if p['morphs']}
     for key, part in parts.items():
         targets = part['targets']
+        if native_parts is not None:
+            native=native_parts.get(key)
+            if native is None or any(part[field]!=native[field] for field in ('table_offset','end_offset','vertex_count')):
+                raise FormatError('MESH 170 companion does not identify a decoded native target part')
+            if [t['id'] for t in targets]!=[t['id'] for t in native['targets']]:
+                raise FormatError('MESH 170 native target membership changed')
         original = read_targets(data, part['table_offset'] + len(targets) * 8,
                                 len(targets), part['vertex_count'], version == 0xaf)
         # The sidecar may edit offset values only. Addresses, IDs, unknown data

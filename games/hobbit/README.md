@@ -12,5 +12,8 @@ full roster audit and remaining model/material limits are documented in the
 This character support does not enable Hobbit CU3 scene assembly. The loose
 source exporter copies native files and can patch supported existing vertex
 attributes. Experimental ANI-D export is available for constrained active clips.
-Hobbit MESH 170 facial target writing and general topology, material and skeleton
-encoding are not enabled. Read the addon instructions before editing.
+Version 0.4.1 also writes existing Hobbit MESH 170 facial target offsets, with
+source-hash, native-part and run-structure validation. Decoded checks cover 48
+cached face assets; modified targets have not been tested in-game. General
+topology, material and skeleton encoding remain unfinished. Read the addon
+instructions before editing.

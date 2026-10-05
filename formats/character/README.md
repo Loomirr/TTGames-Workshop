@@ -1,13 +1,13 @@
 # TT Character and Animation Importer
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters. Version **0.4.0**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters. Version **0.4.1**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.4.0.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.4.1.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -92,10 +92,10 @@ Existing `TT_Target_###` face coordinates can be written into supported GHG
 payloads. Keep the original Basis, topology, target names and vertex order.
 Edits that require splitting a native repeated-offset run are rejected.
 A no-op face export preserves the original file bytes exactly. Face-target
-writing is gated to the verified MESH 169/175 layouts; Hobbit MESH 170 targets
-are readable, but their native writer is not yet enabled.
+writing is gated to the verified MESH 169/170/175 layouts. Version 0.4.1 enables
+the observed Hobbit MESH 170 targets after bounded mesh and target checks.
 
-Version 0.4.0 can also write existing **positions, UVs and SourceColor vertex
+Version 0.4.1 can also write existing **positions, UVs and SourceColor vertex
 colors** into verified MESH 169/170/175 buffers. Work in Edit Mode on the original
 mesh, preserving vertex order and triangles. Position edits must stay within
 the original part's bounds. Facial Basis positions stay immutable. Keep one UV
@@ -103,10 +103,25 @@ per native vertex: new UV seams requiring vertex splits are rejected. Shared
 display copies must agree; the report lists any other parts affected by shared
 buffer edits. A no-op export keeps the exact original bytes.
 
-Object placement, evaluated modifiers, normals, topology, weights, material
+Existing native **normals and skin weights** can now be edited too. Keep one
+normal per native vertex; corner splits needing new vertices are rejected.
+Normal padding stays intact. Weight Paint edits must be normalized, use at most
+four influences, and reference only bones already in that part's native palette.
+The verified byte weights keep a total of 255. Rigid joint reassignment, new
+palette bones, changed rest bones and conflicting shared buffers are rejected.
+Reimport with 0.4.1 to establish the normal/material baselines and rigid bindings;
+older saved imports do not contain those new validation fields.
+
+Object placement, evaluated modifiers, topology, new skin palettes, material
 node graphs and skeleton changes are not encoded. Native bounds are retained,
 not rebuilt. Texture companions are copied; this is not a Blender image encoder.
 This remains a constrained writer, not arbitrary Blender-to-game serialization.
+
+Material node changes, painted/replaced Blender images and edited loaded clips
+now stop a source-bundle export instead of being silently copied as originals.
+Native material/texture encoding is unfinished. Export the model bundle before
+editing clips, then use the separate active AN4 exporter for supported animation
+edits. That writer does not repack a PAK bank or preserve unsupported events.
 
 ## Export an edited animation
 
@@ -195,3 +210,10 @@ Version 0.4.0 adds Avengers character/animation browsing, verified UMTL
 unpacked workflow checks and constrained vertex/ANI-D writers. Modern shader
 reconstruction is still approximate; untextured materials can use native vertex
 colors for inspection rather than appearing white. See [coverage](COMPATIBILITY.md).
+
+Version 0.4.1 fixes custom-normal setup order, adds constrained normal/skin
+weight writing, and detects unsupported material/image edits in native exports.
+Normal and weight changes were exported and reimported for one character per
+enabled game. A static Avengers GSC normal edit also passed. Hobbit MESH 170
+face targets passed decoded edits on 48 cached face assets. No new in-game
+validation or general mesh/material/skeleton encoder is implied.

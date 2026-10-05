@@ -1,7 +1,7 @@
 # LEGO Marvel's Avengers, PC
 
 Use the separate [character and animation addon](../../formats/character/README.md)
-with the **LEGO Marvel's Avengers** profile. Version 0.4.0 accepts installed
+with the **LEGO Marvel's Avengers** profile. Version 0.4.1 accepts installed
 archives or unpacked asset folders, browses character definitions and searches
 their declared animation sets. Supported ANI-D clips play on native skeletons.
 
@@ -17,5 +17,5 @@ unchanged clips and rejects edited poses that cannot be represented safely.
 The tested Captain America idle contains recovered shear, so modified export
 is currently rejected. Original games and archives remain untouched.
 
-Avengers CU3 scene assembly, ANI-E playback and general topology, weight,
+Avengers CU3 scene assembly, ANI-E playback and general topology, new skin palettes,
 material and skeleton writing are not enabled by this character support.

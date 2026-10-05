@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 4, 0), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 4, 1), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -292,8 +292,8 @@ class TTCHAR_OT_export_sources(bpy.types.Operator):
     directory: StringProperty(name='New export folder', subtype='DIR_PATH')
     face_edits: BoolProperty(name='Write supported existing face target edits', default=True,
         description='Write existing targets while preserving facial Basis and topology')
-    mesh_edits: BoolProperty(name='Write supported position / UV / vertex color edits', default=True,
-        description='Preserve topology and bounds; skeleton, normals, material nodes and edited actions are not encoded')
+    mesh_edits: BoolProperty(name='Write supported vertex and skin edits', default=True,
+        description='Positions, UVs, colors, normals and existing palette weights; preserve topology, bounds and skeleton')
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)

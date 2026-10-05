@@ -22,6 +22,50 @@ def vertex_edits(objects, model, source_hash):
         transform = Matrix(json.loads(obj['tt_vertex_transform']))
         inverse = transform.inverted()
         mesh, vertices, changes = obj.data, part['vertices'], {}
+        if vertices and 'normal' in vertices[0]:
+            typ=part['attribute_types']['normal']
+            if typ not in (3,4,6,8):raise FormatError('Unverified native normal encoding')
+            normal_transform=transform.to_3x3().inverted().transposed()
+            normal_inverse=normal_transform.inverted()
+            baseline=mesh.attributes.get('TT_NativeNormalBaseline')
+            if baseline is None or baseline.domain!='CORNER' or baseline.data_type!='FLOAT_VECTOR':
+                raise FormatError('Preserve the imported native normal baseline attribute')
+            rows=[v['normal'][:] for v in vertices];changed=False;normal_loops={}
+            for loop in mesh.loops:
+                index=loop.vertex_index;normal=mesh.corner_normals[loop.index].vector.copy()
+                normal_loops.setdefault(index,[]).append((normal,baseline.data[loop.index].vector.copy()))
+            for index,loops in normal_loops.items():
+                if all((normal-base).length<=2e-5 for normal,base in loops):continue
+                normal=loops[0][0]
+                if any((normal-other).length>.002 for other,base in loops):
+                    raise FormatError('Split normals require native vertex splits')
+                old=vertices[index]['normal']
+                native=Vector([x/127.5-1 for x in old[:3]] if typ==8 else old[:3])
+                if native.length<.1:raise FormatError('Native normal is not a verified unit direction')
+                native=(normal_inverse@normal).normalized()
+                rows[index]=([max(0,min(255,round((x+1)*127.5))) for x in native] if typ==8 else list(native))+old[3:]
+                changed=True
+            if changed:changes['normal']=rows
+        skeleton=model.get('skeleton')
+        if skeleton:
+            if 'tt_native_rigid_joint' not in obj:
+                raise FormatError('Reimport this model with the current addon before editing native skin weights')
+            joints={j['name']:j['index'] for j in skeleton['joints']}
+            rows=[];changed=False;rigid=obj['tt_native_rigid_joint']
+            for point,original in zip(mesh.vertices,vertices):
+                actual={}
+                for group in point.groups:
+                    if group.weight==0:continue
+                    name=obj.vertex_groups[group.group].name
+                    if name not in joints:raise FormatError('Non-native weighted vertex group: '+name)
+                    actual[joints[name]]=actual.get(joints[name],0)+group.weight
+                baseline={rigid:1} if rigid>=0 else {}
+                if rigid<0:
+                    for j,w in original.get('weights',[]):baseline[j]=baseline.get(j,0)+w
+                different=actual.keys()!=baseline.keys() or any(abs(actual[j]-baseline[j])>1e-6 for j in actual)
+                if different and rigid>=0:raise FormatError('Rigid joint reassignment requires native display editing')
+                rows.append([[j,w] for j,w in sorted(actual.items())]);changed|=different
+            if changed:changes['weights']=rows
         rows, changed = [], False
         for point,original in zip(mesh.vertices,vertices):
             expected = transform @ Vector(original['position'][:3])

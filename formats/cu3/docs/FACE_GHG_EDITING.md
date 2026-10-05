@@ -1,7 +1,7 @@
 # Native face GHG editing — experimental
 
 Yes, editing existing face shapes now has a working prototype for the observed
-LMSH1 NXG and LB3 DX11 assets. The writer changes native vertex-offset targets
+LMSH1 NXG, Hobbit NXG and LB3/Avengers DX11 assets. The writer changes native vertex-offset targets
 in a **separate GHG copy** and reads them back to verify the result. Modified
 face files have **not been tested in-game** yet. This is not a general GHG
 mesh exporter or a complete custom-face tool.
@@ -19,7 +19,10 @@ entries; it was not the target JSON or Blender's console log. The CLI retains
 python formats/cu3/scripts/decode_face_targets.py FACE_DX11.GHG --output face-targets.json
 ```
 
-Reading MESH 170 does not enable its facial-target writer.
+**Face Target Writer 0.1.2** and character addon 0.4.1 enable the observed MESH
+170 layout alongside 169/175. MESH 170 requires a bounded full mesh and exact
+native target-part membership. Decoded no-op/edit checks cover 48 cached Hobbit
+faces; this is not an in-game validation or support for arbitrary MESH 170 files.
 
 - Existing dense targets: change per-vertex additive offsets at the same count.
 - Existing run-encoded targets: change offsets while preserving each original

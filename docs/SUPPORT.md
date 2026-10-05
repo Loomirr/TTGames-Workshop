@@ -3,7 +3,7 @@
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
-- Character addon 0.4.0: independent LMSH1/LB3/Hobbit/Avengers character and declared
+- Character addon 0.4.1: independent LMSH1/LB3/Hobbit/Avengers character and declared
   animation browsers, supported ANI-D playback, native TT inner decompression,
   matching attachment tracks, separate live/composed face previews and loose native-source
   export. Explicit default/cutscene costume layers and native material role IDs
@@ -17,7 +17,13 @@ all formats or games are now supported.
   Recursive attachment configuration, textures, facial timing and all clips are
   not covered by that audit. Existing vertex edits and constrained active ANI-D
   export are available; general topology/material/skeleton writing remains unfinished.
-  Hobbit MESH 170 face-target writing remains disabled.
+  Version 0.4.1 corrects custom-normal setup order and writes verified normals
+  and four-influence skin weights within existing palettes. One edited character
+  per enabled game and a static Avengers GSC were exported and reimported.
+  Unsupported material/image, rest-bone and loaded-animation edits are rejected
+  instead of silently copying their original native data.
+  Hobbit MESH 170 face-target writing is enabled for the observed offset layout;
+  48 cached faces passed decoded no-op and edit checks. No new in-game test was performed.
   Avengers adds 821/882 parser-ready definitions, sample Blender assembly/playback,
   modern texture/material readers and unpacked-folder round trips. TFA/DCSV/LMSH2/LOTR archive inspection is available, with explicit
   model and animation version limits. See [compatibility](../formats/character/COMPATIBILITY.md).
@@ -26,6 +32,7 @@ all formats or games are now supported.
   toolbox installation is required. Python is required; only BTGA needs Pillow.
   Face decoder 0.1.2 now reads supported GHGs directly; the old plain-text extraction
   log is optional on the CLI and no longer needed in the GUI.
+  Face writer 0.1.2 adds constrained MESH 170 target edits, with native-part validation.
 
 - CU3 0.1.8: partial LMSH1/LB3 actor, attachment, material and camera assembly
   from an installed game folder or extracted assets. The addon defaults to

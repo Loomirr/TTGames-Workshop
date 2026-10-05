@@ -9,6 +9,8 @@ from ._core.face_edit import patch_targets
 from ._core.mesh_edit import patch_vertices
 from ._core.mesh_edit_blender import vertex_edits
 from ._core.native_mesh import read_mesh_bytes
+from ._core.blender_import import check_rig
+from ._core.material_edit_guard import check_materials
 
 
 def export_sources(rig, destination, face_edits=True, mesh_edits=True):
@@ -21,6 +23,12 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
     if any(destination == root or destination.is_relative_to(root) for root in roots):
         raise FormatError('Choose a new export folder outside game files and the source/cache tree')
     sources, patches, vertex_patches = {}, {}, {}
+    # Avoid returning a successful native bundle that silently discards a
+    # modified clip. Active ANI-D editing has its own constrained writer.
+    from .animation_export import action_fingerprint
+    for clip in rig.tt_clips:
+        if clip.action and clip.action.get('tt_native_pose_fingerprint') and action_fingerprint(clip.action)!=clip.action['tt_native_pose_fingerprint']:
+            raise FormatError('Loaded animation has edits. Export it separately with Export active AN4 clip; the source bundle cannot repack edited banks: '+clip.name)
     for obj in [rig] + list(rig.children_recursive):
         if not obj.get('tt_native_source'):
             continue
@@ -31,6 +39,11 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
         manifest = None
         original = raw
         model = load_model(path) if mesh_edits or (face_edits and path.suffix.casefold()=='.ghg') else None
+        for mesh in obj.children:
+            if mesh.type=='MESH' and mesh.get('tt_vertex_transform'):
+                check_materials(mesh)
+        if mesh_edits and model.get('skeleton'):
+            check_rig(obj,model['skeleton'])
         if mesh_edits:
             raw, vertex_manifest = patch_vertices(original, vertex_edits(obj.children, model, obj['tt_native_source_sha256']))
             vertex_patches[str(path)] = vertex_manifest
@@ -41,8 +54,7 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
                 companion = dict(schema='tt.relative-position-targets.v1', mesh_version=model['mesh_version'],
                                  sha256=obj['tt_native_source_sha256'], parts=parts)
                 edited = edited_companion(faces, companion)
-                # A no-op MESH 170 bundle can be copied; its target writer remains gated.
-                if edited != companion or model['mesh_version'] in (169,175):
+                if edited != companion or model['mesh_version'] in (169,170,175):
                     face_raw, manifest = patch_targets(original, edited)
                     merged = bytearray(raw)
                     for at,(a,b) in enumerate(zip(original,face_raw)):
@@ -89,8 +101,8 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
     if manifest_path.exists():
         raise FormatError('Choose a fresh export folder')
     report = dict(schema='tt.loose-source-export.v1', game=rig['tt_character_game'], files=[], face_patches=patches, vertex_patches=vertex_patches,
-        limitations=['Supported existing position, UV, vertex-color and facial-target edits are encoded when enabled.',
-                     'Topology, skin weights, normals, native bounds, material node edits, skeleton edits and animation edits are not encoded.',
+        limitations=['Supported existing positions, UVs, vertex colors, normals, palette-limited skin weights and facial targets are encoded when enabled.',
+                     'Topology, new palettes, native bounds, material/image encoding, skeleton edits and animation-bank edits are not encoded.',
                      'Position edits must remain inside original part bounds; facial Basis positions are immutable. Object transforms and modifiers are preview-only.',
                      'No DAT archives or installed game files were changed.'])
     for target, data in planned:

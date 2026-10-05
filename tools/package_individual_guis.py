@@ -47,7 +47,7 @@ def main():
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     for name, slug in PACKAGES.items():
         if args.tool and name!=args.tool:continue
-        version='0.1.2' if name=='Face targets: decode' else VERSION
+        version='0.1.2' if name in ('Face targets: decode', 'Face targets: write edited copy') else VERSION
         is_editor = name == 'CU3 Name Editor'
         script = 'formats/cu3/scripts/cu3_name_editor_gui.py' if is_editor else TOOLS[name][0]
         files = dependencies(ROOT / script)

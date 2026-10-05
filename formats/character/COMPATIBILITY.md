@@ -1,6 +1,6 @@
 # PC character compatibility, 5 October 2026
 
-Version 0.4.0 focuses on the PC NXG/DX11 games. Handheld character support is
+Version 0.4.1 focuses on the PC NXG/DX11 games. Handheld character support is
 separate work and is postponed. Shared file extensions do not imply shared
 binary layouts. The Blender game selector offers LMSH1, LB3, The Hobbit and Avengers;
 the other profiles below are inspection tools, not complete importers.
@@ -31,7 +31,7 @@ the other profiles below are inspection tools, not complete importers.
 
 ## Validation
 
-All 165 portable checks pass, including independently constructed archive,
+All 170 portable checks pass, including independently constructed archive,
 skeleton, display, material-role and facial target fixtures. Package integrity
 checks confirm the ZIP contains tools and documentation, with no game assets.
 
@@ -98,8 +98,8 @@ and character assembly, not every declared animation or shader.
 The loose-source exporter copies original definitions and texture companions.
 Version 0.4.0 also patches supported existing vertex attributes and face targets;
 the separate experimental ANI-D writer exports an active native clip.
-The constrained facial writer remains gated to MESH 169/175; MESH 170 reading
-does not enable Hobbit facial writing. See the [workflow](README.md) and
+Version 0.4.1 enables the constrained facial writer for verified MESH 169/170/175
+targets. See the [workflow](README.md) and
 [earlier animation research](RESEARCH_0.2.md).
 
 ## Version 0.3.1 follow-up
@@ -160,5 +160,41 @@ idle preserved unchanged bytes, but modified export was rejected at Spine2
 because the recovered Blender pose contains shear. No approximate matrix was
 silently substituted. Shear/reflection or degenerate scale are rejected. Auxiliary tables require
 explicit omission for modified clips. No new in-game export test was performed.
-General topology, weight, normal, material-node and skeleton writers remain
+General topology, material-node and skeleton writers remain
 unfinished. See [editing limits and instructions](README.md).
+
+## Version 0.4.1
+
+Custom normals were assigned before smooth-face flags, changing Blender's fan
+interpretation after encoding. The builder now sets smooth flags first. An
+asset-free non-coplanar triangle fixture compares imported normals with the
+decoded direction, below one packed-normal byte step. Its source positions
+remain unchanged. The imported corner baseline keeps untouched exports exact
+despite Blender's normal encoding precision.
+
+Packed normal and existing skin-palette edits have independent byte fixtures
+for MESH 169/170/175, including incorrect sums, influence counts, unknown palette
+bones, normal padding and shared-buffer aliases. Blender checks exported and
+reimported edits for Wolverine, B66 Catwoman, Bilbo and Captain America. No-op
+models stayed byte-identical and source hashes stayed unchanged. An Avengers
+Black Widow bracelet GSC also passed no-op copy, normal patch and reimport;
+its zero-normal surface remains gated for editing.
+
+Hobbit MESH 170 facial target writing now requires a bounded full mesh and exact
+native target-part membership. Independent dense/run fixtures verify no-op and
+edited writes. Decoded checks on 48 cached Hobbit face assets preserve original
+bytes for no-op exports, and preserve geometry and every non-offset byte for
+target edits. Sources remain unchanged. This does not enable stream growth,
+new targets or facial animation timing.
+Bilbo's MESH 170 target edit also exported from Blender and reimported with
+unchanged Basis and topology. The independent Face Target Writer 0.1.2 package
+passed a decoded Bilbo edit without depending on the full checkout.
+
+Native source exports now reject changed rest bones and unsupported material,
+image or loaded-animation edits rather than silently exporting their original
+data. Skin edits retain each existing palette, four byte influences and a 255
+weight total. Topology, new palettes, native bounds, tangent rebuilding,
+material/texture encoding, general skeleton edits and animation bank repacking
+remain unfinished. Nine-channel edited animation still has the shear limit
+described above. These are decoded/Blender round trips; no new in-game test was
+performed and no game has a complete fidelity claim.

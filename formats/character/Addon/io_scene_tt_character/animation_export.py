@@ -19,7 +19,8 @@ def action_fingerprint(action):
                     if curve.modifiers:raise FormatError('Bake action modifiers before native export')
                     rows.append((bag.slot_handle,curve.data_path,curve.array_index,
                         [(tuple(k.co),k.interpolation,tuple(k.handle_left),tuple(k.handle_right)) for k in curve.keyframe_points]))
-    return hashlib.sha256(json.dumps(rows,separators=(',',':')).encode()).hexdigest()
+    payload=dict(curves=rows,frame_range=[action.use_frame_range,action.frame_start,action.frame_end])
+    return hashlib.sha256(json.dumps(payload,separators=(',',':')).encode()).hexdigest()
 
 
 def export_action(context,rig,destination,*,omit_auxiliary=False):

@@ -33,6 +33,21 @@ def edits(data,changes):
     return dict(schema=SCHEMA,sha256=hashlib.sha256(data).hexdigest(),mesh_version=read_mesh_bytes(data)['mesh_version'],parts={'0':changes})
 
 
+def skin_fixture(version=175):
+    dx=version==175;e='<' if dx else '>'
+    raw=b'HSEM'+struct.pack('>I',version)+(b'' if dx else b'ROTV')+struct.pack('>I',1)
+    if dx:raw+=struct.pack('>I',1)
+    raw+=struct.pack('>I',1)+struct.pack('>3I',1,0,3)+b'DXTV'+struct.pack('>2I',169,4)
+    raw+=bytes((0,3,0,1,8,12,9,7,16,10,8,20))+bytes(6)
+    for x,y,z in ((0,0,0),(1,0,0),(0,1,1)):
+        raw+=struct.pack(e+'3f',x,y,z)+bytes((128,128,255,255,0,1,255,255,128,127,0,0))
+    raw+=struct.pack('>2I',0,0)
+    raw+=struct.pack('>4I',1,0,3,2)+struct.pack(e+'3H',0,1,2)
+    raw+=struct.pack('>3IH3I',0,3,0,0,3,0,5)+bytes((3,7,11,21,55))
+    raw+=bytes(44)+(b'' if dx else bytes(32))
+    return raw
+
+
 def face_fixture(version=175):
     dx=version==175;raw=fixture(version)[:-(44 if dx else 76)]
     raw+=struct.pack('>3I',1,17,0)+(b'ROTV' if dx else b'')
@@ -42,6 +57,35 @@ def face_fixture(version=175):
 
 
 class MeshEdits(unittest.TestCase):
+    def test_shared_skin_alias_with_different_palette_is_rejected(self):
+        raw=bytearray(skin_fixture());struct.pack_into('>I',raw,8,2)
+        raw+=struct.pack('>2I',1,1)+struct.pack('>2I',0xc0000100,1)+struct.pack('>2I',0,0)
+        raw+=struct.pack('>2I',0xc0000101,1)+struct.pack('>3IH3I',0,3,0,0,3,0,5)
+        raw+=bytes((4,8,12,22,56))+bytes(44);raw=bytes(raw)
+        with self.assertRaisesRegex(FormatError,'different native palette'):
+            patch_vertices(raw,edits(raw,{'weights':[[[7,.2],[11,.8]]]*3}))
+    def test_packed_normals_and_palette_weights_roundtrip(self):
+        for version in (169,170,175):
+            raw=skin_fixture(version);old=read_mesh_bytes(raw)['parts'][0]
+            noop,_=patch_vertices(raw,edits(raw,{'normal':[v['normal'] for v in old['vertices']],
+                'weights':[[list(p) for p in v['weights']] for v in old['vertices']]}))
+            self.assertEqual(noop,raw)
+            output,report=patch_vertices(raw,edits(raw,{'normal':[[128,255,128,255]]*3,
+                'weights':[[[7,.2],[11,.8]]]*3}))
+            new=read_mesh_bytes(output)['parts'][0]
+            self.assertEqual(new['palette'],old['palette']);self.assertEqual(new['triangles'],old['triangles'])
+            self.assertEqual(new['vertices'][0]['normal'],[128,255,128,255])
+            self.assertEqual(dict(new['vertices'][0]['weights']),{7:.2,11:.8})
+            self.assertEqual(sum(new['vertices'][0]['packed_weights']),255)
+            self.assertGreater(report['changed_bytes'],0);self.assertEqual(len(output),len(raw))
+
+    def test_skin_and_normal_invalid_edits_rejected(self):
+        raw=skin_fixture()
+        for change in ({'weights':[[[99,1]]]*3},{'weights':[[[3,.4]]]*3},
+                       {'weights':[[[3,-.1],[7,1.1]]]*3},{'weights':[[[3,.2],[7,.2],[11,.2],[21,.2],[55,.2]]]*3},
+                       {'normal':[[128,128,128,255]]*3},{'normal':[[128,255,128,0]]*3},
+                       {'indices':[[0,1,2,3]]*3}):
+            with self.assertRaises(FormatError):patch_vertices(raw,edits(raw,change))
     def test_face_basis_is_immutable_but_uv_edits_are_allowed(self):
         for version in (169,170,175):
             raw=face_fixture(version)

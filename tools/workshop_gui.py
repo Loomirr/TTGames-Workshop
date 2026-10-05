@@ -41,7 +41,7 @@ TOOLS = {
          ('New target JSON', 'outfile', '--output', '')]),
     'Face targets: write edited copy': (
         'formats/cu3/scripts/write_face_targets.py',
-        'Advanced: existing target offsets only. Requires verified edited-target JSON, preserving topology and source hash. Writes a separate GHG; in-game validation still required.',
+        'Advanced: observed MESH 169/170/175 target offsets only. Requires verified edited-target JSON, preserving topology and source hash. Writes a separate GHG; in-game validation still required.',
         [('Original GHG', 'file', None, ''), ('Edited target JSON', 'file', '--edited', ''),
          ('New GHG copy', 'outfile', '--output', '')]),
     'TFA archive index': (
@@ -139,7 +139,7 @@ class Workshop:
         self.outputs = []
         self.saved = {}
         self.current = None
-        version='0.1.2' if tool=='Face targets: decode' else VERSION
+        version='0.1.2' if tool in ('Face targets: decode', 'Face targets: write edited copy') else VERSION
         window.title(f'{tool or "TTGames Workshop — Standalone Tools"} {version}')
         window.geometry('880x700')
         window.minsize(700, 600)

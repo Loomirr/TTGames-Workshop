@@ -12,6 +12,8 @@ sys.modules[p.__name__] = p
 from io_scene_lego_cu3.morph import read_targets
 from io_scene_lego_cu3.face_edit import patch_targets, digest
 from io_scene_lego_cu3.cu3 import FormatError
+from test_mesh_edit import face_fixture,fixture as mesh_fixture
+from io_scene_lego_cu3.native_mesh import read_mesh_bytes
 
 
 def fixture(dx, dense):
@@ -34,6 +36,28 @@ def fixture(dx, dense):
 
 
 class FaceEditTests(unittest.TestCase):
+    def test_full_mesh_170_dense_and_run_encoded_targets(self):
+        for dense in (False,True):
+            raw=face_fixture(170)
+            if not dense:
+                raw=mesh_fixture(170)[:-76]+struct.pack('>3I',1,17,0)
+                runs=struct.pack('>I3fI3f',2,0,0,0,1,.125,-.25,.5)
+                raw+=struct.pack('>I',0)+bytes(13)+struct.pack('>I',len(runs))+runs
+                raw+=struct.pack('>3I',2,1234,5678)+bytes(4)+bytes(36)+bytes(32)
+            before=read_mesh_bytes(raw)
+            companion=dict(schema='tt.relative-position-targets.v1',mesh_version=170,sha256=digest(raw),parts={'0':before['parts'][0]['morphs']})
+            unchanged,_=patch_targets(raw,companion);self.assertEqual(unchanged,raw)
+            companion['parts']['0']['targets'][0]['offsets'][2]=[.25,-.5,1]
+            changed,report=patch_targets(raw,companion);after=read_mesh_bytes(changed)
+            self.assertEqual(after['parts'][0]['morphs']['targets'][0]['offsets'][2],[.25,-.5,1])
+            self.assertEqual(before['parts'][0]['vertices'],after['parts'][0]['vertices'])
+            self.assertEqual(before['parts'][0]['triangles'],after['parts'][0]['triangles'])
+            self.assertEqual(len(raw),len(changed));self.assertGreater(report['changed_bytes'],0)
+
+    def test_mesh_170_rejects_fake_part_membership(self):
+        raw=face_fixture(170);part=read_mesh_bytes(raw)['parts'][0]['morphs']
+        companion=dict(schema='tt.relative-position-targets.v1',mesh_version=170,sha256=digest(raw),parts={'99':part})
+        with self.assertRaisesRegex(FormatError,'decoded native target part'):patch_targets(raw,companion)
     def test_noop_exact_all_encodings(self):
         for dx in (False, True):
             for dense in (False, True):

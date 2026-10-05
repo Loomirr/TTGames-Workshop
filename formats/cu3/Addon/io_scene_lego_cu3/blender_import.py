@@ -151,6 +151,8 @@ def check_rig(rig, rigdata):
         parent = rigdata['joints'][j['parent']]['name'] if j['parent'] is not None else None
         if (bone.parent.name if bone.parent else None) != parent:
             raise FormatError('Source bone hierarchy differs: ' + j['name'])
+        if bone.inherit_scale!='FULL' or not bone.use_inherit_rotation or not bone.use_local_location or not bone.use_deform or bone.use_connect:
+            raise FormatError('Selected rig has unsupported Blender bone behavior edits: '+j['name'])
         expected = C @ row_matrix(j['inverse_world_bind_row_major']).inverted() @ CI
         error = max(abs(bone.matrix_local[row][col] - expected[row][col]) for row in range(4) for col in range(4))
         if error > 0.0001:

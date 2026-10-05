@@ -15,6 +15,7 @@ from .blender_import import C, row_matrix, create_rig
 from .material_preview import attach_vertex_albedo, attach_vertex_opacity
 from .face_edit_blender import bind_source
 from .mesh_edit_blender import bind_vertices
+from .material_edit_guard import bind_materials
 
 
 def load_model(path):
@@ -77,6 +78,7 @@ def create_model(model, name, collection, definition=None, material_factory=None
         obj['source_part'] = part['index']
         obj['source_special'] = special['index']
         bind_vertices(obj, transform)
+        obj['tt_native_rigid_joint'] = joint if joint is not None else -1
         for field in ('uv', 'uv2', 'uv3'):
             if not vertices or field not in vertices[0]:
                 continue
@@ -89,14 +91,20 @@ def create_model(model, name, collection, definition=None, material_factory=None
             color = mesh.color_attributes.new(name='SourceColor', type='BYTE_COLOR', domain='POINT')
             for value, vertex in zip(color.data, vertices):
                 value.color_srgb = tuple(v/255 for v in vertex['color'])
+        # Custom normal encoding depends on the smooth-face fan topology.
+        # Set smooth flags first; changing them afterwards reinterprets the
+        # encoded normals and can visibly distort shading on an intact mesh.
+        for polygon in mesh.polygons:
+            polygon.use_smooth = True
         if vertices and all('normal' in v for v in vertices):
             packed = part['attribute_types']['normal'] == 8
             normals = [Vector(tuple(x/127.5-1 if packed else x for x in v['normal'][:3])) for v in vertices]
             if all(n.length>.1 for n in normals):
                 rotation = transform.to_3x3().inverted().transposed()
                 mesh.normals_split_custom_set_from_vertices([(rotation@n).normalized() for n in normals])
-        for polygon in mesh.polygons:
-            polygon.use_smooth = True
+        if vertices and 'normal' in vertices[0]:
+            baseline=mesh.attributes.new(name='TT_NativeNormalBaseline',type='FLOAT_VECTOR',domain='CORNER')
+            baseline.data.foreach_set('vector',[x for normal in mesh.corner_normals for x in normal.vector])
         index = binding['material']
         entry = model['materials'][index]
         if index not in materials:
@@ -112,6 +120,7 @@ def create_model(model, name, collection, definition=None, material_factory=None
                 material['tt_material_status'] = 'Vertex-color inspection; texture/lighting reconstruction incomplete'
             materials[index] = material
         mesh.materials.append(materials[index])
+        bind_materials(obj)
         if entry['render_flags']['colourWriteMask']==0:
             obj['tt_colour_write_mask'] = 0
             obj.hide_render = True
