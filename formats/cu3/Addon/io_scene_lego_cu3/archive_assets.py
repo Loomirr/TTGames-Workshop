@@ -34,7 +34,9 @@ def _path_hash(name):
     return value
 
 
-def index_v6(path):
+def index_v6(path, *, version_expected=-6):
+    if version_expected not in (-5, -6):
+        raise FormatError('Unsupported parent-index layout')
     path = Path(path)
     archive_size = path.stat().st_size
     with path.open('rb') as stream:
@@ -55,7 +57,7 @@ def index_v6(path):
         values = struct.unpack_from('<' + fmt, data, at)
         return values[0] if len(values) == 1 else values
     version, count = get('iI', 0)
-    if version != -6 or not 0 < count <= 1000000:
+    if version != version_expected or not 0 < count <= 1000000:
         raise FormatError('Unverified DAT index version/count')
     names_at = 8 + count * 16
     names_count = get('I', names_at)
@@ -110,11 +112,11 @@ def index_v6(path):
 
 
 class ArchiveAssetIndex:
-    """AssetIndex-compatible provider for supported installed LB3/LMSH1 DATs."""
+    """AssetIndex-compatible provider for explicitly profiled PC DAT layouts."""
     def __init__(self, root, profile, cache_root=None):
         self.game_root = Path(root).resolve()
-        if profile not in ('LB3', 'LMSH1'):
-            raise FormatError('Installed archive assembly is verified only for LB3 and LMSH1')
+        if profile not in ('LB3', 'LMSH1', 'AVENGERS', 'TFA', 'DCSV', 'LMSH2', 'HOBBIT', 'LOTR'):
+            raise FormatError('Unsupported installed archive profile')
         archives = sorted(p for p in self.game_root.iterdir() if p.is_file() and p.suffix.casefold()=='.dat'
                           and p.stem.upper().startswith(('GAME','DLC')))
         if not archives:
@@ -137,11 +139,19 @@ class ArchiveAssetIndex:
         if profile == 'LMSH1':
             from .archive_v5 import index_v5
             reader = index_v5
-        else:
+        elif profile == 'LOTR':
+            from .archive_v5 import index_v5
+            reader = lambda path: index_v5(path, name_tags=True)
+        elif profile == 'LB3':
             reader = index_v6
+        elif profile == 'HOBBIT':
+            reader = lambda path: index_v6(path, version_expected=-5)
+        else:
+            from .archive_cc import index
+            reader = index
         for archive in archives:
             for entry in reader(archive):
-                if PurePosixPath(entry['path']).suffix.casefold() in ('.ghg','.gsc','.cd','.tex','.nxg_textures','.cu3','.an4','.txt','.led'):
+                if PurePosixPath(entry['path']).suffix.casefold() in ('.ghg','.gsc','.cd','.tex','.nxg_textures','.cu3','.an4','.as','.pak','.txt','.led'):
                     self.files.setdefault(PurePosixPath(entry['path']).name.casefold(), []).append((archive, entry))
         self.profile, self.archive_count = profile, len(archives)
 

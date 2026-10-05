@@ -5,7 +5,7 @@ below, then use GitHub's **Download raw file** button to save the ZIP.
 
 | Tool | Package | Use |
 | --- | --- | --- |
-| Character and animation importer 0.1.0 | [Blender addon ZIP](blender/TT_Character_Importer_0.1.0.zip) | Independent LMSH1/LB3 character browser and CD/GHG/model GSC import, plus supported uncompressed AN4 actions; [instructions](../formats/character/README.md) |
+| Character and animation importer 0.3.0 | [Blender addon ZIP](blender/TT_Character_Importer_0.3.0.zip) | Independent LMSH1/LB3/Hobbit character browser and CD/GHG/model GSC import, searchable declared animation sets, compressed AN4 actions and loose source/face-target export; [instructions](../formats/character/README.md) |
 | Original LSW1 HGP importer 0.1.3 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.3.zip) | Native character meshes/rigs, corrected palette colors, textures, alpha and normals |
 | CU3 importer 0.1.8 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.8.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages; installed-game loading, live preview and face tools; TFA/DCSV reference inspection |
 | LIJ1 Xbox 360 prototype extractor 0.1.2 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip) | GHG/GSC/TEX/FNT/DDS inputs; cubemaps, BC5, float and legacy textures |

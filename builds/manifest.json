@@ -94,6 +94,26 @@
       "path": "python/CU3_Name_Editor_GUI-0.1.1.zip",
       "bytes": 18152,
       "sha256": "0336f3d5b1aef789fe0daa2ffde3da6f07a1a5ff95c51b215e1a82575de1e5d7"
+    },
+    {
+      "path": "blender/TT_Character_Importer_0.1.1.zip",
+      "bytes": 65561,
+      "sha256": "4c3866731b8946329d39e2d1122fcb6033e0d53fa4eff56875327c578cde7d23"
+    },
+    {
+      "path": "blender/TT_Character_Importer_0.1.2.zip",
+      "bytes": 65706,
+      "sha256": "f871daef2bccd2583b0b4401d3ae6d8fe898d929b606cebdc6ac72c66c6abb53"
+    },
+    {
+      "path": "blender/TT_Character_Importer_0.2.0.zip",
+      "bytes": 89636,
+      "sha256": "1a610beb2d88644eea4856d25b955b5722daa960845bd924a1eac064d35cd796"
+    },
+    {
+      "path": "blender/TT_Character_Importer_0.3.0.zip",
+      "bytes": 96480,
+      "sha256": "30fc437cba237de273345dc7638e4f04ad041e82f55f55654d6180115635f967"
     }
   ],
   "notes": "Our source-built tools only; no game assets or external extraction programs."

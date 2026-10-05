@@ -1,5 +1,6 @@
 """Build the independent character addon from our UI and shared native readers."""
 import hashlib
+import ast
 import json
 from pathlib import Path
 import sys
@@ -12,9 +13,13 @@ from package_individual_guis import dependencies, ADDON
 
 def main():
     files = set()
-    for name in ('an4', 'native_model_blender', 'costume_materials', 'asset_index', 'dependencies', 'blender_import'):
+    for name in ('an4', 'animation_catalog', 'animation_bank', 'native_model_blender', 'costume_materials', 'asset_index', 'dependencies', 'blender_import', 'face_live', 'face_edit'):
         files.update(dependencies(ADDON / (name + '.py')))
-    target = ROOT / 'builds/blender/TT_Character_Importer_0.1.0.zip'
+    source = ROOT / 'formats/character/Addon/io_scene_tt_character/__init__.py'
+    info = next(ast.literal_eval(n.value) for n in ast.parse(source.read_text()).body
+                if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'bl_info' for t in n.targets))
+    version = '.'.join(map(str, info['version']))
+    target = ROOT / 'builds/blender' / f'TT_Character_Importer_{version}.zip'
     prefix = 'io_scene_tt_character/'
     with ZipFile(target, 'w', ZIP_DEFLATED, compresslevel=9) as archive:
         for path in sorted((ROOT / 'formats/character/Addon/io_scene_tt_character').glob('*.py')):
@@ -25,6 +30,8 @@ def main():
             archive.write(path, prefix + '_core/' + path.name)
         archive.writestr(prefix + '_core/__init__.py', '"""Bundled shared native readers; no separate addon registration."""\n')
         archive.write(ROOT / 'formats/character/README.md', prefix + 'README.md')
+        archive.write(ROOT / 'formats/character/COMPATIBILITY.md', prefix + 'COMPATIBILITY.md')
+        archive.write(ROOT / 'formats/character/RESEARCH_0.2.md', prefix + 'RESEARCH_0.2.md')
         archive.write(ROOT / 'docs/LICENSING.md', prefix + 'LICENSING.md')
     manifest_path = ROOT / 'builds/manifest.json'
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))

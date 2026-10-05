@@ -11,7 +11,7 @@ from .cu3 import Animation
 
 
 def decode_runs(data, start, size, vertices):
-    """BE (repeat_count, dx, dy, dz) records, including a zero terminal run."""
+    """BE repeat/count vectors, including zero padding runs inside a buffer."""
     r = Reader(data)
     if size % 16 or start < 0 or start + size > len(data):
         raise FormatError('Relative-position run buffer outside file or misaligned')
@@ -22,7 +22,7 @@ def decode_runs(data, start, size, vertices):
             raise FormatError('Non-finite relative position')
         if count > vertices - len(offsets):
             raise FormatError('Relative-position run exceeds vertex count')
-        if count == 0 and (at != start + size - 16 or any((x, y, z))):
+        if count == 0 and any((x, y, z)):
             raise FormatError('Invalid zero-length relative-position run')
         offsets.extend([[x, y, z] for _ in range(count)])
     if len(offsets) != vertices:
@@ -44,7 +44,7 @@ def read_targets(data, terminal, count, vertices, dx):
     if dx and data[terminal + 4:terminal + 8] != b'ROTV':
         raise FormatError('DX11 relative-position array marker missing')
     at, targets = terminal + (8 if dx else 4), []
-    for target in ids:
+    for target_index, target in enumerate(ids):
         record = at
         dense_count = r.get('I', at)
         at += 4
@@ -64,10 +64,18 @@ def read_targets(data, terminal, count, vertices, dx):
             at += size
             tail = at
             if dx:
-                # Two observed ROTV fields; preserve the unknown companion.
+                # The companion is a counted index array, followed by the
+                # next vector marker. Older faces can have more than two IDs.
                 if data[at:at + 4] != b'ROTV':
                     raise FormatError('DX11 relative-position companion marker missing')
-                at += 20
+                n = r.get('I', at + 4)
+                if n > 65536:
+                    raise FormatError('Unreasonable DX11 relative-position companion count')
+                at += 8 + n * 4
+                continuation = data[at:at + 4]
+                if continuation != b'ROTV' and not (target_index == len(ids)-1 and continuation == bytes(4)):
+                    raise FormatError('DX11 relative-position continuation marker missing')
+                at += 4
             else:
                 n = r.get('I', at)
                 if n > 65536:

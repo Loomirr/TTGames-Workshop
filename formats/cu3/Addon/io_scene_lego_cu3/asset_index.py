@@ -14,7 +14,9 @@ def open_assets(root, profile, cache_root=None):
     if any(p.is_file() and p.suffix.casefold()=='.dat' and p.stem.upper().startswith('GAME') for p in path.iterdir()):
         from .archive_assets import ArchiveAssetIndex
         return ArchiveAssetIndex(path, profile, cache_root)
-    return AssetIndex(path)
+    assets = AssetIndex(path)
+    assets.profile = profile
+    return assets
 
 
 class AssetIndex:
@@ -26,7 +28,7 @@ class AssetIndex:
             raise FormatError('Choose a folder containing extracted game assets')
         self.files = {}
         for path in self.root.rglob('*'):
-            if path.is_file() and path.suffix.lower() in ('.ghg', '.gsc', '.cd', '.tex', '.nxg_textures', '.cu3', '.an4', '.txt', '.led'):
+            if path.is_file() and path.suffix.lower() in ('.ghg', '.gsc', '.cd', '.tex', '.nxg_textures', '.cu3', '.an4', '.as', '.pak', '.txt', '.led'):
                 # Do not follow a link outside the selected asset tree.
                 if path.resolve().is_relative_to(self.root):
                     self.files.setdefault(path.name.casefold(), []).append(path)

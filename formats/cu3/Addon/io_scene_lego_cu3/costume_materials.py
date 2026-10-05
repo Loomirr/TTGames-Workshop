@@ -7,11 +7,7 @@ import bpy
 from .cu3 import FormatError
 from .material_preview import attach_vertex_albedo, attach_vertex_opacity
 from .texture_store import read_texture_store
-
-SLOTS = {'headfrontgame':1, 'headbackgame':2, 'bodyfrontgame':3, 'bodybackgame':4,
-         'hipsgame':5, 'lefthandgame':6, 'leftarmgame':7, 'leftleggame':8,
-         'rightarmgame':24, 'rightleggame':25, 'righthandgame':26}
-
+from .native_materials import costume_slot
 
 def multiply_base_tint(material, tint, label, property_name):
     if len(tint)!=3 or not all(math.isfinite(v) and v>=0 for v in tint):
@@ -75,8 +71,7 @@ class CostumeMaterials:
         nodes, links = material.node_tree.nodes, material.node_tree.links
         surface = nodes.get('Principled BSDF')
         surface.inputs['Roughness'].default_value = .5
-        key = entry['name'].replace('_','').split(':')[0].casefold()
-        slot = SLOTS.get(key)
+        slot = costume_slot(entry)
         matched = [o['fields'] for o in definition['objects'] if o['fields'].get('Material')==slot] if definition and slot is not None else []
         texture = next((o for o in matched if o.get('Texture Slot')==0 and 'Texture File' in o), None)
         assigned = False

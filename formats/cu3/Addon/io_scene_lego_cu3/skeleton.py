@@ -23,10 +23,12 @@ def read_skeleton(path, expected_nodes=None):
             ver = r.get('I', at + 4)
             try:
                 joints, pos = [], at + 8
-                if ver == 16:
+                if ver in (15, 16, 17):
                     if data[pos:pos + 4] != b'ROTV':
                         raise FormatError('GHG v16 joint array marker missing')
                     count = r.get('I', pos + 4)
+                    if not 0 < count <= 255:
+                        raise FormatError('Unsupported GHG joint count')
                     pos += 8
                     for i in range(count):
                         length = r.get('H', pos)
@@ -38,11 +40,17 @@ def read_skeleton(path, expected_nodes=None):
                         pos += 78
                         joints.append(dict(index=i, name=name, parent=None if parent == 255 else parent,
                                            flags=flags, orient_row_major=orient, locator_offset=locator))
-                elif ver == 10:
+                elif ver in (10, 12):
                     nt = data.index(b'LBTN')
                     names_size = r.get('I', nt + 8)
                     names = nt + 12
+                    if ver == 12:
+                        if data[pos:pos + 4] != b'ROTV':
+                            raise FormatError('HGOL v12 joint array marker missing')
+                        pos += 4
                     count = r.get('I', pos)
+                    if not 0 < count <= 255:
+                        raise FormatError('Unsupported GHG joint count')
                     pos += 4
                     for i in range(count):
                         no = r.get('I', pos)
@@ -57,7 +65,7 @@ def read_skeleton(path, expected_nodes=None):
                 if not 0 < count <= 255:
                     raise FormatError('Unsupported GHG joint count')
                 for field in ('local_bind_row_major', 'inverse_world_bind_row_major'):
-                    if ver == 16:
+                    if ver in (12, 15, 16, 17):
                         if data[pos:pos + 4] != b'ROTV':
                             raise FormatError('GHG matrix array marker missing')
                         pos += 4
@@ -70,7 +78,7 @@ def read_skeleton(path, expected_nodes=None):
                 bind_end = pos
                 def array_count():
                     nonlocal pos
-                    if ver == 16:
+                    if ver in (12, 15, 16, 17):
                         if data[pos:pos + 4] != b'ROTV':
                             raise FormatError('Missing HGOL array marker')
                         pos += 4
@@ -84,7 +92,7 @@ def read_skeleton(path, expected_nodes=None):
                 pos += n
                 pois = []
                 for k in range(array_count()):
-                    if ver == 16:
+                    if ver in (12, 15, 16, 17):
                         length = r.get('H', pos)
                         pos += 2
                         label = r.string(pos, pos + length)
@@ -107,7 +115,7 @@ def read_skeleton(path, expected_nodes=None):
                     pos += 5
                 layers = []
                 for k in range(array_count()):
-                    if ver == 16:
+                    if ver in (15, 16, 17):
                         length = r.get('H', pos)
                         pos += 2
                         label = r.string(pos, pos + length)
@@ -127,7 +135,7 @@ def read_skeleton(path, expected_nodes=None):
                 continue
         compatible = [c for c in candidates if expected_nodes is None or len(c['joints']) == expected_nodes]
         if not compatible:
-            raise FormatError('No supported matching GHG skeleton (observed HGOL versions 10 and 16 only)')
+            raise FormatError('No supported matching GHG skeleton (HGOL 10/12 or ROTV layouts 15/16/17)')
         rig = compatible[0]
         joints = rig['joints']
     if expected_nodes is not None and len(joints) != expected_nodes:

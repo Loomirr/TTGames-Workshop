@@ -45,4 +45,18 @@ class DisplayTests(unittest.TestCase):
     def test_invalid_clip_is_not_treated_as_locator(self):
         with self.assertRaisesRegex(FormatError,'display instance'):self.read(fixture(1))
 
+    def test_hobbit_vector_arrays_and_global_special_name(self):
+        names=b'Mesh\0'
+        data=b'LBTN'+struct.pack('>2I',1,len(names))+names+b'PSID'+struct.pack('>I',26)
+        data+=b'ROTV'+struct.pack('>IBBI',1,0x80,0,0)
+        data+=b'ROTV'+struct.pack('>IH2I',1,1,0,0)
+        body=bytearray(204)
+        struct.pack_into('>I16f',body,0,0,1,0,0,0,0,1,0,0,0,0,1,0,2,3,4,1)
+        struct.pack_into('>3I',body,180,0,0,0)
+        data+=b'ROTV'+struct.pack('>I',1)+body
+        result=self.read(data)['specials'][0]
+        self.assertEqual(result['name'],'Mesh')
+        self.assertEqual(result['matrix'][12:15],[2,3,4])
+        self.assertEqual(result['parts'],[{'part':0,'material':0}])
+
 if __name__=='__main__':unittest.main()

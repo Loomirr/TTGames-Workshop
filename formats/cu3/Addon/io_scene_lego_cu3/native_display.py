@@ -12,9 +12,9 @@ def read_display(path, part_count):
         raise FormatError('Native display section missing')
     c = Cursor(data, at + 4)
     version = c.get('I')
-    if version not in (18, 21, 23, 32):
+    if version not in (18, 21, 23, 24, 26, 32):
         raise FormatError(f'DISP {version} requires a separate verified reader')
-    dx = version == 32
+    dx = version in (26, 32)
     def array(size=None):
         if dx:
             c.expect(b'ROTV', '4s')
@@ -51,7 +51,7 @@ def read_display(path, part_count):
     specials = []
     for index in range(array()):
         start = c.at
-        if dx:
+        if dx and version != 26:
             length = c.get('H')
             name = c.reader.string(c.at, c.at + length)
             c.take(length)

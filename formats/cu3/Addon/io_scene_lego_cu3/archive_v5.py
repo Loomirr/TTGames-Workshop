@@ -29,7 +29,7 @@ def _safe_segment(name):
         raise ValueError('Reserved device name in DAT path')
 
 
-def _parse_index(data, payload_limit):
+def _parse_index(data, payload_limit, *, name_tags=False):
     """Decode a complete -5 index; payload_limit is its archive file offset."""
     if not isinstance(payload_limit, int) or payload_limit < 8:
         raise ValueError('Invalid DAT payload extent')
@@ -59,7 +59,7 @@ def _parse_index(data, payload_limit):
     nodes = []
     for index in range(names_count):
         child, previous, name_offset, padding = get('hhiI', names_at + index * 12)
-        if padding or not 0 <= previous < names_count or child >= names_count:
+        if (padding and not name_tags) or not 0 <= previous < names_count or child >= names_count:
             raise ValueError('Invalid DAT name-tree reference')
         if not 0 <= name_offset < string_length or (name_offset and strings[name_offset-1] != 0):
             raise ValueError('Invalid DAT string reference')
@@ -113,6 +113,10 @@ def _parse_index(data, payload_limit):
         high_offset, packed, size, flags = get('4I', 8 + index * 16)
         offset = (high_offset << 8) + (flags >> 24)
         flags &= 0xffffff
+        if name_tags:
+            # LOTR retains opaque tag bits above the storage-mode byte.
+            # Paths still have to match the separate complete file hash table.
+            flags &= 0xff
         if flags not in (0, 2):
             raise ValueError('Unverified DAT storage flags')
         if offset < 8 or offset > payload_limit or packed > payload_limit-offset:
@@ -123,7 +127,7 @@ def _parse_index(data, payload_limit):
     return result
 
 
-def index_v5(path):
+def index_v5(path, *, name_tags=False):
     """Return validated -5 file entries from an installed archive, read-only."""
     path = Path(path)
     with path.open('rb') as source:
@@ -142,4 +146,4 @@ def index_v5(path):
         data = source.read(size)
         if len(data) != size:
             raise ValueError('DAT index could not be read completely')
-    return _parse_index(data, offset)
+    return _parse_index(data, offset, name_tags=name_tags)

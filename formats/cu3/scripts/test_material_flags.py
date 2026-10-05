@@ -3,6 +3,7 @@ import unittest,struct,sys,types
 from pathlib import Path
 R=Path(__file__).resolve().parents[1];p=types.ModuleType('io_scene_lego_cu3');p.__path__=[str(R/'Addon/io_scene_lego_cu3')];sys.modules[p.__name__]=p
 from io_scene_lego_cu3.material_flags import footer,read_render_flags
+from io_scene_lego_cu3.native_materials import costume_slot
 
 def fixture(version,mask=15,variant=0xffffffff):
     # Independent scalar fixture: 18 historic flags, two later booleans,
@@ -15,6 +16,12 @@ def fixture(version,mask=15,variant=0xffffffff):
     return raw+struct.pack('>2I',123,2)
 
 class MaterialFlagTests(unittest.TestCase):
+    def test_native_costume_role_overrides_name_guess(self):
+        self.assertEqual(costume_slot({'name':'LEFTARM_GAME:VARIANT_AUTO','render_flags':{'special_id':24}}),24)
+        self.assertEqual(costume_slot({'name':'LEGS_GAME','render_flags':{'special_id':8}}),8)
+        self.assertIsNone(costume_slot({'name':'stud','render_flags':{'special_id':1}}))
+        self.assertIsNone(costume_slot({'name':'VERTEXCOLOURS_GAME','render_flags':{'special_id':0}}))
+
     def test_version_gates_and_no_colour_mask(self):
         for version in (174,176,177,183,187,190,191,194,198,199,202):
             with self.subTest(version=version):

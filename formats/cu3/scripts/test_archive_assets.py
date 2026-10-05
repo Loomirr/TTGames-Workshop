@@ -38,6 +38,16 @@ def archive(path,payload=b'abc',name='SAMPLE.CD'):
 
 
 class Compression(unittest.TestCase):
+    def test_hobbit_parent_index_requires_explicit_version(self):
+        with tempfile.NamedTemporaryFile(suffix='.dat',delete=False) as f:path=Path(f.name)
+        try:
+            archive(path)
+            data=bytearray(path.read_bytes());offset=struct.unpack_from('<I',data)[0]
+            struct.pack_into('<i',data,offset,-5);path.write_bytes(data)
+            with self.assertRaises(FormatError):index_v6(path)
+            self.assertEqual(index_v6(path,version_expected=-5)[0]['path'],'SAMPLE.CD')
+        finally:path.unlink()
+
     def test_literal_block(self):
         self.assertEqual(decode_lz2k_chunk(blocks((3,65,0)),3),b'AAA')
 

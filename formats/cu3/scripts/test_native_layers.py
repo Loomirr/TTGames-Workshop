@@ -30,6 +30,11 @@ class LayerSelection(unittest.TestCase):
     def test_default_selects_one_alternative(self):
         self.assertEqual(self.select(),[0,3])
 
+    def test_explicit_default_costume_with_empty_cutscene_mask(self):
+        self.definition['character'].update({'Default Layers':1,'Cutscene Layers':0,'Use Default Layers':-64})
+        self.assertEqual([m['special'] for m in selected_layer_metadata(self.skeleton,self.display,self.definition,layer_mode='default')],[0])
+        self.assertEqual(selected_layer_metadata(self.skeleton,self.display,self.definition,layer_mode='cutscene'),[])
+
     def test_named_cape_selects_exact_source_special(self):
         self.override(1,'Cape')
         self.assertEqual(self.select(),[0,4])

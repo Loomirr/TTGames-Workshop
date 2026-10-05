@@ -48,7 +48,7 @@ class MeshReader:
     def __init__(self, data, at):
         self.c = Cursor(data, at + 4)
         self.version = self.c.get('I')
-        if self.version not in (169, 175):
+        if self.version not in (169, 170, 175):
             raise FormatError(f'Native MESH version {self.version} is not supported')
         self.dx = self.version == 175
         self.buffers = {}
@@ -229,7 +229,7 @@ def read_mesh(path):
     candidates = []
     at = data.find(b'HSEM')
     while at >= 0:
-        if at + 8 <= len(data) and int.from_bytes(data[at+4:at+8], 'big') in (169, 175):
+        if at + 8 <= len(data) and int.from_bytes(data[at+4:at+8], 'big') in (169, 170, 175):
             candidates.append(at)
         at = data.find(b'HSEM', at + 4)
     if len(candidates) != 1:

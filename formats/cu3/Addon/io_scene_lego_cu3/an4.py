@@ -1,8 +1,9 @@
-"""Standalone PC AN4 tree reader; only observed v13/14 ANI-D pose layouts."""
+"""Observed PC AN4 trees; ANI-D poses and gated newer ANI-E inventory."""
 from pathlib import Path
 import hashlib
 import math
 from .cu3 import Reader, Animation, FormatError
+from .tt_deflate import decompress
 
 
 class AnimationFile:
@@ -14,12 +15,12 @@ class AnimationFile:
         self.fps = fps
         if not math.isfinite(fps) or not 0 < fps < 1000:
             raise FormatError('Invalid preview FPS')
-        r = Reader(raw)
         if raw.startswith(b'Deflate_v1.0'):
-            raise FormatError('This AN4 still has its Deflate_v1.0 wrapper. Supply the decompressed AN4; this wrapper is not decoded by the character addon yet.')
+            raw = decompress(raw)
+        r = Reader(raw)
         version, size = r.get('2I', 0)
-        if version not in (13, 14) or size != len(raw) or size < 72:
-            raise FormatError('Standalone AN4 requires an uncompressed big-endian v13/14 tree. Other versions and packed PAK banks are not supported.')
+        if version not in (13, 14, 15, 16, 18, 19, 20) or size != len(raw) or size < 72:
+            raise FormatError('Standalone AN4 requires a verified big-endian v13/14/15/16/18/19/20 tree; ANI-E is inspection only.')
         strings, children = r.get('2I', 16)
         if not 72 <= strings < size:
             raise FormatError('AN4 string table outside file')

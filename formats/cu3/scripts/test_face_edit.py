@@ -26,7 +26,7 @@ def fixture(dx, dense):
         runs = struct.pack('>I3fI3fI3f', 2, 0, 0, 0, 1, .125, -.25, .5, 0, 0, 0, 0)
         raw += struct.pack('>I', 0) + b'P' * (4 if dx else 13)
         raw += struct.pack('>I', len(runs)) + runs
-        raw += b'ROTV' + b'Q' * 16 if dx else struct.pack('>3I', 2, 1234, 5678)
+        raw += b'ROTV' + struct.pack('>3I', 2, 1234, 5678) + b'ROTV' if dx else struct.pack('>3I', 2, 1234, 5678)
     raw += b'UNRELATED MATERIALS AND FILE TAIL'
     companion = dict(schema='tt.relative-position-targets.v1', mesh_version=version,
                      sha256=digest(raw), parts={'2': read_targets(raw, 20, 1, 3, dx)})

@@ -55,7 +55,7 @@ class AN4Checks(unittest.TestCase):
 
     def test_unknown_version_and_wrapper(self):
         raw = tree()
-        struct.pack_into('>I', raw, 0, 20)
+        struct.pack_into('>I', raw, 0, 99)
         for data in (raw, b'Deflate_v1.0' + b'\0' * 70, b'bad'):
             with self.assertRaises(FormatError):
                 AnimationFile('fixture.an4', data=data)

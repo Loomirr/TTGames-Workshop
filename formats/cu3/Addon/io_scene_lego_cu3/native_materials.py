@@ -5,6 +5,15 @@ from .cu3 import Reader, FormatError
 from .material_flags import read_render_flags
 
 
+def costume_slot(entry):
+    """Authored material-role ID, not its display-table index or a name guess."""
+    name = entry['name'].split(':', 1)[0].upper()
+    if not name.endswith('_GAME'):
+        return None
+    value = entry['render_flags'].get('special_id', 0)
+    return value if value else None
+
+
 def shader_prefix(data, start, version):
     if not 174 <= version <= 202:
         raise ValueError('UMTL prefix version outside observed family')
@@ -83,7 +92,7 @@ def read_materials(path):
     if marker < 0:
         raise FormatError('Native material table missing')
     version, count = r.get('2I', marker+4)
-    if version not in (174, 175, 176, 177, 195, 198, 199, 200, 201, 202) or count > 65536:
+    if version not in (174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202) or count > 65536:
         raise FormatError(f'Unverified native material table version/count: {version}/{count}')
     start = marker+12
     if version < 190:

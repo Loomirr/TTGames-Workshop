@@ -28,7 +28,7 @@ def main():
             json.loads(path.read_text(encoding='utf-8-sig'));counts['json']+=1
         elif path.suffix=='.csproj':
             ET.parse(path);counts['projects']+=1
-    for name in ['test_an4_standalone.py','test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py','test_native_display.py','test_morph_controls.py','test_dependencies.py','test_native_layers.py','test_camera_version_gate.py','test_archive_cc8.py','test_tfa_structure.py','test_archive_assets.py','test_archive_v5.py','test_scene_configuration.py','test_stage_geometry.py']:
+    for name in ['test_skeleton_versions.py','test_animation_sources.py','test_tt_deflate.py','test_an4_standalone.py','test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py','test_native_display.py','test_morph_controls.py','test_dependencies.py','test_native_layers.py','test_camera_version_gate.py','test_archive_cc8.py','test_tfa_structure.py','test_archive_assets.py','test_archive_v5.py','test_scene_configuration.py','test_stage_geometry.py']:
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     manifest=ROOT/'builds/manifest.json'
     if manifest.exists():

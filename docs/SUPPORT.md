@@ -3,14 +3,20 @@
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
-- Character addon 0.1.0: independent install and minifig CD browser, observed
-  LMSH1/LB3 native model assembly, and uncompressed standalone AN4 v13/14 actions.
-  The packaged addon was checked in Blender 5.2.2 with one character from each
-  game and three LMSH1 actions, including clip switching and finite evaluated
-  poses. Eight LMSH1 clips match the previous scalar decoder at sampled frames;
-  four synthetic checks cover byte order and tree rejection. Face masking,
-  smoothing and some costume/material details still differ visibly from the
-  game. LB3 standalone `Deflate_v1.0` wrappers are rejected, not decoded.
+- Character addon 0.3.0: independent LMSH1/LB3/Hobbit character and declared
+  animation browsers, supported ANI-D playback, native TT inner decompression,
+  matching attachment tracks, separate live face previews and loose native-source
+  export. Explicit default/cutscene costume layers and native material role IDs
+  fix several missing attachments and costume color assignments. Variable-length
+  LB3 facial target records are now read correctly. Five characters were checked
+  in Blender 5.2.2, with three actions each and finite evaluated poses/meshes.
+  Full roster preflights found 342/467 LMSH1, 280/361 LB3 and 375/417 Hobbit
+  definitions passing the probed readers. These counts are not visual certification.
+  Recursive attachment configuration, textures, facial timing and all clips are
+  not covered by that audit. General mesh/material/animation writing is absent;
+  Hobbit MESH 170 face-target writing remains disabled.
+  Avengers/TFA/DCSV/LMSH2/LOTR archive inspection is available, with explicit
+  model and animation version limits. See [compatibility](../formats/character/COMPATIBILITY.md).
 - Desktop GUIs 0.1.1: nine separate Python/Tk downloads, each checked by launching
   an extracted copy and importing its own backends. No full checkout or common
   toolbox installation is required. Python is required; only BTGA needs Pillow.
@@ -30,7 +36,7 @@ all formats or games are now supported.
   and attachment tint selection reduce overlapping models and incorrect
   accessory colors. Six portable stage tests and a synthetic Blender builder
   check cover native bindings and geometry invariants, not full-scene fidelity.
-  TFA versions 22–27 support reference inspection: 426 files were structurally
+  TFA versions 22Ã¢â‚¬â€œ27 support reference inspection: 426 files were structurally
   checked. Its two private animation examples contain rigs only. TFA/DCSV
   ANI-E playback and full scene assembly remain disabled. Name rebuilding and
   hash/layout-locked face target editing have separate validation scopes.
@@ -48,7 +54,8 @@ all formats or games are now supported.
   cover 83 mips. Selected visuals were checked; this is not in-game validation.
   Other-platform fonts/CSC data and ISO/archive unpacking remain outside scope.
 - AN4: observed ANI-D six-channel layouts, constants and packed type-6/7 curves.
-  The standalone skeleton reader expects the verified 63-joint HGOL v10 rig.
+  The original standalone BVH workflow targets the verified 63-joint HGOL v10 rig;
+  the separate character addon supports additional validated native skeleton layouts.
 - 3DS BTGA: observed 56-byte texture header, PICA tiles, stored mips. The FUSE
   helper reads indexed payloads; it does not unpack encrypted ROMs.
 

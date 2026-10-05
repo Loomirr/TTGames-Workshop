@@ -22,6 +22,11 @@ def definition(model, attachments=(), textures=()):
 
 
 class DependencyTests(unittest.TestCase):
+    def test_high_attachment_layer_and_empty_custom_slot(self):
+        d = definition('Body', [(36, 'Cape'), (1, '')])
+        d['character']['Default Layers'] = (1 << 36) | 2
+        self.assertEqual([a['Resource File'] for a in active_attachments(d)], ['Cape'])
+
     def setUp(self):
         self.root=Path(tempfile.gettempdir())/('tt-dependency-test-'+uuid.uuid4().hex)
         self.root.mkdir()
@@ -90,7 +95,7 @@ class DependencyTests(unittest.TestCase):
         with self.assertRaises(FormatError):dependency_report(cut,self.resolver())
 
     def test_invalid_attachment_layer_rejected(self):
-        for layer in (-1,32):
+        for layer in (-1,64):
             with self.assertRaises(FormatError):active_attachments(definition('Hero',[(layer,'Hat')]))
 
     def test_declared_root_replacement_uses_target_definition_without_renaming_actor(self):

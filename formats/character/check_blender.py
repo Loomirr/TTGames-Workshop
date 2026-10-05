@@ -12,7 +12,7 @@ cases_path, output = Path(args[0]), Path(args[1])
 output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[2]
 bundle = output / 'addon'
-with ZipFile(root / 'builds/blender/TT_Character_Importer_0.1.0.zip') as archive:
+with ZipFile(root / 'builds/blender/TT_Character_Importer_0.3.0.zip') as archive:
     archive.extractall(bundle)
 sys.path.insert(0, str(bundle))
 import io_scene_tt_character as addon

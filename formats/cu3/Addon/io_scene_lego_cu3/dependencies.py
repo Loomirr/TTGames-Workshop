@@ -8,24 +8,29 @@ from pathlib import PurePosixPath
 from .cu3 import FormatError
 from .definitions import character_definition
 
-PROFILES = {'LB3':(19,'_DX11'), 'LMSH1':(18,'_NXG')}
+PROFILES = {'LB3':(19,'_DX11'), 'LMSH1':(18,'_NXG'), 'HOBBIT':(None,'_NXG')}
 
 
 def actor_resource(name):
     return re.sub(r'^instance[^_]*_', '', name, flags=re.I)
 
 
-def active_attachments(definition):
+def active_attachments(definition, *, layer_mode='authored'):
     if definition is None:return []
     character=definition['character']
-    mask=character.get('Default Layers',0) if character.get('Use Default Layers',-1)&2 else character.get('Cutscene Layers',0)
+    if layer_mode not in ('authored', 'default', 'cutscene'):
+        raise FormatError('Unknown attachment layer selection mode')
+    mask=(character.get('Default Layers',0) if layer_mode=='default' else character.get('Cutscene Layers',0)
+          if layer_mode=='cutscene' else character.get('Default Layers',0) if character.get('Use Default Layers',-1)&2
+          else character.get('Cutscene Layers',0))
     result=[]
     for item in definition['objects']:
         if item['class']!='Character Attachment':continue
         fields=item['fields'];layer=fields.get('Layer')
-        if not isinstance(layer,int) or not 0<=layer<32:
-            raise FormatError('Attachment layer is missing or outside the native 32-bit mask')
-        if mask & (1 << layer):result.append(fields)
+        if not isinstance(layer,int) or not 0<=layer<64:
+            raise FormatError('Attachment layer is missing or outside the native 64-bit mask')
+        # Empty customization slots are declarations, not asset references.
+        if mask & (1 << layer) and fields.get('Resource File'):result.append(fields)
     return result
 
 
@@ -53,6 +58,8 @@ class ResourceResolver:
         return self.replacements.get(reference.casefold(),reference)
 
     def validate_cutscene(self, cut):
+        if self.version is None:
+            raise FormatError('This profile supports characters; cutscene assembly is not verified')
         if cut.version!=self.version:
             raise FormatError('Cutscene version does not match the selected game profile')
 

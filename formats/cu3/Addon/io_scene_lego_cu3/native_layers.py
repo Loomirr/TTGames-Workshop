@@ -8,12 +8,15 @@ An unconfigured model inspection retains all specials for inspection.
 from .cu3 import FormatError
 
 
-def selected_layer_metadata(skeleton, display, definition=None):
+def selected_layer_metadata(skeleton, display, definition=None, *, layer_mode='authored'):
+    if layer_mode not in ('authored', 'default', 'cutscene'):
+        raise FormatError('Unknown native layer selection mode')
     selections = {}
     mask = None
     if definition is not None:
         character = definition['character']
-        mask = (character.get('Default Layers') if character.get('Use Default Layers', -1) & 2
+        mask = (character.get('Default Layers') if layer_mode == 'default' else character.get('Cutscene Layers')
+                if layer_mode == 'cutscene' else character.get('Default Layers') if character.get('Use Default Layers', -1) & 2
                 else character.get('Cutscene Layers'))
         for item in definition['objects']:
             if item['class'] != 'Character Layer Special':

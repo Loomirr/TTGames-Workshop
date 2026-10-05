@@ -33,6 +33,13 @@ def fixture(name='TWO.TEX'):
 
 
 class DatV5(unittest.TestCase):
+    def test_tagged_name_variant_keeps_full_path_hash_validation(self):
+        raw=fixture();struct.pack_into('<I',raw,44+8,0x12345678)
+        with self.assertRaises(ValueError):_parse_index(raw,1024)
+        self.assertEqual(_parse_index(raw,1024,name_tags=True)[0]['path'],'CHARS/ONE.CD')
+        raw[-16]^=1
+        with self.assertRaisesRegex(ValueError,'hash'):_parse_index(raw,1024,name_tags=True)
+
     def test_archive_header_and_encoded_index_offset(self):
         table=fixture()
         for offset_word in (1024,0xfffffffc):

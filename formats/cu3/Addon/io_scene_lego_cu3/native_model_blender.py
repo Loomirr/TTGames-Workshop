@@ -1,5 +1,7 @@
 """Build native source geometry with preserved vertex order and display bindings."""
 import math
+import hashlib
+from pathlib import Path
 import bpy
 from mathutils import Vector
 from .cu3 import FormatError
@@ -11,6 +13,7 @@ from .skeleton import read_skeleton
 from .morph import add_shape_keys
 from .blender_import import C, row_matrix, create_rig
 from .material_preview import attach_vertex_albedo, attach_vertex_opacity
+from .face_edit_blender import bind_source
 
 
 def load_model(path):
@@ -21,12 +24,12 @@ def load_model(path):
     return model
 
 
-def selected_draws(model, definition=None):
+def selected_draws(model, definition=None, *, layer_mode='authored'):
     skeleton = model['skeleton']
     if skeleton is None:
         return [(special, binding, None) for special in model['display']['specials'] for binding in special['parts']]
     draws = []
-    for metadata in selected_layer_metadata(skeleton, model['display'], definition):
+    for metadata in selected_layer_metadata(skeleton, model['display'], definition, layer_mode=layer_mode):
         special = model['display']['specials'][metadata['special']]
         if special['unsupported_commands']:
             raise FormatError('Layer uses unsupported display commands')
@@ -35,9 +38,9 @@ def selected_draws(model, definition=None):
     return draws
 
 
-def create_model(model, name, collection, definition=None, material_factory=None):
+def create_model(model, name, collection, definition=None, material_factory=None, *, layer_mode='authored'):
     skeleton = model['skeleton']
-    draws = selected_draws(model, definition)
+    draws = selected_draws(model, definition, layer_mode=layer_mode)
     prepared = []
     for special, binding, metadata in draws:
         part = model['parts'][binding['part']]
@@ -58,6 +61,9 @@ def create_model(model, name, collection, definition=None, material_factory=None
         collection.objects.link(rig)
     objects = []
     materials = {}
+    companion = dict(schema='tt.relative-position-targets.v1', mesh_version=model['mesh_version'],
+        sha256=hashlib.sha256(Path(model['source']).read_bytes()).hexdigest(),
+        parts={str(p['index']):p['morphs'] for p in model['parts'] if p['morphs']})
     for special, binding, part, joint, transform in prepared:
         vertices = part['vertices']
         mesh = bpy.data.meshes.new(f'{name} / {special["name"]} / {part["index"]}')
@@ -120,5 +126,6 @@ def create_model(model, name, collection, definition=None, material_factory=None
             obj.modifiers.new('Native source skin', 'ARMATURE').object = rig
         if part['morphs']:
             add_shape_keys(obj, part['morphs'], transform)
+            bind_source(obj, companion, part['index'], transform)
         objects.append(obj)
     return rig, objects

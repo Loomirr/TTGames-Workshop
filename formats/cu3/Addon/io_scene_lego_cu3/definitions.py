@@ -8,6 +8,7 @@ import re
 import struct
 import math
 from .cu3 import Reader, FormatError
+from .tt_deflate import decompress
 
 FORMATS = {0:'B', 1:'h', 2:'i', 3:'q', 4:'f', 6:'3f', 8:'3f',
            9:'4f', 10:'16f', 17:'3e', 18:'B'}
@@ -15,6 +16,8 @@ FORMATS = {0:'B', 1:'h', 2:'i', 3:'q', 4:'f', 6:'3f', 8:'3f',
 
 def read_definition(path):
     data = Path(path).read_bytes()
+    if data.startswith(b'Deflate_v1.0'):
+        data = decompress(data)
     r = Reader(data)
     def get(fmt, at, limit):
         if at < 0 or at + struct.calcsize('<' + fmt) > limit:
@@ -41,7 +44,7 @@ def read_definition(path):
         raise FormatError('Uncompressed definition StreamInfo missing')
     _, info_end = block(marker, b'StreamInfo')
     version = get('I', marker+11, info_end)
-    if version not in (25, 28, 29):
+    if version not in (25, 26, 27, 28, 29, 30, 31):
         raise FormatError(f'Definition stream version {version} is not verified')
     marker = data.find(b'ClassList\0', info_end)
     if marker < 0:
@@ -67,8 +70,8 @@ def read_definition(path):
         for _ in range(count):
             typ = get('I', pos, types_end)
             field, pos = string(pos+4, types_end)
-            details = get('5I' if version >= 28 else '4I', pos, types_end)
-            pos += 20 if version >= 28 else 16
+            details = get('5I' if version >= 27 else '4I', pos, types_end)
+            pos += 20 if version >= 27 else 16
             fields.append({'type':typ, 'name':field, 'details':details})
         if pos != types_end:
             raise FormatError('Definition field schema does not fill block')
@@ -92,8 +95,24 @@ def read_definition(path):
             else:
                 yield field
     objects = []
+    # Only direct members of typed lists have that list's schema. Nested
+    # GAMEANIMDATA MOBJ blocks are not Character Anim Entry objects.
+    members = set()
+    for owner in lists:
+        count = get('I', owner['start'] + 15, owner['end'])
+        if count > 65536:
+            raise FormatError('Unreasonable definition object count')
+        pos = owner['start'] + 19
+        for _ in range(count):
+            _, end = block(pos + 8, b'MOBJ')
+            if end > owner['end']:
+                raise FormatError('Definition member exceeds its list')
+            members.add(pos)
+            pos = end
     for match in re.finditer(b'\x05\0\0\0MOBJ\0', data[limit:]):
         start, end = block(limit+match.start()+4, b'MOBJ')
+        if start not in members:
+            continue
         owners = [o for o in lists if o['start'] < start and end <= o['end']]
         if not owners:
             raise FormatError('Definition object has no enclosing typed list')

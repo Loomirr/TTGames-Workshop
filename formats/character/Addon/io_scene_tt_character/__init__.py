@@ -1,19 +1,21 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 1, 0), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 3, 0), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
-           'description': 'Experimental LMSH1/LB3 CD/GHG/GSC models and observed AN4 skeletal animations'}
+           'description': 'LMSH1/LB3 character and animation browsing, native source export and experimental face preview'}
 
 import json
 from pathlib import Path
 import bpy
+from mathutils import Matrix
 from bpy.props import StringProperty, EnumProperty, BoolProperty, FloatProperty, IntProperty, CollectionProperty, PointerProperty
 from bpy_extras.io_utils import ImportHelper
-from .importer import import_character, import_animations, find_rig
+from .importer import import_character, import_animations, find_rig, find_character, refresh_catalog, import_catalog_entry
 from ._core.cu3 import FormatError
 from ._core.asset_index import open_assets
 
-GAMES = [('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models')]
+GAMES = [('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
+         ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models')]
 _catalog = []
 _catalog_assets = None
 
@@ -22,16 +24,31 @@ class TTCHAR_Preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
     lb3: StringProperty(name='LB3 game / extracted folder', subtype='DIR_PATH')
     lmsh1: StringProperty(name='LMSH1 game / extracted folder', subtype='DIR_PATH')
+    hobbit: StringProperty(name='The Hobbit game / extracted folder', subtype='DIR_PATH')
     cache: StringProperty(name='Optional asset cache', subtype='DIR_PATH')
 
     def draw(self, context):
-        for prop in ('lb3', 'lmsh1', 'cache'):
+        for prop in ('lb3', 'lmsh1', 'hobbit', 'cache'):
             self.layout.prop(self, prop)
 
 
 def preferences(context):
     addon = context.preferences.addons.get(__package__)
     return addon.preferences if addon else None
+
+
+def character_catalog(assets):
+    paths = set()
+    for name, entries in assets.files.items():
+        if not name.endswith('.cd'):
+            continue
+        for entry in entries:
+            path = entry[1]['path'] if isinstance(entry, tuple) else entry.relative_to(assets.root).as_posix()
+            upper = path.upper()
+            categories = ('/MINIFIG', '/SMALL/', '/BIGFIG', '/BIGGERFIG', '/CREATURE')
+            if (any(c in '/' + upper for c in categories) and '/SUPER_CHAR' not in upper) or '/' not in path:
+                paths.add(path)
+    return [(p, Path(p).stem, p) for p in sorted(paths)]
 
 
 class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
@@ -52,18 +69,9 @@ class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
         try:
             _catalog_assets = open_assets(bpy.path.abspath(root), game,
                 cache_root=bpy.path.abspath(prefs.cache) if prefs.cache else None)
-            paths = set()
-            for name, entries in _catalog_assets.files.items():
-                if not name.endswith('.cd'):
-                    continue
-                for entry in entries:
-                    path = entry[1]['path'] if isinstance(entry, tuple) else entry.relative_to(_catalog_assets.root).as_posix()
-                    upper = path.upper()
-                    if '/MINIFIG' in '/' + upper and '/SUPER_CHAR' not in upper:
-                        paths.add(path)
-            _catalog = [(p, Path(p).stem, p) for p in sorted(paths)]
+            _catalog = character_catalog(_catalog_assets)
             if not _catalog:
-                raise FormatError('No minifig character definitions found in that folder')
+                raise FormatError('No character CD files found. Select a game folder or extracted folder containing character CDs; a model/texture-only folder is not enough. You can also import a CD directly.')
         except (ValueError, OSError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
@@ -97,20 +105,31 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
     assets: StringProperty(name='Game / extracted folder', subtype='DIR_PATH', description='Optional if saved in addon preferences; otherwise defaults to the input folder')
     definition: StringProperty(name='Optional matching CD', subtype='FILE_PATH', description='Use with a raw GHG to select its costume and native layers')
     attachments: BoolProperty(name='Import declared attachments', default=True)
+    layers: EnumProperty(name='Costume layers', items=[('default', 'Default costume', 'Use native default character layers'),
+        ('cutscene', 'Cutscene costume', 'Use native cutscene layers'), ('authored', 'Authored selection flags', 'Original reader selection flags')], default='default')
+
+    def invoke(self, context, event):
+        # Blender remembers file-browser operator settings separately from the
+        # sidebar. Always start this interactive import with the visible game.
+        self.game = context.scene.tt_character_game
+        return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
+        if not self.properties.is_property_set('game'):
+            self.game = context.scene.tt_character_game
         prefs = preferences(context)
         root = self.assets or (getattr(prefs, self.game.lower()) if prefs else '') or str(Path(self.filepath).parent)
         try:
             rig, report = import_character(context, Path(self.filepath), Path(bpy.path.abspath(root)), self.game,
                 definition_path=Path(bpy.path.abspath(self.definition)) if self.definition else None,
                 cache=Path(bpy.path.abspath(prefs.cache)) if prefs and prefs.cache else None,
-                attachments=self.attachments)
+                attachments=self.attachments, layer_mode=self.layers)
         except (OSError, ValueError, KeyError, RuntimeError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
         if prefs and self.assets:
             setattr(prefs, self.game.lower(), self.assets)
+        context.scene.tt_character_game = self.game
         issues = len(report['issues']) + len(report['materials'])
         self.report({'WARNING'} if issues else {'INFO'}, f'Imported {len(report["models"])} models; {issues} notices. See TT Character report in Text Editor.')
         return {'FINISHED'}
@@ -135,7 +154,10 @@ class IMPORT_ANIM_OT_tt_an4(bpy.types.Operator, ImportHelper):
         paths = [Path(self.directory) / f.name for f in self.files] if self.files else [Path(self.filepath)]
         report = import_animations(context, rig, paths, self.actor, self.fps)
         imported = report['imported']
-        self.report({'WARNING'} if report['issues'] else {'INFO'}, f'Imported {imported} actions; {len(report["issues"])} notices. See TT AN4 report.')
+        if not imported and report['issues']:
+            self.report({'WARNING'}, report['issues'][0])
+        else:
+            self.report({'WARNING'} if report['issues'] else {'INFO'}, f'Imported {imported} actions; {len(report["issues"])} notices. See TT AN4 report.')
         return {'FINISHED'} if imported else {'CANCELLED'}
 
 
@@ -151,6 +173,21 @@ def set_clip(self, context):
     self.animation_data_create()
     self.animation_data.action = item.action
     self.animation_data.action_slot = slot
+    tracks = json.loads(item.action.get('tt_attachment_actions', '[]'))
+    for child in self.children_recursive:
+        if child.type == 'ARMATURE' and child.get('tt_character_skeleton') and child.animation_data:
+            child.animation_data.action = None
+            for bone in child.pose.bones:
+                bone.matrix_basis = Matrix.Identity(4)
+    for track in tracks:
+        child, action = bpy.data.objects.get(track['object']), bpy.data.actions.get(track['action'])
+        if child not in self.children_recursive:
+            child = next((o for o in self.children_recursive if o.get('tt_preview_source') == track['object']), None)
+        if child is None or child not in self.children_recursive or action is None:
+            continue
+        child.animation_data_create()
+        child.animation_data.action = action
+        child.animation_data.action_slot = next((s for s in action.slots if s.identifier == track['slot']), None)
     if context and context.scene:
         scene = context.scene
         scene.frame_start, scene.frame_end = 1, max(1, item.frames)
@@ -167,8 +204,107 @@ class TTCHAR_Clip(bpy.types.PropertyGroup):
 
 
 class TTCHAR_UL_clips(bpy.types.UIList):
+    def filter_items(self, context, data, propname):
+        query = data.tt_animation_search.casefold()
+        return [self.bitflag_filter_item if query in item.name.casefold() else 0 for item in getattr(data, propname)], []
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         layout.label(text=item.name, icon='ACTION')
+
+
+class TTCHAR_AnimationAsset(bpy.types.PropertyGroup):
+    payload: StringProperty()
+    label: StringProperty()
+    available: BoolProperty()
+
+
+class TTCHAR_UL_animation_assets(bpy.types.UIList):
+    def filter_items(self, context, data, propname):
+        query = data.tt_animation_search.casefold()
+        return [self.bitflag_filter_item if query in item.label.casefold() else 0 for item in getattr(data, propname)], []
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        entry = json.loads(item.payload)
+        layout.label(text=item.label + (' [disabled]' if not entry['active'] else ''),
+                     icon='ACTION' if item.available else 'ERROR')
+
+
+class TTCHAR_OT_refresh_animations(bpy.types.Operator):
+    bl_idname = 'tt_character.refresh_animations'
+    bl_label = 'Find character animations'
+
+    def execute(self, context):
+        rig = find_rig(context.object)
+        try:
+            report = refresh_catalog(rig)
+        except (ValueError, OSError, KeyError, RuntimeError) as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        self.report({'INFO'}, f'{len(report["entries"])} declared actions; {len(report["issues"])} unresolved sets. See catalog report.')
+        return {'FINISHED'}
+
+
+class TTCHAR_OT_load_animation(bpy.types.Operator):
+    bl_idname = 'tt_character.load_animation'
+    bl_label = 'Load selected animation'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        rig = find_rig(context.object)
+        if rig is None or not 0 <= rig.tt_animation_asset_index < len(rig.tt_animation_assets):
+            return {'CANCELLED'}
+        try:
+            entry = json.loads(rig.tt_animation_assets[rig.tt_animation_asset_index].payload)
+            report = import_catalog_entry(context, rig, entry)
+        except (ValueError, OSError, KeyError, RuntimeError) as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        self.report({'WARNING'} if report['issues'] else {'INFO'}, report['issues'][0] if report['issues'] else 'Animation ready; press Play / Pause')
+        return {'FINISHED'} if report['imported'] else {'CANCELLED'}
+
+
+class TTCHAR_OT_preview(bpy.types.Operator):
+    bl_idname = 'tt_character.preview'
+    bl_label = 'Create character preview scene'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        from .preview import create_preview
+        rig = find_character(context.object)
+        if rig is None:
+            return {'CANCELLED'}
+        try:
+            create_preview(context, rig)
+        except (ValueError, RuntimeError) as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        self.report({'INFO'}, 'Use camera view and Material Preview; Space plays animations')
+        return {'FINISHED'}
+
+
+class TTCHAR_OT_export_sources(bpy.types.Operator):
+    bl_idname = 'tt_character.export_sources'
+    bl_label = 'Export loose native sources / face targets'
+    directory: StringProperty(name='New export folder', subtype='DIR_PATH')
+    face_edits: BoolProperty(name='Write supported existing face target edits', default=True,
+        description='Other mesh, material and animation edits are not encoded; their original native files are copied')
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+
+    def execute(self, context):
+        from .exporter import export_sources
+        rig = find_character(context.object)
+        if rig is None or not self.directory:
+            return {'CANCELLED'}
+        try:
+            report = export_sources(rig, bpy.path.abspath(self.directory), self.face_edits)
+        except (ValueError, OSError, KeyError, RuntimeError) as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        self.report({'WARNING'}, f'{len(report["files"])} loose files exported. Face targets only: other Blender edits are not encoded. See TT_Source_Export.json.')
+        return {'FINISHED'}
 
 
 class TTCHAR_PT_tools(bpy.types.Panel):
@@ -190,11 +326,24 @@ class TTCHAR_PT_tools(bpy.types.Panel):
         rig = find_rig(context.object)
         if rig:
             layout.label(text=rig.name, icon='ARMATURE_DATA')
+            layout.prop(rig, 'tt_animation_search', text='', icon='VIEWZOOM')
+            layout.operator('tt_character.refresh_animations')
+            if rig.tt_animation_assets:
+                layout.label(text=f'{len(rig.tt_animation_assets)} declared actions')
+                layout.template_list('TTCHAR_UL_animation_assets', '', rig, 'tt_animation_assets', rig, 'tt_animation_asset_index', rows=6)
+                layout.operator('tt_character.load_animation', icon='IMPORT')
+            layout.label(text='Loaded clips')
             layout.template_list('TTCHAR_UL_clips', '', rig, 'tt_clips', rig, 'tt_clip_index', rows=5)
             layout.operator('screen.animation_play', text='Play / Pause', icon='PLAY')
+            layout.operator('tt_character.preview', icon='SCENE_DATA')
+            layout.operator('tt_character.export_sources', icon='EXPORT')
             layout.label(text='Select a clip; Space plays the timeline.')
         else:
-            layout.label(text='Select an imported character or its rig.')
+            if find_character(context.object):
+                layout.operator('tt_character.preview', icon='SCENE_DATA')
+                layout.operator('tt_character.export_sources', icon='EXPORT')
+            else:
+                layout.label(text='Select an imported character or its rig.')
         layout.label(text='Experimental materials and face preview.')
 
 
@@ -203,7 +352,7 @@ def menu_import(self, context):
     self.layout.operator(IMPORT_ANIM_OT_tt_an4.bl_idname)
 
 
-CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_PT_tools)
+CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_PT_tools)
 
 
 def register():
@@ -211,6 +360,9 @@ def register():
         bpy.utils.register_class(cls)
     bpy.types.Object.tt_clips = CollectionProperty(type=TTCHAR_Clip)
     bpy.types.Object.tt_clip_index = IntProperty(default=0, update=set_clip)
+    bpy.types.Object.tt_animation_assets = CollectionProperty(type=TTCHAR_AnimationAsset)
+    bpy.types.Object.tt_animation_asset_index = IntProperty(default=0)
+    bpy.types.Object.tt_animation_search = StringProperty(name='Search animations')
     bpy.types.Scene.tt_character_game = EnumProperty(name='Game', items=GAMES, default='LB3')
     bpy.types.TOPBAR_MT_file_import.append(menu_import)
 
@@ -219,6 +371,9 @@ def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(menu_import)
     del bpy.types.Object.tt_clip_index
     del bpy.types.Object.tt_clips
+    del bpy.types.Object.tt_animation_assets
+    del bpy.types.Object.tt_animation_asset_index
+    del bpy.types.Object.tt_animation_search
     del bpy.types.Scene.tt_character_game
     for cls in reversed(CLASSES):
         bpy.utils.unregister_class(cls)
