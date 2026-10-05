@@ -14,6 +14,7 @@ from .morph import add_shape_keys
 from .blender_import import C, row_matrix, create_rig
 from .material_preview import attach_vertex_albedo, attach_vertex_opacity
 from .face_edit_blender import bind_source
+from .mesh_edit_blender import bind_vertices
 
 
 def load_model(path):
@@ -75,6 +76,7 @@ def create_model(model, name, collection, definition=None, material_factory=None
         obj['source_model'] = str(model['source']).replace('\\','/').rsplit('/',1)[-1].rsplit('.',1)[0]
         obj['source_part'] = part['index']
         obj['source_special'] = special['index']
+        bind_vertices(obj, transform)
         for field in ('uv', 'uv2', 'uv3'):
             if not vertices or field not in vertices[0]:
                 continue

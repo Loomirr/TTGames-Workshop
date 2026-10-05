@@ -1,21 +1,22 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 3, 1), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 4, 0), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
-           'description': 'LMSH1/LB3/Hobbit character and animation browsing, native source export and experimental face preview'}
+           'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
 import json
 from pathlib import Path
 import bpy
 from mathutils import Matrix
 from bpy.props import StringProperty, EnumProperty, BoolProperty, FloatProperty, IntProperty, CollectionProperty, PointerProperty
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from .importer import import_character, import_animations, find_rig, find_character, refresh_catalog, import_catalog_entry
 from ._core.cu3 import FormatError
 from ._core.asset_index import open_assets
 
 GAMES = [('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
-         ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models')]
+         ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models'),
+         ('AVENGERS', "LEGO Marvel's Avengers", 'Observed PC DX11 characters')]
 _catalog = []
 _catalog_assets = None
 
@@ -24,11 +25,12 @@ class TTCHAR_Preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
     lb3: StringProperty(name='LB3 game / extracted folder', subtype='DIR_PATH')
     lmsh1: StringProperty(name='LMSH1 game / extracted folder', subtype='DIR_PATH')
+    avengers: StringProperty(name='Avengers game / extracted folder', subtype='DIR_PATH')
     hobbit: StringProperty(name='The Hobbit game / extracted folder', subtype='DIR_PATH')
     cache: StringProperty(name='Optional asset cache', subtype='DIR_PATH')
 
     def draw(self, context):
-        for prop in ('lb3', 'lmsh1', 'hobbit', 'cache'):
+        for prop in ('lb3', 'lmsh1', 'hobbit', 'avengers', 'cache'):
             self.layout.prop(self, prop)
 
 
@@ -267,6 +269,8 @@ class TTCHAR_OT_preview(bpy.types.Operator):
     bl_idname = 'tt_character.preview'
     bl_label = 'Create character preview scene'
     bl_options = {'REGISTER', 'UNDO'}
+    composed_faces: BoolProperty(name='Composed face render', default=False,
+        description='Create a separate Cycles/compositor scene for native facial masking; use F12')
 
     def execute(self, context):
         from .preview import create_preview
@@ -274,20 +278,22 @@ class TTCHAR_OT_preview(bpy.types.Operator):
         if rig is None:
             return {'CANCELLED'}
         try:
-            create_preview(context, rig)
+            create_preview(context, rig, composed_faces=self.composed_faces)
         except (ValueError, RuntimeError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
-        self.report({'INFO'}, 'Use camera view and Material Preview; Space plays animations')
+        self.report({'INFO'}, 'F12 renders composed facial masks' if self.composed_faces else 'Use camera view and Material Preview; Space plays animations')
         return {'FINISHED'}
 
 
 class TTCHAR_OT_export_sources(bpy.types.Operator):
     bl_idname = 'tt_character.export_sources'
-    bl_label = 'Export loose native sources / face targets'
+    bl_label = 'Export loose native files / supported edits'
     directory: StringProperty(name='New export folder', subtype='DIR_PATH')
     face_edits: BoolProperty(name='Write supported existing face target edits', default=True,
-        description='Other mesh, material and animation edits are not encoded; their original native files are copied')
+        description='Write existing targets while preserving facial Basis and topology')
+    mesh_edits: BoolProperty(name='Write supported position / UV / vertex color edits', default=True,
+        description='Preserve topology and bounds; skeleton, normals, material nodes and edited actions are not encoded')
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -299,11 +305,32 @@ class TTCHAR_OT_export_sources(bpy.types.Operator):
         if rig is None or not self.directory:
             return {'CANCELLED'}
         try:
-            report = export_sources(rig, bpy.path.abspath(self.directory), self.face_edits)
+            report = export_sources(rig, bpy.path.abspath(self.directory), self.face_edits, self.mesh_edits)
         except (ValueError, OSError, KeyError, RuntimeError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
-        self.report({'WARNING'}, f'{len(report["files"])} loose files exported. Face targets only: other Blender edits are not encoded. See TT_Source_Export.json.')
+        self.report({'WARNING'}, f'{len(report["files"])} loose files exported. Existing vertex/face edits only; see TT_Source_Export.json for limits.')
+        return {'FINISHED'}
+
+
+class TTCHAR_OT_export_action(bpy.types.Operator, ExportHelper):
+    bl_idname = 'tt_character.export_action'
+    bl_label = 'Export active AN4 clip (experimental)'
+    filename_ext = '.AN4'
+    filter_glob: StringProperty(default='*.AN4', options={'HIDDEN'})
+    omit_auxiliary: BoolProperty(name='Omit unsupported events / auxiliary tables', default=False,
+        description='Explicitly allow pose-only export when original ANI-D has auxiliary tables; gameplay cues will need separate setup')
+
+    def execute(self, context):
+        from .animation_export import export_action
+        rig = find_rig(context.object)
+        if rig is None:return {'CANCELLED'}
+        try:
+            report = export_action(context, rig, self.filepath, omit_auxiliary=self.omit_auxiliary)
+        except (ValueError, OSError, KeyError, RuntimeError, OverflowError) as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        self.report({'WARNING'}, 'Separate AN4 written and decoded; experimental, no PAK/DAT writing or in-game validation')
         return {'FINISHED'}
 
 
@@ -336,11 +363,15 @@ class TTCHAR_PT_tools(bpy.types.Panel):
             layout.template_list('TTCHAR_UL_clips', '', rig, 'tt_clips', rig, 'tt_clip_index', rows=5)
             layout.operator('screen.animation_play', text='Play / Pause', icon='PLAY')
             layout.operator('tt_character.preview', icon='SCENE_DATA')
+            layout.operator('tt_character.preview', text='Create composed face preview', icon='RENDER_STILL').composed_faces=True
             layout.operator('tt_character.export_sources', icon='EXPORT')
+            if rig.animation_data and rig.animation_data.action:
+                layout.operator('tt_character.export_action', icon='EXPORT')
             layout.label(text='Select a clip; Space plays the timeline.')
         else:
             if find_character(context.object):
                 layout.operator('tt_character.preview', icon='SCENE_DATA')
+                layout.operator('tt_character.preview', text='Create composed face preview', icon='RENDER_STILL').composed_faces=True
                 layout.operator('tt_character.export_sources', icon='EXPORT')
             else:
                 layout.label(text='Select an imported character or its rig.')
@@ -352,7 +383,7 @@ def menu_import(self, context):
     self.layout.operator(IMPORT_ANIM_OT_tt_an4.bl_idname)
 
 
-CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_PT_tools)
+CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools)
 
 
 def register():

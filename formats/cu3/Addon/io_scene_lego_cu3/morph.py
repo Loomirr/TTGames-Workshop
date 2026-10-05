@@ -1,8 +1,9 @@
-"""Recover observed NXG/DX11 relative-position targets using extractor offsets.
+"""Recover observed NXG/DX11 relative-position targets with bounded readers.
 
-This is a companion to the private mesh extractor, not a general GHG reader.
+The native mesh reader calls these routines directly. Legacy extractor logs
+can still provide offsets for a separate cross-check.
 Target IDs are preserved. Observed ANI-D BSA control curves are decoded below;
-semantic expression names remain unknown. The old extractor discards the arrays.
+semantic expression names remain unknown.
 """
 import math
 import re

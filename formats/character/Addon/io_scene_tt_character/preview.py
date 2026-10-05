@@ -2,28 +2,34 @@
 import bpy
 from mathutils import Vector
 from ._core.face_live import prepare_live
+from ._core.face_preview import prepare_render
 
 
-def create_preview(context, rig):
+def create_preview(context, rig, *, composed_faces=False):
     previous = context.window.scene
-    stores = ('objects','collections','meshes','armatures','cameras','lights','worlds','scenes','shape_keys','node_groups')
+    stores = ('objects','collections','meshes','armatures','cameras','lights','worlds','scenes','shape_keys','node_groups','materials')
     before = {name:set(getattr(bpy.data,name)) for name in stores}
     try:
-        return build_preview(context, rig)
+        return build_preview(context, rig, composed_faces=composed_faces)
     except Exception:
         context.window.scene = previous
         bpy.data.batch_remove(ids={item for name in stores for item in getattr(bpy.data,name) if item not in before[name]})
         raise
 
 
-def build_preview(context, rig):
-    scene = bpy.data.scenes.new(rig.name + ' / Animation preview')
+def build_preview(context, rig, *, composed_faces=False):
+    scene = bpy.data.scenes.new(rig.name + (' / Composed face preview' if composed_faces else ' / Animation preview'))
     scene.render.fps = 30
     copies = {}
     for source in [rig] + list(rig.children_recursive):
         obj = source.copy()
         if source.data:
             obj.data = source.data.copy()
+        # A user may request a composed scene from the live viewing copy.
+        # Rebuild only our preview modifiers, retaining native skin/morphs.
+        for modifier in list(obj.modifiers):
+            if modifier.name in ('TT live facial clipping','TT facial depth bias'):
+                obj.modifiers.remove(modifier)
         obj['tt_preview_source'] = source.name
         scene.collection.objects.link(obj)
         copies[source] = obj
@@ -80,8 +86,12 @@ def build_preview(context, rig):
             follow.target, follow.subtarget, follow.use_offset = preview_rig, root.name, True
     context.window.scene = scene
     context.view_layer.update()
-    prepare_live(scene, detail_level=3)
-    scene['tt_character_preview_notes'] = 'Use camera view and Material Preview for live depth-mask clipping. Geometry-node clipping approximates native depth tests; source scene is preserved.'
+    if composed_faces:
+        prepare_render(scene)
+        scene['tt_character_preview_notes'] = 'F12 renders the composed facial depth-mask passes. Native shaders and expression timing remain approximate; source scene is preserved.'
+    else:
+        prepare_live(scene, detail_level=3)
+        scene['tt_character_preview_notes'] = 'Use camera view and Material Preview for live depth-mask clipping. Geometry-node clipping approximates native depth tests; source scene is preserved.'
     context.window.scene = scene
     context.view_layer.objects.active = preview_rig
     preview_rig.select_set(True)

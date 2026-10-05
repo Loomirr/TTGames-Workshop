@@ -1,9 +1,9 @@
 {
   "packages": [
     {
-      "path": "blender/TT_Character_Importer_0.3.1.zip",
-      "bytes": 97178,
-      "sha256": "c4caa422c969f799b59fe66f87ebab7a9aa1733235f3e74b25c8dd29ef3aa55b"
+      "path": "blender/TT_Character_Importer_0.4.0.zip",
+      "bytes": 111977,
+      "sha256": "c09c5234edfc3375ae6b81d6aaf320f16649f022e9bd326c2809e27207729508"
     },
     {
       "path": "blender/TT_Cutscene_Importer_0.1.8.zip",
@@ -36,9 +36,9 @@
       "sha256": "d0c33d0a104ef0ebe2b03455d31790ae5c63904d5791cfb2e955343dbd5e9733"
     },
     {
-      "path": "python/Face_Target_Decoder_GUI-0.1.1.zip",
-      "bytes": 16820,
-      "sha256": "5f7d3e344e5f6d6e320bbff462abfd2f3d5a372ffa8d0a4c9231bd014e088818"
+      "path": "python/Face_Target_Decoder_GUI-0.1.2.zip",
+      "bytes": 20997,
+      "sha256": "ae9c2d1067fa09b9645cb8298f72964c623511d5cb47f423062c91cfd3d6ba6a"
     },
     {
       "path": "python/Face_Target_Writer_GUI-0.1.1.zip",

@@ -51,7 +51,11 @@ class CostumeMaterials:
         return self.images[key]
 
     def model_image(self, model, index):
-        path = self.assets.find(Path(model['source']).stem+'.NXG_TEXTURES')
+        source = Path(model['source'])
+        relative = source.relative_to(self.assets.root).with_suffix('.NXG_TEXTURES')
+        path = self.assets.find_exact(relative.as_posix(), required=False)
+        if path is None:
+            path = self.assets.find(source.stem+'.NXG_TEXTURES')
         if path not in self.stores:
             self.stores[path] = read_texture_store(path)
         store = self.stores[path]
@@ -83,7 +87,13 @@ class CostumeMaterials:
                 node = nodes.new('ShaderNodeTexImage');node.image=image
                 links.new(node.outputs['Color'], surface.inputs['Base Color'])
                 links.new(node.outputs['Alpha'], surface.inputs['Alpha'])
-                uv = nodes.new('ShaderNodeUVMap');uv.uv_map='Source uv 1'
+                name=entry['name'].split(':',1)[0].upper()
+                if name.endswith('_DX11'):name=name[:-5]
+                # Shared minifig GAME roles use print UV1. Native bigfig and
+                # accessory roles also accept CD overrides, on their own UV set.
+                uv_index=1 if name.endswith('_GAME') else entry['fields']['uvSets'][0][1]
+                if uv_index==0xffffffff:uv_index=0
+                uv = nodes.new('ShaderNodeUVMap');uv.uv_map=f'Source uv {uv_index}'
                 links.new(uv.outputs['UV'], node.inputs['Vector'])
                 assigned = True
                 textured = True
@@ -109,10 +119,12 @@ class CostumeMaterials:
             except (ValueError, RuntimeError, OSError) as error:
                 self.report.append({'material':entry['name'], 'issue':str(error)})
         if not assigned:
-            if entry['fields']['vertAlbedo']:
+            if entry['fields']['vertAlbedo'] or entry['texture_formats']:
                 node = nodes.new('ShaderNodeVertexColor');node.layer_name='SourceColor'
                 links.new(node.outputs['Color'], surface.inputs['Base Color'])
                 assigned = True
+                if not entry['fields']['vertAlbedo']:
+                    self.report.append({'material':entry['name'], 'issue':'Modern untextured material uses source vertex colors for inspection; shader color flags remain approximate'})
         if not assigned:
             self.report.append({'material':entry['name'], 'issue':'Native material texture store or constant color remains unresolved'})
         if textured:

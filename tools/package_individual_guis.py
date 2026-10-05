@@ -1,5 +1,6 @@
 """Build independent GUI downloads with only their Python backend dependencies."""
 import ast
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -39,9 +40,14 @@ def dependencies(entry):
 
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--tool',choices=list(PACKAGES),help='Build only one independent tool')
+    args=parser.parse_args()
     manifest_path = ROOT / 'builds/manifest.json'
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     for name, slug in PACKAGES.items():
+        if args.tool and name!=args.tool:continue
+        version='0.1.2' if name=='Face targets: decode' else VERSION
         is_editor = name == 'CU3 Name Editor'
         script = 'formats/cu3/scripts/cu3_name_editor_gui.py' if is_editor else TOOLS[name][0]
         files = dependencies(ROOT / script)
@@ -52,7 +58,7 @@ def main():
                        if is_editor else TOOLS[name][1])
         readme = f'''# {name}
 
-Version {VERSION}. {description}
+Version {version}. {description}
 
 Extract this entire ZIP, then double-click **Launch.pyw**. This opens only
 this tool's GUI. No other Workshop download or Blender installation is needed.
@@ -76,7 +82,7 @@ AI was used to help with this project. See docs/LICENSING.md for reuse notes.
                     "sys.path.insert(0, str(base / 'formats/cu3/scripts'))\n"
                     f"runpy.run_path(str(base / {script!r}), run_name='__main__')\n"
                     if is_editor else f'from tools.workshop_gui import main\nmain({name!r})\n')
-        target = ROOT / 'builds/python' / f'{slug}_GUI-{VERSION}.zip'
+        target = ROOT / 'builds/python' / f'{slug}_GUI-{version}.zip'
         target.parent.mkdir(parents=True, exist_ok=True)
         with ZipFile(target, 'w', ZIP_DEFLATED, compresslevel=9) as archive:
             for path in sorted(files):

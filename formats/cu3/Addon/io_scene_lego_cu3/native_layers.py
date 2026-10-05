@@ -45,6 +45,9 @@ def selected_layer_metadata(skeleton, display, definition=None, *, layer_mode='a
         choice = selections.get(index)
         if definition is None or choice == 'All':
             result.extend(metadata)
+        elif choice == 'None':
+            # Authored CD sentinel: disable this layer, not a display name.
+            continue
         elif choice:
             matching = [m for m in metadata if display['specials'][m['special']]['name'] == choice]
             if len(matching) != 1:

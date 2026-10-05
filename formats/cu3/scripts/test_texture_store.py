@@ -35,6 +35,19 @@ def read(raw):
 
 
 class TextureInventory(unittest.TestCase):
+    def test_modern_opaque_refs_and_named_cube(self):
+        for cube in (False,True):
+            name=b'cube\0' if cube else b'color\0'
+            raw=b'TSXT'+bytes(4)+b'TSXT'+struct.pack('>I',14)+struct.pack('>I',1)+b'\0ROTV'+struct.pack('>I',1)
+            raw+=bytes(16)+b'\0\1\0'+struct.pack('>H',len(name))+name+bytes([6 if cube else 0])+struct.pack('>I',255 if cube else 4)
+            if cube:raw+=struct.pack('>H',len(name))+name+b'\x05'
+            else:raw+=struct.pack('>3H',2,2,7)
+            dds=bytearray(128);dds[:4]=b'DDS ';struct.pack_into('<I',dds,4,124);struct.pack_into('<2I',dds,12,4,4);struct.pack_into('<I',dds,76,32)
+            row=read(raw+dds+bytes(8))['entries'][0]
+            self.assertEqual(row['name'],name[:-1].decode());self.assertEqual(row['width'],4)
+            if not cube:self.assertEqual(row['opaque_refs'],[2,7])
+            if cube:
+                with self.assertRaisesRegex(FormatError,'disagrees'):read(raw[:-len(name)-1]+b'fake\0\x05'+dds)
     def test_shared_slots_do_not_shift_dds_indices(self):
         for version in (1,12):
             rows = read(fixture(version))['entries']

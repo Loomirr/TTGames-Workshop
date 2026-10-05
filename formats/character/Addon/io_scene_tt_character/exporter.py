@@ -1,9 +1,4 @@
-"""Loose native sources and constrained facial-target edits; never writes DAT.
-
-This is not a general mesh, material or animation encoder. Source files remain
-unchanged except verified existing facial target coordinates. A manifest states
-exactly what was written, so preview edits cannot masquerade as native exports.
-"""
+"""Loose sources, existing vertex attributes and face targets; never writes DAT."""
 import hashlib
 import json
 from pathlib import Path
@@ -11,9 +6,12 @@ from ._core.cu3 import FormatError
 from ._core.native_model_blender import load_model
 from ._core.face_edit_blender import edited_companion
 from ._core.face_edit import patch_targets
+from ._core.mesh_edit import patch_vertices
+from ._core.mesh_edit_blender import vertex_edits
+from ._core.native_mesh import read_mesh_bytes
 
 
-def export_sources(rig, destination, face_edits=True):
+def export_sources(rig, destination, face_edits=True, mesh_edits=True):
     destination = Path(destination).expanduser().resolve()
     # Source paths reside either in the extracted root or our game cache.
     roots = [Path(rig['tt_character_assets_root']).resolve()]
@@ -22,7 +20,7 @@ def export_sources(rig, destination, face_edits=True):
     roots.append(assets.root.resolve())
     if any(destination == root or destination.is_relative_to(root) for root in roots):
         raise FormatError('Choose a new export folder outside game files and the source/cache tree')
-    sources, patches = {}, {}
+    sources, patches, vertex_patches = {}, {}, {}
     for obj in [rig] + list(rig.children_recursive):
         if not obj.get('tt_native_source'):
             continue
@@ -31,14 +29,29 @@ def export_sources(rig, destination, face_edits=True):
         if hashlib.sha256(raw).hexdigest() != obj['tt_native_source_sha256']:
             raise FormatError('Native source changed since import: ' + path.name)
         manifest = None
+        original = raw
+        model = load_model(path) if mesh_edits or (face_edits and path.suffix.casefold()=='.ghg') else None
+        if mesh_edits:
+            raw, vertex_manifest = patch_vertices(original, vertex_edits(obj.children, model, obj['tt_native_source_sha256']))
+            vertex_patches[str(path)] = vertex_manifest
         if face_edits and path.suffix.casefold() == '.ghg':
-            model = load_model(path)
             parts = {str(p['index']):p['morphs'] for p in model['parts'] if p['morphs']}
             faces = [o for o in obj.children if o.get('tt_face_source_sha256')]
             if parts and faces:
                 companion = dict(schema='tt.relative-position-targets.v1', mesh_version=model['mesh_version'],
                                  sha256=obj['tt_native_source_sha256'], parts=parts)
-                raw, manifest = patch_targets(raw, edited_companion(faces, companion))
+                edited = edited_companion(faces, companion)
+                # A no-op MESH 170 bundle can be copied; its target writer remains gated.
+                if edited != companion or model['mesh_version'] in (169,175):
+                    face_raw, manifest = patch_targets(original, edited)
+                    merged = bytearray(raw)
+                    for at,(a,b) in enumerate(zip(original,face_raw)):
+                        if a==b:continue
+                        if merged[at]!=a and merged[at]!=b:
+                            raise FormatError('Face and vertex patches overlap with different values')
+                        merged[at]=b
+                    raw=bytes(merged)
+                    read_mesh_bytes(raw)
         sources[path] = raw
         if manifest:
             patches[str(path)] = manifest
@@ -75,9 +88,10 @@ def export_sources(rig, destination, face_edits=True):
     manifest_path = destination/'TT_Source_Export.json'
     if manifest_path.exists():
         raise FormatError('Choose a fresh export folder')
-    report = dict(schema='tt.loose-source-export.v1', game=rig['tt_character_game'], files=[], face_patches=patches,
-        limitations=['Only supported existing face-target coordinates are encoded from Blender edits.',
-                     'Geometry, UVs, material node edits, skeleton edits and animation edits are not encoded; included sources retain their original bytes.',
+    report = dict(schema='tt.loose-source-export.v1', game=rig['tt_character_game'], files=[], face_patches=patches, vertex_patches=vertex_patches,
+        limitations=['Supported existing position, UV, vertex-color and facial-target edits are encoded when enabled.',
+                     'Topology, skin weights, normals, native bounds, material node edits, skeleton edits and animation edits are not encoded.',
+                     'Position edits must remain inside original part bounds; facial Basis positions are immutable. Object transforms and modifiers are preview-only.',
                      'No DAT archives or installed game files were changed.'])
     for target, data in planned:
         target.parent.mkdir(parents=True, exist_ok=True)

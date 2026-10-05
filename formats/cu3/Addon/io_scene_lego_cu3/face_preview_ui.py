@@ -1,10 +1,6 @@
 """Facial render setup for imported meshes carrying native material metadata."""
 import bpy
-from .face_preview import depth_mask_material,depth_bias_modifier,setup_layers
-
-def face_objects(scene):
-    return [o for o in scene.objects if o.type=='MESH' and
-            (o.get('source_model','').startswith('FACE_') or o.get('source_model')=='SpiderFace')]
+from .face_preview import face_objects,prepare_render
 
 class SCENE_OT_tt_facial_preview(bpy.types.Operator):
     bl_idname='scene.tt_facial_preview'
@@ -16,28 +12,9 @@ class SCENE_OT_tt_facial_preview(bpy.types.Operator):
         return bool(face_objects(context.scene)) and not context.scene.get('tt_face_preview')
 
     def execute(self,context):
-        scene=context.scene;objects=face_objects(scene)
-        masks=[o for o in objects if o.get('tt_colour_write_mask')==0]
-        if not masks:
-            self.report({'ERROR'},'No verified native colourWriteMask=0 metadata. Decode material records first; material names alone are insufficient.')
-            return {'CANCELLED'}
-        if getattr(scene,'compositing_node_group',None) or getattr(scene,'node_tree',None):
-            self.report({'ERROR'},'This scene already has a compositor. Use a scene copy with an empty compositor.')
-            return {'CANCELLED'}
-        if any(any(o.name in other.objects for other in bpy.data.scenes if other!=scene) for o in objects):
-            self.report({'ERROR'},'Face objects are shared across scenes. Make a full scene copy before preparing render layers.')
-            return {'CANCELLED'}
-        collection=bpy.data.collections.new('TT native facial surfaces');scene.collection.children.link(collection)
-        for obj in objects:
-            # The validation above requires scene-local objects.
-            for owner in list(obj.users_collection):owner.objects.unlink(obj)
-            collection.objects.link(obj)
-            if obj in masks:
-                obj.data=obj.data.copy();obj.data.materials.clear();obj.data.materials.append(depth_mask_material())
-                for polygon in obj.data.polygons:polygon.material_index=0
-                depth_bias_modifier(obj)
-        context.view_layer.update();setup_layers(scene,collection)
-        scene.render.engine='CYCLES'
+        try:prepare_render(context.scene)
+        except ValueError as error:
+            self.report({'ERROR'},str(error));return {'CANCELLED'}
         self.report({'INFO'},'Facial passes prepared. Render with F12; Solid/Workbench cannot display depth-only masks.')
         return {'FINISHED'}
 

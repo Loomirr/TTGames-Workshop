@@ -10,5 +10,7 @@ full roster audit and remaining model/material limits are documented in the
 [compatibility report](../../formats/character/COMPATIBILITY.md).
 
 This character support does not enable Hobbit CU3 scene assembly. The loose
-source exporter copies native files; Hobbit MESH 170 facial target writing and
-general native mesh/animation encoding are not enabled.
+source exporter copies native files and can patch supported existing vertex
+attributes. Experimental ANI-D export is available for constrained active clips.
+Hobbit MESH 170 facial target writing and general topology, material and skeleton
+encoding are not enabled. Read the addon instructions before editing.

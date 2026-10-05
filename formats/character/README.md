@@ -1,13 +1,13 @@
 # TT Character and Animation Importer
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11** and **The Hobbit NXG** characters. Version **0.3.1**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters. Version **0.4.0**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.3.1.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.4.0.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -45,7 +45,7 @@ are supplied in the addon download.
 
 ## Browse animations and preview
 
-1. Import a character CD from an installed **LB3, LMSH1 or The Hobbit** game folder.
+1. Import a character CD from an installed or unpacked **LB3, LMSH1, The Hobbit or Avengers** game folder.
 2. Its declared animation sets appear automatically in **TT Character**.
    The search box filters action names and set names, including shared sets.
 3. Select an action and press **Load selected animation**. AN4 files and
@@ -55,6 +55,15 @@ are supplied in the addon download.
 5. Use **Create character preview scene** for a separate viewing scene with
    lighting, a camera that follows root movement and live facial mask clipping. Stay in camera view with
    Material Preview; no frame renders are needed to watch playback.
+
+Live facial clipping can leave jagged edges, particularly on modern faces.
+For closer inspection, **Create composed face preview** makes a separate Cycles
+scene with facial holdout passes and a compositor. Press F12 in that scene.
+The native depth-only masks are enabled for this pass, preventing overlapping
+teeth and mouth surfaces from drawing in full. Raw imports hide these masks;
+a plain render of the raw import does not reproduce facial masking. The composed
+preview still approximates the game shader and does not supply missing expression
+animation. Both preview choices preserve the original scene and native meshes.
 
 For extracted AN4 files, **Import AN4 animations** still supports multiple
 files. The addon now decodes the observed `Deflate_v1.0` wrapper itself.
@@ -73,7 +82,7 @@ not fully reproduced.
 
 ## Export loose native files
 
-Select the character and use **Export loose native sources / face targets**.
+Select the character and use **Export loose native files / supported edits**.
 Choose a fresh folder outside the installed game and extraction cache. This
 writes native model files, character definitions, texture companions and the
 original sources for catalog animations you loaded. It preserves their
@@ -86,11 +95,50 @@ A no-op face export preserves the original file bytes exactly. Face-target
 writing is gated to the verified MESH 169/175 layouts; Hobbit MESH 170 targets
 are readable, but their native writer is not yet enabled.
 
-**This is a source-bundle and constrained face-target exporter, not a general
-Blender-to-GHG/GSC/AN4 encoder.** Geometry, UVs, material nodes, skeleton changes
-and edited actions are not encoded; those source files retain their original
-bytes. The UI and export manifest state this explicitly. General writers are
-still needed before arbitrary custom meshes and animations can round-trip.
+Version 0.4.0 can also write existing **positions, UVs and SourceColor vertex
+colors** into verified MESH 169/170/175 buffers. Work in Edit Mode on the original
+mesh, preserving vertex order and triangles. Position edits must stay within
+the original part's bounds. Facial Basis positions stay immutable. Keep one UV
+per native vertex: new UV seams requiring vertex splits are rejected. Shared
+display copies must agree; the report lists any other parts affected by shared
+buffer edits. A no-op export keeps the exact original bytes.
+
+Object placement, evaluated modifiers, normals, topology, weights, material
+node graphs and skeleton changes are not encoded. Native bounds are retained,
+not rebuilt. Texture companions are copied; this is not a Blender image encoder.
+This remains a constrained writer, not arbitrary Blender-to-game serialization.
+
+## Export an edited animation
+
+With a newly imported native clip active, use **Export active AN4 clip
+(experimental)**. Choose a fresh file outside the game, source tree and cache.
+Keep the native bones/rest pose, frame range and clip length. The writer samples
+the active action and rebuilds the selected six/nine-channel ANI-D record;
+other actors/records remain untouched. Six-channel records require unit scale;
+nine-channel records support positive nonzero scales. Shear, reflection, ANI-E,
+constraints and active NLA tracks are rejected. Bake to a clean rig first.
+
+Many originals contain unsupported auxiliary/event tables. Modified clips with
+those tables are rejected unless you explicitly enable **Omit unsupported events
+/ auxiliary tables**. That produces a pose-only draft; it does not preserve the
+selected animation block's gameplay cues. Unchanged clips preserve original bytes.
+The separate `.AN4.json` report records this and the decoded sample error.
+
+PAK members become separate AN4 files; their bank is not rebuilt. Neither export
+operation writes DATs. Modified AN4s have been decoded and reimported in Blender;
+in-game replacement/loading still needs testing. This is not a verified complete
+animation mod writer.
+
+## Unpacked games
+
+All four enabled character profiles use the same installed/unpacked workflow.
+Choose the **root of the extracted asset tree**, preserving folders such as
+`CHARS` and `ADDITIONALCONTENT`. Include CDs, models, TEX/NXG_TEXTURES companions,
+AS animation declarations and the AN4/PAK files they reference. A single model
+folder is not a full game dump. Companion texture stores are resolved beside
+their source model first, avoiding unrelated DLC stores with the same basename.
+Archive and loose-folder imports were compared for one character/clip per game.
+This does not enable unknown layouts or later games still listed as inspection-only.
 
 ## Other game research
 
@@ -141,3 +189,9 @@ it does not certify visual or animation accuracy. See [coverage](COMPATIBILITY.m
 Version 0.3.1 also accepts verified texture stores with empty conversion metadata,
 restoring their embedded DDS materials. Further Blender checks cover bigfigs
 Killer Croc and Hulk, plus Thorin and Gandalf.
+
+Version 0.4.0 adds Avengers character/animation browsing, verified UMTL
+229/232/234/235 and TXTS 14 boundaries, native `None` layer suppression,
+unpacked workflow checks and constrained vertex/ANI-D writers. Modern shader
+reconstruction is still approximate; untextured materials can use native vertex
+colors for inspection rather than appearing white. See [coverage](COMPATIBILITY.md).

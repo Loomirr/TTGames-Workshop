@@ -55,8 +55,8 @@ def write_report(name, report):
 def import_character(context, path, assets_root, game, *, definition_path=None, cache=None, attachments=True, assets=None, layer_mode='default'):
     if context.mode != 'OBJECT':
         raise FormatError('Switch to Object Mode before importing')
-    if game not in ('LB3', 'LMSH1', 'HOBBIT'):
-        raise FormatError('Select LB3, LMSH1 or The Hobbit')
+    if game not in ('LB3', 'LMSH1', 'HOBBIT', 'AVENGERS'):
+        raise FormatError('Select LB3, LMSH1, The Hobbit or Avengers')
     assets = assets or open_assets(assets_root, game, cache_root=cache)
     resolver = ResourceResolver(assets, game)
     definition = character_definition(path) if path.suffix.lower() == '.cd' else character_definition(definition_path) if definition_path else None
@@ -86,7 +86,7 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
             if key in chain or len(chain) > 8:
                 raise FormatError('Cyclic or excessively nested character attachments')
             model = load_model(source)
-            expected = (175,) if game == 'LB3' else (169, 170) if game == 'HOBBIT' else (169,)
+            expected = (175,) if game in ('LB3', 'AVENGERS') else (169, 170) if game == 'HOBBIT' else (169,)
             if model['mesh_version'] not in expected:
                 raise FormatError('Model version does not match the selected game')
             factory = lambda m, e, d: materials(m, e, d, attachment_tint=parent[2].get('Tint Colour') if parent else None)
@@ -237,6 +237,8 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                             report['issues'].append(f'{record["name"]} / {child.name}: {error}')
                     source.frames = record['animation'].frames
                     action['tt_attachment_actions'] = json.dumps(attachment_actions)
+                    from .animation_export import action_fingerprint
+                    action['tt_native_pose_fingerprint'] = action_fingerprint(action)
                     action['tt_character_status'] = 'Native skeleton AN4 pose; original root translation retained. Compatible attachment tracks are linked; FPS is a preview assumption and events remain separate.'
                     item = rig.tt_clips.add()
                     item.name, item.action = action.name, action

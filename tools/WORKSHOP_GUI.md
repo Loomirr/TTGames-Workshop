@@ -41,7 +41,7 @@ partial output, which is never silently overwritten on retry.
 - LMSH1 AN4 decoder: exact actor name and original 63-joint skeleton required.
 - Decoded LMSH1 animation to experimental BVH: transformation preview only.
 - LB3/LMSH1 CU3 dependency report: game folder and separate companion cache.
-- Native face target decode: original GHG plus matching extractor log.
+- Native face target decode: supported original GHG only; no extraction log is needed in decoder 0.1.2. Older downloads required a plain-text model-extractor log containing mesh part offsets and vertex counts. Target JSON is the output, not that log.
 - Native face target write: verified edited-target JSON into a separate GHG.
 - TFA CC8 and DCSV CC4 archive indexes: path listings, not full extraction.
 - A button opens the existing CU3 instance-name editor in its own window.

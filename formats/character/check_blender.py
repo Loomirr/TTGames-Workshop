@@ -1,4 +1,4 @@
-"""Manual installed-package check: Blender --background --python this.py -- cases.json output."""
+"""Package check: Blender --background --factory-startup --python this.py -- cases.json output."""
 import json
 import math
 from pathlib import Path
@@ -8,16 +8,21 @@ import bpy
 from mathutils import Vector
 
 args = sys.argv[sys.argv.index('--') + 1:]
-cases_path, output = Path(args[0]), Path(args[1])
+cases_path, output = Path(args[0]).resolve(), Path(args[1]).resolve()
 output.mkdir(parents=True, exist_ok=True)
 root = Path(__file__).resolve().parents[2]
 bundle = output / 'addon'
-with ZipFile(root / 'builds/blender/TT_Character_Importer_0.3.1.zip') as archive:
+packages=list((root/'builds/blender').glob('TT_Character_Importer_*.zip'))
+if len(packages)!=1:raise ValueError('Build exactly one current character addon before checking')
+with ZipFile(packages[0]) as archive:
     archive.extractall(bundle)
 sys.path.insert(0, str(bundle))
 import io_scene_tt_character as addon
 addon.register()
-from io_scene_tt_character.importer import import_character, import_animations
+from io_scene_tt_character.importer import import_character, import_animations, snapshot, rollback
+from io_scene_tt_character.exporter import export_sources
+from io_scene_tt_character._core.asset_index import open_assets
+from io_scene_tt_character._core.face_preview import face_objects, prepare_render
 
 results = []
 for case in json.loads(cases_path.read_text()):
@@ -40,6 +45,23 @@ for case in json.loads(cases_path.read_text()):
                 assert all(math.isfinite(v) for b in rig.pose.bones for row in b.matrix for v in row)
         rig.tt_clip_index = 0
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH' and not o.hide_render]
+    roundtrip = None
+    if case.get('check_unpacked_roundtrip'):
+        label = case['game'] + '_' + Path(case['source']).stem
+        folder = output / (label + '_native_sources')
+        roundtrip = export_sources(rig, folder)
+        assert all(p['changed_bytes']==0 for p in roundtrip['vertex_patches'].values())
+        loose = open_assets(folder, case['game'])
+        cd = loose.find(Path(rig['tt_character_definition']).name)
+        before = snapshot()
+        try:
+            copy, copied_report = import_character(bpy.context, cd, folder, case['game'], assets=loose)
+            expected = len([o for o in rig.children_recursive if o.type=='MESH'])
+            assert len([o for o in copy.children_recursive if o.type=='MESH'])==expected
+            roundtrip['reimport_meshes']=expected
+        finally:
+            rollback(before)
+            bpy.context.view_layer.objects.active=rig
     depsgraph = bpy.context.evaluated_depsgraph_get()
     points = [o.matrix_world @ Vector(corner) for obj in meshes for o in [obj.evaluated_get(depsgraph)] for corner in o.bound_box]
     low = Vector(tuple(min(p[i] for p in points) for i in range(3)))
@@ -74,10 +96,14 @@ for case in json.loads(cases_path.read_text()):
                 area.spaces.active.region_3d.view_location = center
                 area.spaces.active.region_3d.view_distance = extent * 2
     label = case['game'] + '_' + Path(case['source']).stem
+    face_report = None
+    if any(obj.get('tt_colour_write_mask')==0 for obj in face_objects(scene)):
+        face_report = prepare_render(scene)
+        scene.cycles.samples = 16
     bpy.ops.wm.save_as_mainfile(filepath=str(output / (label + '.blend')))
     scene.render.filepath = str(output / (label + '.png'))
     bpy.ops.render.render(write_still=True)
     results.append(dict(name=label, report=report, animation=actions,
-                        meshes=len(meshes), bones=len(rig.data.bones), bounds=list(high-low)))
+                        meshes=len(meshes), bones=len(rig.data.bones), bounds=list(high-low),unpacked_roundtrip=roundtrip,facial_render=face_report))
 (output / 'validation.json').write_text(json.dumps(results, indent=2))
 print('CHARACTER_PACKAGE_CHECK_PASSED', len(results))

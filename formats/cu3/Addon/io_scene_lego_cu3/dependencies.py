@@ -8,7 +8,7 @@ from pathlib import PurePosixPath
 from .cu3 import FormatError
 from .definitions import character_definition
 
-PROFILES = {'LB3':(19,'_DX11'), 'LMSH1':(18,'_NXG'), 'HOBBIT':(None,'_NXG')}
+PROFILES = {'LB3':(19,'_DX11'), 'LMSH1':(18,'_NXG'), 'HOBBIT':(None,'_NXG'), 'AVENGERS':(None,'_DX11')}
 
 
 def actor_resource(name):

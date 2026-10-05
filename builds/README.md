@@ -5,7 +5,7 @@ below, then use GitHub's **Download raw file** button to save the ZIP.
 
 | Tool | Package | Use |
 | --- | --- | --- |
-| Character and animation importer 0.3.1 | [Blender addon ZIP](blender/TT_Character_Importer_0.3.1.zip) | Independent LMSH1/LB3/Hobbit character browser and CD/GHG/model GSC import, searchable declared animation sets, compressed AN4 actions and loose source/face-target export; [instructions](../formats/character/README.md) |
+| Character and animation importer 0.4.0 | [Blender addon ZIP](blender/TT_Character_Importer_0.4.0.zip) | LMSH1/LB3/Hobbit/Avengers, installed or unpacked assets, searchable animations, constrained vertex/face editing and experimental ANI-D export; [instructions](../formats/character/README.md) |
 | Original LSW1 HGP importer 0.1.3 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.3.zip) | Native character meshes/rigs, corrected palette colors, textures, alpha and normals |
 | CU3 importer 0.1.8 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.8.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages; installed-game loading, live preview and face tools; TFA/DCSV reference inspection |
 | LIJ1 Xbox 360 prototype extractor 0.1.2 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip) | GHG/GSC/TEX/FNT/DDS inputs; cubemaps, BC5, float and legacy textures |
@@ -29,7 +29,7 @@ users do not need the toolbox, Blender, or a full repository checkout.
 | LMSH1 AN4 decoder | [ZIP](python/LMSH1_AN4_Decoder_GUI-0.1.1.zip) |
 | LMSH1 experimental BVH exporter | [ZIP](python/LMSH1_BVH_Exporter_GUI-0.1.1.zip) |
 | CU3 dependency checker | [ZIP](python/CU3_Dependency_Checker_GUI-0.1.1.zip) |
-| Face target decoder | [ZIP](python/Face_Target_Decoder_GUI-0.1.1.zip) |
+| Face target decoder 0.1.2 (no extraction log needed) | [ZIP](python/Face_Target_Decoder_GUI-0.1.2.zip) |
 | Face target writer | [ZIP](python/Face_Target_Writer_GUI-0.1.1.zip) |
 | TFA archive index | [ZIP](python/TFA_Archive_Index_GUI-0.1.1.zip) |
 | DCSV archive index | [ZIP](python/DCSV_Archive_Index_GUI-0.1.1.zip) |

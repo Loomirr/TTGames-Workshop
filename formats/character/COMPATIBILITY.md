@@ -1,8 +1,8 @@
 # PC character compatibility, 5 October 2026
 
-Version 0.3.0 focuses on the PC NXG/DX11 games. Handheld character support is
+Version 0.4.0 focuses on the PC NXG/DX11 games. Handheld character support is
 separate work and is postponed. Shared file extensions do not imply shared
-binary layouts. The Blender game selector offers LMSH1, LB3 and The Hobbit;
+binary layouts. The Blender game selector offers LMSH1, LB3, The Hobbit and Avengers;
 the other profiles below are inspection tools, not complete importers.
 
 ## New working coverage
@@ -31,7 +31,7 @@ the other profiles below are inspection tools, not complete importers.
 
 ## Validation
 
-All 146 portable checks pass, including independently constructed archive,
+All 165 portable checks pass, including independently constructed archive,
 skeleton, display, material-role and facial target fixtures. Package integrity
 checks confirm the ZIP contains tools and documentation, with no game assets.
 
@@ -64,7 +64,7 @@ timing is still incomplete.
 
 | Game | Confirmed inspection | Current import blockers |
 | --- | --- | --- |
-| Avengers | CC archive index, MESH 175, HGOL 17 ROTV, DISP 32; sampled ANI-D | Material table 235 shader layout and TXTS 14 stores |
+| Avengers | Character import and ANI-D playback enabled; CC index, MESH 175, HGOL 17 ROTV, DISP 32, UMTL 229/232/234/235, TXTS 14 | UMTL 228, some target blocks/skin palettes, missing or ambiguous companions, unknown shader flags and runtime attachment layers |
 | The Force Awakens | CC archive index, MESH 175, HGOL 17 ROTV | DISP 33, material table 236, ANI-E sampling and some actor bounds |
 | DC Super-Villains | CC archive index and animation structure | CD 38, MESH 200, newer HGOL 17, DISP 35 and ANI-E |
 | LMSH2 | Full archive inventory; sample ANI-D scalar poses | Newer HGOL 17, DISP 34, material table 270, ANI-E and newer definitions |
@@ -90,8 +90,14 @@ output filename. Installed archives are read only; requested companions are
 cached separately. Blender checking is manual through the packaged addon or
 `check_blender.py` with user-supplied case paths.
 
-The loose-source exporter still copies original model/definition/animation
-bytes. It does not encode edited meshes, UVs, materials, skeletons or actions.
+Set `"check_unpacked_roundtrip": true` on a CD case in that Blender check's
+JSON input to export a fresh native source bundle and verify reimported mesh
+counts through the unpacked provider. This flag checks no-op vertex patches
+and character assembly, not every declared animation or shader.
+
+The loose-source exporter copies original definitions and texture companions.
+Version 0.4.0 also patches supported existing vertex attributes and face targets;
+the separate experimental ANI-D writer exports an active native clip.
 The constrained facial writer remains gated to MESH 169/175; MESH 170 reading
 does not enable Hobbit facial writing. See the [workflow](README.md) and
 [earlier animation research](RESEARCH_0.2.md).
@@ -114,3 +120,45 @@ A cached-store audit checked 105 files: 91 typed TXTS 1/12 stores passed,
 including 20 with empty conversion metadata. Thirteen TXTS 14 stores and one
 version 0 store remain rejected. This checks inventory/DDS boundaries, not
 full shader reconstruction or rendering of every texture.
+
+## Version 0.4.0
+
+Avengers now imports configured characters with native skeletons, costume
+textures, attachments and searchable ANI-D animation catalogs. A full installed
+roster preflight checked **882 definitions; 821 are parser-ready**. This count
+checks model dependencies, not all textures, recursive assemblies or clips.
+UMTL 228 remains gated; unknown version/layout records still fail explicitly.
+UMTL 229 shader booleans remain opaque. Modern untextured face materials use
+their authored vertex colors for inspection, with a report warning. No shader
+fidelity claim follows from matching record boundaries.
+
+Blender samples include Captain America, Thor, Hawkeye, Black Widow, Iron Man
+Mark 7 and Hulk AOU. Character assembly, declared catalogs and playable clips
+were checked; six front previews were inspected. Original lighting, layered
+shaders, face target timing, gameplay transitions and all roster variants are
+not fully reproduced. Avengers CU3 assembly is not enabled by this change.
+
+A raw Captain America front render exposed overlapping teeth and mouth surfaces:
+depth-only facial masks were hidden without compositing. The composed face
+preview now enables those masks in a separate pass. A close-up render removes
+the overlap; live clipping still leaves edge artifacts. An asset-free Blender
+check verifies a hidden mask becomes a holdout, reveals the underlying surface
+in the composed image, and leaves source vertices and target values unchanged.
+This is a rendering check, not full Avengers face-shader or timing validation.
+
+For LMSH1 Wolverine, LB3 B66 Catwoman, Hobbit Bilbo and Avengers Captain America,
+source bundles were exported and imported through the unpacked provider. Mesh
+counts and a native clip survived. No-op native mesh files were byte-identical;
+position, half/float UV and vertex-color edits decoded in place. Source hashes
+remained unchanged. This validates representative loose trees, not a full dump
+of every installed game or every DLC collision.
+
+Edited six-channel ANI-D rotations round-tripped in Blender for Wolverine,
+Catwoman and Bilbo, with sampled maximum pose matrix errors below 0.00004.
+The nine-channel scalar encoder has portable checks. Captain America's tested
+idle preserved unchanged bytes, but modified export was rejected at Spine2
+because the recovered Blender pose contains shear. No approximate matrix was
+silently substituted. Shear/reflection or degenerate scale are rejected. Auxiliary tables require
+explicit omission for modified clips. No new in-game export test was performed.
+General topology, weight, normal, material-node and skeleton writers remain
+unfinished. See [editing limits and instructions](README.md).

@@ -221,11 +221,13 @@ class MeshReader:
         if any(v >= part['vertex_count'] for v in values):
             raise FormatError('Native triangle index exceeds draw vertex count')
         part.update(vertices=vertices, attribute_types={FIELDS.get(v, f'attribute_{v}'):t for v,(_,t,_) in attributes.items()},
+                    attribute_layout={FIELDS.get(v, f'attribute_{v}'):dict(offset=s, type=t, stride=stride,
+                        endian='<' if self.dx and t<=6 else '>') for v,(s,t,stride) in attributes.items()},
                     triangles=[list(values[i:i+3]) for i in range(0, len(values), 3)])
 
 
-def read_mesh(path):
-    data = Path(path).read_bytes()
+def read_mesh_bytes(data):
+    """Decode an uncompressed native model in memory, including patch validation."""
     candidates = []
     at = data.find(b'HSEM')
     while at >= 0:
@@ -235,5 +237,10 @@ def read_mesh(path):
     if len(candidates) != 1:
         raise FormatError('Expected one supported native MESH section in an uncompressed file')
     result = MeshReader(data, candidates[0]).read()
+    return result
+
+
+def read_mesh(path):
+    result = read_mesh_bytes(Path(path).read_bytes())
     result['source'] = str(Path(path).resolve())
     return result

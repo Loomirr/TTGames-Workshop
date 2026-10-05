@@ -43,6 +43,10 @@ class LayerSelection(unittest.TestCase):
         self.override(0,'All')
         self.assertEqual(self.select(),[0,1,2,3])
 
+    def test_none_disables_only_selected_layer(self):
+        self.override(0,'None')
+        self.assertEqual(self.select(),[3])
+
     def test_nxg_layer_id(self):
         self.override(0,'Robot','Layer Id')
         self.assertEqual(self.select(),[1,3])

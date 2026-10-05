@@ -5,6 +5,42 @@ the complete TT shader. Original target coordinates remain unmodified.
 """
 import bpy
 
+def face_objects(scene):
+    return [obj for obj in scene.objects if obj.type=='MESH' and
+            (obj.get('source_model','').startswith('FACE_') or obj.get('source_model')=='SpiderFace')]
+
+
+def prepare_render(scene):
+    """Set up scene-local source surfaces, including initially hidden masks."""
+    objects=face_objects(scene)
+    masks=[obj for obj in objects if obj.get('tt_colour_write_mask')==0]
+    if not masks:
+        raise ValueError('No verified native colourWriteMask=0 facial surfaces')
+    if getattr(scene,'compositing_node_group',None) or getattr(scene,'node_tree',None):
+        raise ValueError('Use a scene copy with an empty compositor')
+    if any(any(obj.name in other.objects for other in bpy.data.scenes if other!=scene) for obj in objects):
+        raise ValueError('Make a full scene copy before preparing facial render layers')
+    collection=bpy.data.collections.new('TT native facial surfaces')
+    scene.collection.children.link(collection)
+    for obj in objects:
+        for owner in list(obj.users_collection):owner.objects.unlink(obj)
+        collection.objects.link(obj)
+        if obj in masks:
+            obj.data=obj.data.copy()
+            obj.data.materials.clear();obj.data.materials.append(depth_mask_material())
+            for polygon in obj.data.polygons:polygon.material_index=0
+            # Model import deliberately hides depth-only surfaces. They must
+            # participate in the facial pass for holdout masking to work.
+            obj.hide_render=False
+            obj.hide_set(False,view_layer=scene.view_layers[0])
+            depth_bias_modifier(obj)
+    scene.view_layers[0].update()
+    setup_layers(scene,collection)
+    scene.render.engine='CYCLES'
+    return {'detail_parts':len(objects)-len(masks),'depth_parts':len(masks),
+            'validation':'Composed depth-mask approximation; native shaders and facial timing are separate'}
+
+
 def depth_mask_material():
     name='TT / native colourWriteMask 0'
     material=bpy.data.materials.get(name)

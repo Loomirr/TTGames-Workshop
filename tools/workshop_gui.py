@@ -36,8 +36,8 @@ TOOLS = {
          ('New report JSON', 'outfile', '--report', '')]),
     'Face targets: decode': (
         'formats/cu3/scripts/decode_face_targets.py',
-        'Observed LB3 / LMSH1 face GHGs. Requires the matching extractor log. Produces target data; this is not a visual face editor.',
-        [('Original GHG', 'file', None, ''), ('Matching extractor log', 'file', '--log', ''),
+        'Reads supported MESH 169/170/175 face GHGs directly. No extraction log is needed. Produces target JSON; this is not a visual face editor.',
+        [('Original GHG', 'file', None, ''),
          ('New target JSON', 'outfile', '--output', '')]),
     'Face targets: write edited copy': (
         'formats/cu3/scripts/write_face_targets.py',
@@ -139,7 +139,8 @@ class Workshop:
         self.outputs = []
         self.saved = {}
         self.current = None
-        window.title(f'{tool or "TTGames Workshop — Standalone Tools"} {VERSION}')
+        version='0.1.2' if tool=='Face targets: decode' else VERSION
+        window.title(f'{tool or "TTGames Workshop — Standalone Tools"} {version}')
         window.geometry('880x700')
         window.minsize(700, 600)
         frame = ttk.Frame(window, padding=14)

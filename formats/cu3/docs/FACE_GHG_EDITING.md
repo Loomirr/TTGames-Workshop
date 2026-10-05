@@ -8,6 +8,19 @@ mesh exporter or a complete custom-face tool.
 
 ## What can be edited
 
+The separate **Face Target Decoder 0.1.2** reads supported MESH 169/170/175
+GHGs directly. Choose the original GHG and a new target JSON filename. An
+extraction log is no longer required. Older decoder downloads used a plain-text
+model-extractor log with `Part`, `Number Vertices` and `Relative Position Lists`
+entries; it was not the target JSON or Blender's console log. The CLI retains
+`--log` as an optional cross-check for its older verified layouts.
+
+```sh
+python formats/cu3/scripts/decode_face_targets.py FACE_DX11.GHG --output face-targets.json
+```
+
+Reading MESH 170 does not enable its facial-target writer.
+
 - Existing dense targets: change per-vertex additive offsets at the same count.
 - Existing run-encoded targets: change offsets while preserving each original
   repeated-vertex group. All vertices covered by one run must keep the same
@@ -38,6 +51,15 @@ the approximate native depth-mask compositor and synchronized Target/Strength
 controls. Press F12 for the composed result; solid viewport shading does not
 reproduce that masking. The game shader is still not matched exactly.
 
+Character addon 0.4.0 also has **Create composed face preview**, which builds
+these passes in a separate scene. Use the live preview for playback and the
+composed preview for closer face inspection. A manual asset-free rendering
+check verifies hidden masks and preserves source coordinates:
+
+```sh
+blender --background --factory-startup --python-exit-code 1 --python formats/cu3/scripts/test_face_preview_blender.py -- output/face-render-check
+```
+
 1. Build/install the source addon ZIP and open a **copy** of the editing lab.
 2. Choose a character using Blender's Scene dropdown.
 3. Select a mesh in that character's **editable native face** collection.
@@ -64,12 +86,12 @@ face meshes or create these bindings.
 
 ## Standalone target workflow
 
-The source GHG must be uncompressed. The decoder still needs an extractor log
-to locate the verified native part/target tables; it is not a standalone mesh
-parser. No proprietary game assets or extractor logs are distributed here.
+The source GHG must be uncompressed and use a supported native mesh layout.
+The current decoder reads it directly. No proprietary game assets or extractor
+logs are distributed here. Legacy logs are optional CLI cross-checks.
 
 ```text
-python scripts/decode_face_targets.py FACE_MODEL.GHG --log FACE_MODEL.log --output original.morph.json
+python scripts/decode_face_targets.py FACE_MODEL.GHG --output original.morph.json
 ```
 
 Duplicate the companion and edit only the `offsets` arrays. Keep its original

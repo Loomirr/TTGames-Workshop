@@ -12,11 +12,13 @@ LMSH1 PC NXG and LB3 PC DX11; extensions alone do not identify a layout.
 | Installed-game companion loading | `archive_assets.py`, `archive_v5.py`, `archive_compression.py` | Observed LB3 -6 and LMSH1 -5 DATs; requested actor, registry and stage companions cached outside the installation |
 | CU3 hierarchy, actor names, supported ANI-D motion and visibility | `formats/cu3/Addon/io_scene_lego_cu3/{cu3,cinematic}.py` | Unsupported descriptors fail; DCSV ANI-E playback remains disabled |
 | Native character skeleton | `formats/cu3/Addon/io_scene_lego_cu3/skeleton.py` | Observed HGOL v10/v16 only; this is not a mesh reader |
-| Face target data and curves | `formats/cu3/Addon/io_scene_lego_cu3/morph.py` | Part/vertex metadata still comes from companion extraction; numeric target IDs retained |
+| Face target data and curves | `native_mesh.py`, `morph.py`, `decode_face_targets.py` | Supported GHG target blocks read directly; legacy logs are optional cross-checks; numeric IDs retained |
 | Material depth flags | `formats/cu3/Addon/io_scene_lego_cu3/material_flags.py` | Needs verified material offsets; does not discover complete material records |
 | Geometry, stream offsets and skin palettes | `native_mesh.py`, `native_display.py`, `native_model_blender.py`, `native_layers.py` | Observed MESH 169/175 and DISP 18/21/23/32; CD layer-special selection; remaining layouts and visual correctness need work |
 | Character definitions and texture inventories | `definitions.py`, `native_materials.py`, `texture_store.py`, `costume_materials.py` | Observed CD/UMTL/TXTS layouts; shared slots and full layered shaders remain incomplete |
 | Face GHG target writing | `face_edit.py`, `face_edit_blender.py`, `face_edit_ui.py` | Verified companions; existing Basis/topology/IDs and supported encoding only; edited files need game tests |
+| Existing vertex attributes | `mesh_edit.py`, `mesh_edit_blender.py` | MESH 169/170/175 positions within original bounds, UVs and vertex colors; topology/Basis/skin data preserved |
+| Edited standalone ANI-D clips | `an4_edit.py`, character addon `animation_export.py` | Experimental six/nine-channel active-action baking, same frame count; unsupported auxiliaries require explicit omission; no PAK/DAT writing or new in-game validation |
 | Longer actor/object names and character-family replacement | CU3 CLI/GUI and relocation writer | Reparse + unchanged animation-byte checks; one LB3 replacement confirmed in-game |
 | Scene configuration | `scene_configuration.py`, `scene_inputs.py` | Exact primary/shared stage associations and simple root-resource replacements; other registry commands remain unapplied |
 | Cutscene assembly | `scene_assembly.py` and the default Blender import mode | Supported actors, attachments, materials and cameras; full shaders, faces and game fidelity remain incomplete |

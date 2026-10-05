@@ -17,6 +17,7 @@ class AnimationFile:
             raise FormatError('Invalid preview FPS')
         if raw.startswith(b'Deflate_v1.0'):
             raw = decompress(raw)
+        self.data = raw
         r = Reader(raw)
         version, size = r.get('2I', 0)
         if version not in (13, 14, 15, 16, 18, 19, 20) or size != len(raw) or size < 72:
@@ -37,7 +38,7 @@ class AnimationFile:
             child, records, name = r.get('3I', at + 20)
             if not name:
                 raise FormatError('Invalid one-based AN4 actor name')
-            actor = dict(index=len(self.actors), parent=parent,
+            actor = dict(index=len(self.actors), offset=at, parent=parent,
                          name=r.string(strings + name - 1, size), records=[])
             self.actors.append(actor)
             number = r.get('B', at + 12)
@@ -50,7 +51,7 @@ class AnimationFile:
                 label, ani = r.get('2I', rec + 64)
                 if not label or ani < 72 or ani + 80 > size:
                     raise FormatError('AN4 animation/name pointer is invalid')
-                actor['records'].append(dict(index=i, name=r.string(strings + label - 1, size),
+                actor['records'].append(dict(index=i, offset=rec, name=r.string(strings + label - 1, size),
                     matrix=list(r.get('16f', rec)), animation=Animation(r, ani, size)))
             if count > 4096:
                 raise FormatError('Too many child nodes')
