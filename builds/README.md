@@ -5,12 +5,14 @@ below, then use GitHub's **Download raw file** button to save the ZIP.
 
 | Tool | Package | Use |
 | --- | --- | --- |
-| Character and animation importer 0.3.0 | [Blender addon ZIP](blender/TT_Character_Importer_0.3.0.zip) | Independent LMSH1/LB3/Hobbit character browser and CD/GHG/model GSC import, searchable declared animation sets, compressed AN4 actions and loose source/face-target export; [instructions](../formats/character/README.md) |
+| Character and animation importer 0.3.1 | [Blender addon ZIP](blender/TT_Character_Importer_0.3.1.zip) | Independent LMSH1/LB3/Hobbit character browser and CD/GHG/model GSC import, searchable declared animation sets, compressed AN4 actions and loose source/face-target export; [instructions](../formats/character/README.md) |
 | Original LSW1 HGP importer 0.1.3 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.3.zip) | Native character meshes/rigs, corrected palette colors, textures, alpha and normals |
 | CU3 importer 0.1.8 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.8.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages; installed-game loading, live preview and face tools; TFA/DCSV reference inspection |
 | LIJ1 Xbox 360 prototype extractor 0.1.2 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip) | GHG/GSC/TEX/FNT/DDS inputs; cubemaps, BC5, float and legacy textures |
 
-Checksums and exact download sizes are in [manifest.json](manifest.json).
+Only the newest version of each tool is kept in this download folder. Older
+packages are archived locally; Git history remains available. Packaging scripts
+apply this policy automatically. Checksums and sizes are in [manifest.json](manifest.json).
 
 ## Install
 
@@ -38,8 +40,8 @@ To rebuild these packages: `python tools/package_individual_guis.py`.
 
 The Python GUI downloads are small source distributions, not self-contained
 Windows EXEs. See each ZIP's README for its inputs, format limits and requirements.
-The older combined toolbox 0.1.0 remains in the build archive; use the separate
-downloads above for the current per-tool launchers.
+The optional [combined toolbox](python/TTGames_Workshop_GUI-0.1.0.zip) is a separate
+tool. The individual downloads above open directly to their own functions.
 
 For the Blender ZIPs, open Preferences and **Install from Disk**, select the ZIP
 and enable the importer. LSW1 requires Blender 4.2+; CU3 declares 4.4+. Both

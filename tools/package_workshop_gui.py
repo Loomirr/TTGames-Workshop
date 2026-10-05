@@ -33,6 +33,8 @@ def main():
     manifest['packages'].append(dict(path=relative, bytes=target.stat().st_size,
                                     sha256=hashlib.sha256(target.read_bytes()).hexdigest()))
     manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+    from prune_builds import keep_latest
+    keep_latest(apply=True)
     print(target, target.stat().st_size, 'bytes')
 
 

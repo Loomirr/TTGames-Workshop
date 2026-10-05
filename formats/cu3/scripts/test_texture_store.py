@@ -47,6 +47,21 @@ class TextureInventory(unittest.TestCase):
         raw = fixture();at = raw.index(b'ROTV')
         self.assertEqual(read(raw[:at+4]+b'\0'*4)['entries'],[])
 
+    def test_empty_conversion_metadata_preserves_inventory(self):
+        for version in (1,12):
+            raw=fixture(version)
+            raw=raw[:16]+bytes(4)+raw[28:]
+            result=read(raw)
+            self.assertEqual(len(result['entries']),3)
+            self.assertEqual(result['entries'][0]['width'],4)
+            self.assertNotIn('offset',result['entries'][1])
+
+    def test_metadata_must_be_at_the_declared_boundary(self):
+        raw=fixture().replace(b'CONVDATE',b'NOTMETA!')+b'CONVDATE'
+        with self.assertRaisesRegex(FormatError,'metadata'):read(raw)
+        raw=fixture()[:16]+struct.pack('>I',0xffffffff)+fixture()[20:]
+        with self.assertRaisesRegex(FormatError,'metadata'):read(raw)
+
     def test_missing_payload_rejected(self):
         raw = fixture();last = raw.rfind(b'DDS ')
         with self.assertRaisesRegex(FormatError,'boundaries'):

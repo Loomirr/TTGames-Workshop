@@ -30,6 +30,9 @@ def main():
             ET.parse(path);counts['projects']+=1
     for name in ['test_skeleton_versions.py','test_animation_sources.py','test_tt_deflate.py','test_an4_standalone.py','test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py','test_native_display.py','test_morph_controls.py','test_dependencies.py','test_native_layers.py','test_camera_version_gate.py','test_archive_cc8.py','test_tfa_structure.py','test_archive_assets.py','test_archive_v5.py','test_scene_configuration.py','test_stage_geometry.py']:
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'tools/test_prune_builds.py')],check=True,cwd=ROOT)
+    from prune_builds import keep_latest
+    assert not keep_latest(), 'Superseded build packages are still published'
     manifest=ROOT/'builds/manifest.json'
     if manifest.exists():
         for package in json.loads(manifest.read_text(encoding='utf-8'))['packages']:

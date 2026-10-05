@@ -39,6 +39,8 @@ def main():
                   sha256=hashlib.sha256(target.read_bytes()).hexdigest())
     manifest['packages'] = [p for p in manifest['packages'] if p['path'] != record['path']] + [record]
     manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+    from prune_builds import keep_latest
+    keep_latest(apply=True)
     print(target, record['bytes'], 'bytes')
 
 

@@ -3,13 +3,15 @@
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
-- Character addon 0.3.0: independent LMSH1/LB3/Hobbit character and declared
+- Character addon 0.3.1: independent LMSH1/LB3/Hobbit character and declared
   animation browsers, supported ANI-D playback, native TT inner decompression,
   matching attachment tracks, separate live face previews and loose native-source
   export. Explicit default/cutscene costume layers and native material role IDs
   fix several missing attachments and costume color assignments. Variable-length
   LB3 facial target records are now read correctly. Five characters were checked
   in Blender 5.2.2, with three actions each and finite evaluated poses/meshes.
+  A further four-character Blender check covers Gandalf, Thorin, Killer Croc and
+  Hulk with three clips each. Empty conversion-metadata texture stores now load.
   Full roster preflights found 342/467 LMSH1, 280/361 LB3 and 375/417 Hobbit
   definitions passing the probed readers. These counts are not visual certification.
   Recursive attachment configuration, textures, facial timing and all clips are

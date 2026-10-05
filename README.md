@@ -15,7 +15,7 @@ game does not mean support for every TT game that uses the same extension.
 
 | Area | What is here | Current status |
 | --- | --- | --- |
-| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.3.0 experimental; LMSH1/LB3/Hobbit character animation search, packed AN4 playback and live face previews |
+| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.3.1 experimental; LMSH1/LB3/Hobbit character animation search, packed AN4 playback and live face previews |
 | [CU3 cutscenes](formats/cu3/README.md) | Blender addon, installed-game actor and static stage loading, name editor, source animation and face tools | 0.1.8 experimental; partial LMSH1/LB3 scene assembly, TFA/DCSV reference inspection |
 | [LSW1 HGP models](formats/hgp/lsw1/README.md) | Character meshes, native skeletons, corrected palette colors, textures, face alpha and normal maps | 0.1.3; original 2005 PC game only |
 | [LIJ1 Xbox 360 prototype textures](formats/nu20/lij1-xbox360/README.md) | Drag-and-drop Windows DDS extractor and format notes | 0.1.2; BC1/2/3/5, float, cubemaps, TEX and font textures |

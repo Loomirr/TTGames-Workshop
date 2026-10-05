@@ -153,5 +153,3 @@ def index(path):
             raise ValueError('CC8 index lies outside archive')
         stream.seek(offset)
         return parse_index(stream.read(size), archive_limit=offset)
-
-

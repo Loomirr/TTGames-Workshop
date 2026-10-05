@@ -1,8 +1,8 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 3, 0), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 3, 1), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
-           'description': 'LMSH1/LB3 character and animation browsing, native source export and experimental face preview'}
+           'description': 'LMSH1/LB3/Hobbit character and animation browsing, native source export and experimental face preview'}
 
 import json
 from pathlib import Path

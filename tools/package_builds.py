@@ -71,7 +71,7 @@ def main():
                 temporary.replace(package)
             finally:
                 temporary.unlink(missing_ok=True)
-        packages.append(package)
+    packages.extend(sorted(windows.glob('*.zip')))
     # Preserve the separately packaged lightweight Python GUI downloads.
     packages.extend(sorted((builds/'python').glob('*.zip')))
     records=[]
@@ -86,5 +86,7 @@ def main():
         records.append(record);print(json.dumps(record),flush=True)
     manifest=dict(packages=records,notes='Our source-built tools only; no game assets or external extraction programs.')
     (builds/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n',encoding='utf-8')
+    from prune_builds import keep_latest
+    keep_latest(apply=True)
 
 if __name__=='__main__':main()

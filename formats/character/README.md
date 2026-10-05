@@ -1,13 +1,13 @@
 # TT Character and Animation Importer
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11** and **The Hobbit NXG** characters. Version **0.3.0**, experimental.
+**LEGO Batman 3 DX11** and **The Hobbit NXG** characters. Version **0.3.1**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.3.0.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.3.1.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -132,8 +132,12 @@ actual reason. Version 0.2.0 adds the compression reader, declared animation bro
 matching attachment tracks, separate live viewing scenes and constrained
 loose source/face-target export.
 
-Version 0.3.0 adds The Hobbit character and animation browsing, explicit costume
+Version 0.3.1 adds The Hobbit character and animation browsing, explicit costume
 layer selection, more observed native skeleton/material layouts, native material
 slot assignments and variable-length LB3 facial target records. The portable
 `audit_characters.py` tool checks the entire declared roster and reports failures;
 it does not certify visual or animation accuracy. See [coverage](COMPATIBILITY.md).
+
+Version 0.3.1 also accepts verified texture stores with empty conversion metadata,
+restoring their embedded DDS materials. Further Blender checks cover bigfigs
+Killer Croc and Hulk, plus Thorin and Gandalf.

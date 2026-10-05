@@ -17,12 +17,14 @@ def read_texture_store(path):
     version = r.get('I', at+4)
     if version not in (1, 12):
         raise FormatError(f'Unsupported TXTS version {version}')
-    marker = data.find(b'CONVDATE', at+8)
-    if marker < 4:
-        raise FormatError('Missing texture conversion metadata')
-    length = r.get('I', marker-4)
+    # The conversion-metadata string is length-prefixed and may be empty.
+    # Do not search later texture names/payloads for a coincidental CONVDATE.
+    length = r.get('I', at+8)
+    marker = at+12
+    if length and (not 8 <= length <= 65536 or data[marker:marker+8] != b'CONVDATE'):
+        raise FormatError('Unsupported texture conversion metadata')
     cursor = marker+length
-    if not 8 <= length <= 65536 or data[cursor:cursor+4] != b'ROTV':
+    if data[cursor:cursor+4] != b'ROTV':
         raise FormatError('Invalid texture inventory boundary')
     count = r.get('I', cursor+4)
     if not 0 <= count <= 65536:

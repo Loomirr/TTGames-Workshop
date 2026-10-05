@@ -89,6 +89,8 @@ AI was used to help with this project. See docs/LICENSING.md for reuse notes.
         manifest['packages'].append(record)
         print(target.name, record['bytes'], 'bytes')
     manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+    from prune_builds import keep_latest
+    keep_latest(apply=True)
 
 
 if __name__ == '__main__':

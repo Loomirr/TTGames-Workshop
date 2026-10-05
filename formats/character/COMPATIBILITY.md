@@ -54,8 +54,9 @@ unsupported native records remain failures rather than selecting arbitrary data.
 Blender 5.2.2 checks imported Bilbo, Gandalf, B66 Catwoman, Wolverine and B66
 Alfred, loaded idle/run/walk for each, sampled start/middle/end poses and mesh
 coordinates, and saved private preview scenes. Front renders were inspected.
-Gandalf's older cape texture reports missing conversion metadata; some shaders,
-surface smoothing and face masking remain approximate. No new in-game export
+The initial 0.3.0 check reported missing conversion metadata for Gandalf's cape;
+0.3.1 fixes that store layout. Some shaders, surface smoothing and face masking
+remain approximate. No new in-game export
 test was performed. Facial shape targets are readable, but cutscene target-weight
 timing is still incomplete.
 
@@ -63,7 +64,7 @@ timing is still incomplete.
 
 | Game | Confirmed inspection | Current import blockers |
 | --- | --- | --- |
-| Avengers | CC archive index, MESH 175, HGOL 17 ROTV, DISP 32; sampled ANI-D | Material table 235 shader layout |
+| Avengers | CC archive index, MESH 175, HGOL 17 ROTV, DISP 32; sampled ANI-D | Material table 235 shader layout and TXTS 14 stores |
 | The Force Awakens | CC archive index, MESH 175, HGOL 17 ROTV | DISP 33, material table 236, ANI-E sampling and some actor bounds |
 | DC Super-Villains | CC archive index and animation structure | CD 38, MESH 200, newer HGOL 17, DISP 35 and ANI-E |
 | LMSH2 | Full archive inventory; sample ANI-D scalar poses | Newer HGOL 17, DISP 34, material table 270, ANI-E and newer definitions |
@@ -94,3 +95,22 @@ bytes. It does not encode edited meshes, UVs, materials, skeletons or actions.
 The constrained facial writer remains gated to MESH 169/175; MESH 170 reading
 does not enable Hobbit facial writing. See the [workflow](README.md) and
 [earlier animation research](RESEARCH_0.2.md).
+
+## Version 0.3.1 follow-up
+
+The typed TXTS 1/12 conversion-metadata string can have length zero. The reader
+now advances from that explicit length and validates the following ROTV marker,
+rather than searching the payload for CONVDATE. Empty metadata no longer hides
+valid DDS entries. Nonempty metadata still requires the verified prefix.
+
+Gandalf, Thorin, Killer Croc and Hulk were imported in Blender 5.2.2 with three
+clips each and checked for finite poses and evaluated mesh coordinates. Front
+previews were inspected; embedded cape and bigfig textures are loaded. This is
+additional sample coverage, not a claim that all characters or shaders are exact.
+The shared reader has 148 portable checks; two package-retention tests separately
+verify numeric version selection and preservation of historical builds.
+
+A cached-store audit checked 105 files: 91 typed TXTS 1/12 stores passed,
+including 20 with empty conversion metadata. Thirteen TXTS 14 stores and one
+version 0 store remain rejected. This checks inventory/DDS boundaries, not
+full shader reconstruction or rendering of every texture.
