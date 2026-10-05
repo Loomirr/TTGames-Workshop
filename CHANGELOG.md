@@ -1,5 +1,18 @@
 # Changelog
 
+## Issue #1: minifigure LODs and LMSH1 arm printing — 5 October 2026
+
+- Character 0.4.3 / CU3 0.1.10 select the nearest verified accessory LOD,
+  restoring high-detail hair and hats. Unknown LOD layouts fail explicitly.
+- Corrected the layout-gated LMSH1 arm-print UV selection without changing
+  native UVs or other games' print mappings.
+- Added NXG/DX11 LOD and material-role regression fixtures. Source normals,
+  topology, skeletons and animation axes are preserved.
+- Updated packages and documented partial issue resolution. Head/face,
+  mirroring and shading reports still need specific reproductions.
+- Toolbox 0.1.2 carries the current shared readers and package links;
+  separate GUI versions are independent of the toolbox version.
+
 ## General tool review and package updates — 5 October 2026
 
 - Reviewed the existing LIJ1 0.1.2 work, reran its 57 synthetic checks and checked

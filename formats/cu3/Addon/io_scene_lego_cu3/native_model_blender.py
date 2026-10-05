@@ -6,7 +6,7 @@ import bpy
 from mathutils import Vector
 from .cu3 import FormatError
 from .native_mesh import read_mesh
-from .native_display import read_display
+from .native_display import read_display, model_bindings
 from .native_materials import read_materials
 from .native_layers import selected_layer_metadata
 from .skeleton import read_skeleton
@@ -29,13 +29,14 @@ def load_model(path):
 def selected_draws(model, definition=None, *, layer_mode='authored'):
     skeleton = model['skeleton']
     if skeleton is None:
-        return [(special, binding, None) for special in model['display']['specials'] for binding in special['parts']]
+        return [(special, binding, None) for special in model['display']['specials']
+                for binding in model_bindings(model['display'], special)]
     draws = []
     for metadata in selected_layer_metadata(skeleton, model['display'], definition, layer_mode=layer_mode):
         special = model['display']['specials'][metadata['special']]
         if special['unsupported_commands']:
             raise FormatError('Layer uses unsupported display commands')
-        for binding in special['parts']:
+        for binding in model_bindings(model['display'], special):
             draws.append((special, binding, metadata))
     return draws
 
@@ -45,6 +46,8 @@ def create_model(model, name, collection, definition=None, material_factory=None
     draws = selected_draws(model, definition, layer_mode=layer_mode)
     prepared = []
     for special, binding, metadata in draws:
+        if not 0 <= binding['part'] < len(model['parts']):
+            raise FormatError('Native model LOD references an absent mesh part')
         part = model['parts'][binding['part']]
         joint = metadata['joint'] if metadata and not metadata['kind'] else None
         if skeleton and joint is not None and joint >= len(skeleton['joints']):

@@ -16,6 +16,26 @@ def costume_slot(entry):
     return value if value else None
 
 
+def costume_uv_index(entry, mesh_version):
+    """Observed CD print coordinates, distinct from the shared base atlas.
+
+    LMSH1's UMTL 176 minifig arm prints use the first pair. Its other shared
+    print roles use the second pair, as do the later shared DX11 GAME roles.
+    This exception is layout/role gated; it does not rewrite source UVs.
+    """
+    name = entry['name'].split(':', 1)[0].upper()
+    if name.endswith('_DX11'):
+        name = name[:-5]
+    role = costume_slot(entry)
+    if (mesh_version == 169 and entry.get('table_version') == 176
+            and (name, role) in (('LEFTARM_GAME', 24), ('RIGHTARM_GAME', 5))):
+        return 0
+    if name.endswith('_GAME'):
+        return 1
+    value = entry['fields']['uvSets'][0][1]
+    return 0 if value == 0xffffffff else value
+
+
 def shader_prefix(data, start, version):
     if version == 163:
         # Older static NXG accessories have a separate bounded prefix. Boolean

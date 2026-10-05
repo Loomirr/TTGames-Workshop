@@ -8,7 +8,7 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.9** (experimental).
+Current source and packaged build: **0.1.10** (experimental).
 Import now defaults to assembling supported actors, attachments, materials,
 source cameras and experimental static stage geometry. Supply the selected
 CU3 and its installed LB3/LMSH1 game folder or an extracted asset tree. The
@@ -18,6 +18,11 @@ scene assembly:** stage visibility and render controls are approximate;
 nested scenes, rigid props, original lighting, audio and effects are not
 automatically reconstructed. Faces and native shaders also need more work.
 Game assets and example Blender scenes are not included here.
+
+Version 0.1.10 includes the shared model fixes for nearest-detail accessory
+LODs and the verified LMSH1 arm print UV layout. Stage draw-pool interpretation
+and source camera/animation axes remain unchanged. Reimport to rebuild actors;
+see [issue #1 patch scope](../../docs/ISSUE_1_MINIFIGS.md).
 
 See [the progress notes](docs/PROGRESS.md) for what's changed and what still needs checking.
 The new [face GHG editing prototype](docs/FACE_GHG_EDITING.md) exports existing
@@ -37,7 +42,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.9 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.9.zip)
+Download the [0.1.10 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.10.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

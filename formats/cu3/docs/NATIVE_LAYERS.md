@@ -1,5 +1,11 @@
 # Native model layer selection
 
+Character 0.4.3 / CU3 0.1.10 also select the nearest native accessory LOD
+when a special has a verified distance-threshold/consecutive-clip table.
+This is separate from HGOL layer alternatives: a named costume layer keeps
+its authored selection. Stage pool interpretation is unchanged. See the
+[minifigure patch notes](../../../docs/ISSUE_1_MINIFIGS.md).
+
 A visible HGOL layer can contain several alternative display specials. Turning
 on the layer does not mean drawing every special in it.
 

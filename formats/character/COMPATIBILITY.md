@@ -1,11 +1,16 @@
 # PC character compatibility, 5 October 2026
 
-Version 0.4.2 focuses on the PC NXG/DX11 games. Handheld character support is
+Version 0.4.3 focuses on the PC NXG/DX11 games. Handheld character support is
 separate work and is postponed. Shared file extensions do not imply shared
 binary layouts. The Blender game selector offers LMSH1, LB3, The Hobbit and Avengers;
 the other profiles below are inspection tools, not complete importers.
 
 ## New working coverage
+
+Version 0.4.3 selects the nearest verified accessory LOD and corrects the
+MESH 169 / UMTL 176 LMSH1 arm print UV choice. No new game profile is enabled.
+The [issue #1 notes](../../docs/ISSUE_1_MINIFIGS.md) distinguish these patches
+from the remaining head/face, mirroring and shading reports.
 
 - The Hobbit installed archives use a verified parent-index -5 variant. Its
   v27 definitions, MESH 169/170, DISP 24/26 and HGOL 12/16 resources now assemble
@@ -31,7 +36,7 @@ the other profiles below are inspection tools, not complete importers.
 
 ## Validation
 
-All 176 native/archive/package checks pass, including independently constructed archive,
+The 188-test repository suite passes, including independently constructed archive,
 skeleton, display, material-role and facial target fixtures. Package integrity
 checks confirm the ZIP contains tools and documentation, with no game assets.
 The general repository review also adds five separate FUSE bounds/command

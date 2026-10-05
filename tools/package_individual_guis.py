@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
-from workshop_gui import TOOLS, VERSION, TOOL_VERSIONS
+from workshop_gui import TOOLS, DEFAULT_TOOL_VERSION, TOOL_VERSIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 ADDON = ROOT / 'formats/cu3/Addon/io_scene_lego_cu3'
@@ -19,7 +19,7 @@ PACKAGES['CU3 Name Editor'] = 'CU3_Name_Editor'
 def package_version(name):
     if name not in PACKAGES:
         raise ValueError('Unknown standalone GUI')
-    return TOOL_VERSIONS.get(name,VERSION)
+    return TOOL_VERSIONS.get(name,DEFAULT_TOOL_VERSION)
 
 
 def dependencies(entry):

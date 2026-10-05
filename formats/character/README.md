@@ -1,13 +1,13 @@
 # TT Character and Animation Importer
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters. Version **0.4.2**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters. Version **0.4.3**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.4.2.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.4.3.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -42,6 +42,14 @@ of exact in-game appearance.
 CD and texture companions must be available in the selected asset tree/game.
 Selecting a packed archive itself is not a character import. No game files
 are supplied in the addon download.
+
+**0.4.3 fixes far-distance hair/hat LOD selection and LMSH1 arm print UVs.**
+Native accessory LOD tables now select their nearest detail clip. The verified
+LMSH1 shared-arm layout uses UV0 for costume printing; other mappings retain
+their existing coordinates. Reimport with the new ZIP to rebuild these parts.
+Authored normals and split vertices remain intact. See the
+[issue #1 patch notes](../../docs/ISSUE_1_MINIFIGS.md) for checks and unresolved
+head/face, mirroring and shading reports.
 
 ## Browse animations and preview
 
@@ -123,7 +131,7 @@ Normal padding stays intact. Weight Paint edits must be normalized, use at most
 four influences, and reference only bones already in that part's native palette.
 The verified byte weights keep a total of 255. Rigid joint reassignment, new
 palette bones, changed rest bones and conflicting shared buffers are rejected.
-Reimport with the current 0.4.2 build to establish normal/material baselines and rigid bindings;
+Reimport with the current 0.4.3 build to establish normal/material baselines and rigid bindings;
 older saved imports do not contain those new validation fields.
 
 Object placement, evaluated modifiers, topology, new skin palettes, material

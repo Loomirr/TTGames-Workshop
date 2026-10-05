@@ -1,6 +1,6 @@
 # Standalone tool GUI
 
-Version 0.1.1. A small native Tkinter window with browse buttons, forms and a
+Version 0.1.2. A small native Tkinter window with browse buttons, forms and a
 live log. No browser, server or extra GUI framework.
 
 **Separate downloads are now available for each tool** in

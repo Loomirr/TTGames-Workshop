@@ -71,6 +71,7 @@ def read_display(path, part_count):
             if extra > 100_000:
                 raise FormatError('Unreasonable native display extra count')
             c.take(136 + 4 * ranges + 4 * extra)
+            lod_ranges = [c.reader.get('f', body + 124 + i*4) for i in range(ranges)]
         else:
             name = c.reader.string(names_start + c.get('I'), names_end)
             matrix = list(c.reader.get('16f', start + 4))
@@ -79,6 +80,7 @@ def read_display(path, part_count):
                 raise FormatError('Unreasonable native display range count')
             c.at = start
             c.take(204 + 4 * ranges)
+            lod_ranges = [c.reader.get('f', start + 192 + i*4) for i in range(ranges)]
         # The all-ones clip index is an empty named locator, observed on
         # accessory VFX anchors. Keep its position in the specials table:
         # native layer/attachment indices still refer to that table.
@@ -97,6 +99,38 @@ def read_display(path, part_count):
                 unsupported.append({'opcode': opcode, 'flags': command_flags, 'value': part})
         specials.append(dict(index=index, name=name, matrix=matrix, clip=clip,
                              flags=flags, parts=bindings, unsupported_commands=unsupported,
-                             locator_only=locator_only))
+                             locator_only=locator_only, lod_ranges=lod_ranges))
     return dict(version=version, specials=specials, commands=commands,
                 clips=clips, end_offset=c.at)
+
+
+def model_bindings(display, special, *, highest_detail=True):
+    """Select the nearest native LOD, without interpreting stage draw pools.
+
+    Verified static accessories store far-to-near thresholds and consecutive
+    clips. HGOL alternatives without this table retain their authored binding.
+    Unknown LOD tables fail instead of choosing a mesh by triangle count/name.
+    """
+    ranges = special.get('lod_ranges', [])
+    if not highest_detail or not ranges or special.get('locator_only'):
+        return special['parts']
+    if (display['version'] not in (16, 21, 24, 32)
+            or len(ranges) > 8 or ranges[-1] != 0
+            or any(not math.isfinite(v) or v < 0 for v in ranges)
+            or any(a <= b for a, b in zip(ranges, ranges[1:]))):
+        raise FormatError('Unverified native model LOD thresholds')
+    first = special['clip']
+    if first + len(ranges) > len(display['clips']):
+        raise FormatError('Native model LOD clips exceed the display table')
+    levels = []
+    for clip in display['clips'][first:first + len(ranges)]:
+        bindings = []
+        for material, index in zip(clip['materials'], clip['items']):
+            opcode, flags, part = display['commands'][index]
+            if (opcode, flags) != (0xb3, 0):
+                raise FormatError('Unverified native model LOD draw command')
+            bindings.append(dict(part=part, material=material))
+        if not bindings:
+            raise FormatError('Native model LOD has no draw bindings')
+        levels.append(bindings)
+    return levels[-1]

@@ -7,7 +7,7 @@ import bpy
 from .cu3 import FormatError
 from .material_preview import attach_vertex_albedo, attach_vertex_opacity
 from .texture_store import read_texture_store
-from .native_materials import costume_slot
+from .native_materials import costume_slot, costume_uv_index
 
 def multiply_base_tint(material, tint, label, property_name):
     if len(tint)!=3 or not all(math.isfinite(v) and v>=0 for v in tint):
@@ -89,14 +89,10 @@ class CostumeMaterials:
                 node = nodes.new('ShaderNodeTexImage');node.image=image
                 links.new(node.outputs['Color'], surface.inputs['Base Color'])
                 links.new(node.outputs['Alpha'], surface.inputs['Alpha'])
-                name=entry['name'].split(':',1)[0].upper()
-                if name.endswith('_DX11'):name=name[:-5]
-                # Shared minifig GAME roles use print UV1. Native bigfig and
-                # accessory roles also accept CD overrides, on their own UV set.
-                uv_index=1 if name.endswith('_GAME') else entry['fields']['uvSets'][0][1]
-                if uv_index==0xffffffff:uv_index=0
+                uv_index=costume_uv_index(entry, model['mesh_version'])
                 uv = nodes.new('ShaderNodeUVMap');uv.uv_map=f'Source uv {uv_index}'
                 links.new(uv.outputs['UV'], node.inputs['Vector'])
+                material['tt_costume_uv_index'] = uv_index
                 assigned = True
                 textured = True
             except (ValueError, RuntimeError, OSError) as error:

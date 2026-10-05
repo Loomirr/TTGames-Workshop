@@ -3,7 +3,7 @@
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
-- Character addon 0.4.2: independent LMSH1/LB3/Hobbit/Avengers character and declared
+- Character addon 0.4.3: independent LMSH1/LB3/Hobbit/Avengers character and declared
   animation browsers, supported ANI-D playback, native TT inner decompression,
   matching attachment tracks, separate live/composed face previews and loose native-source
   export. Explicit default/cutscene costume layers and native material role IDs
@@ -45,7 +45,7 @@ all formats or games are now supported.
   log is optional on the CLI and no longer needed in the GUI.
   Face writer 0.1.2 adds constrained MESH 170 target edits, with native-part validation.
 
-- CU3 0.1.9: partial LMSH1/LB3 actor, attachment, material and camera assembly
+- CU3 0.1.10: partial LMSH1/LB3 actor, attachment, material and camera assembly
   from an installed game folder or extracted assets. The addon defaults to
   assembly, detects the verified CU3 versions 18/19 and remembers per-game
   folders. Original Python archive readers load requested companions into an

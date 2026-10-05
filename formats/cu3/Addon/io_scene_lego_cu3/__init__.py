@@ -1,7 +1,7 @@
 bl_info = {
     'name': 'LEGO CU3 Cutscene Importer (Experimental)',
     'author': 'Loomirr',
-    'version': (0, 1, 9),
+    'version': (0, 1, 10),
     'blender': (4, 4, 0),
     'location': 'File > Import > LEGO CU3 cutscene',
     'description': 'Assemble supported cutscene actors, attachments, materials and cameras from native companion assets',
