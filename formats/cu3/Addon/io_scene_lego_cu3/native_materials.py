@@ -17,6 +17,21 @@ def costume_slot(entry):
 
 
 def shader_prefix(data, start, version):
+    if version == 163:
+        # Older static NXG accessories have a separate bounded prefix. Boolean
+        # meanings remain opaque; do not reuse the later flag offsets.
+        r = Reader(data)
+        fields = dict(version=r.get('I', start), shaderType=r.get('I', start+4),
+                      lightingModel=r.get('I', start+8),
+                      uvSets=[r.get('2I', start+120+i*8) for i in range(16)],
+                      shaderVersion=r.get('I', start+319), GPUVendor=r.get('I', start+323),
+                      colourSpace=r.get('I', start+327),
+                      opaqueShaderFlags=list(data[start+248:start+319]),
+                      vertAlbedo=None, canAlphaBlend=None, ignoreVertexOpacity=None)
+        if fields['version'] != 2 or fields['shaderVersion'] != 4 or any(
+                a not in (0, 1) or b not in (*range(16), 0xffffffff) for a,b in fields['uvSets']):
+            raise FormatError('Unverified UMTL 163 static shader prefix')
+        return fields, start+397
     if version == 229:
         # Older Avengers shaders retain a longer flag block. Its individual
         # boolean semantics are not established; expose only verified fields.
@@ -74,7 +89,9 @@ def shader_prefix(data, start, version):
          'bakedSpecular semiLit refractionNearFix metallicSpecular dontReceiveShadow lateShader '
          'diffreflmaps perLayerUVScale', 'B')
     read('tintable', 'B')
-    read('generateCubeMap outputToonShaderData disablePerPixelFade', 'B')
+    if version >= 175:
+        read('generateCubeMap outputToonShaderData', 'B')
+    read('disablePerPixelFade', 'B')
     read('vertAlbedo skinned fastBlend blendShape doPerspDivInVS numAlphaLayers use2DW unTransformed '
          'effectAmplitude ignoreVertexOpacity LODVerticalScale instancedLightmapping positionAccuracy '
          'uvAccuracy tangent2 vertexControlledTint zBias', 'B')
@@ -106,6 +123,13 @@ def shader_prefix(data, start, version):
     read('sceneZAccess shadowZAccess PCFMethod rainSplashSurfaceType')
     if modern:
         read('opaqueModernTexturePrefix')
+    if version == 174:
+        # The verified earlier prefix is two bytes shorter. Its Boolean
+        # semantics are still unresolved, so don't infer opacity/albedo flags
+        # from the later shader's field names. UVs, IDs and footer are bounded.
+        fields['vertAlbedo'] = fields['canAlphaBlend'] = fields['ignoreVertexOpacity'] = None
+        if fields['version'] != 2 or fields['shaderVersion'] != 4 or fields['numUVSets'] > 16:
+            raise FormatError('Unverified UMTL 174 shader prefix')
     return fields, at
 
 
@@ -116,7 +140,7 @@ def read_materials(path):
     if marker < 0:
         raise FormatError('Native material table missing')
     version, count = r.get('2I', marker+4)
-    if version not in (174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 229, 232, 234, 235) or count > 65536:
+    if version not in (163, 174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 229, 232, 234, 235) or count > 65536:
         raise FormatError(f'Unverified native material table version/count: {version}/{count}')
     start = marker+12
     if version < 190:

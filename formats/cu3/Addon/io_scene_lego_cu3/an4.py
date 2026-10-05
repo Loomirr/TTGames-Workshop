@@ -71,3 +71,21 @@ class AnimationFile:
             available = ', '.join(a['name'] for a in self.actors)
             raise FormatError('Specify one compatible AN4 actor by name. Available: ' + available)
         return candidates[0]
+
+    def morph_animation(self, actor):
+        """Standalone BE node +36 points to a bounded BE BSA/ANI-D block.
+
+        CU3 embeds a different, little-endian tree. Keep its decoder separate.
+        """
+        r = Reader(self.data)
+        at = r.get('I', actor['offset']+36)
+        if not at:
+            return None
+        if at < 72 or self.data[at:at+4] != b'BSA\0':
+            raise FormatError('Unsupported standalone AN4 facial-control block')
+        header, padded, size, reserved = r.get('4I', at+4)
+        if header != 20 or reserved or size < 100 or not size <= padded <= size+4 or at+padded > len(self.data):
+            raise FormatError('Standalone BSA header/range is not verified')
+        animation = Animation(r, at+header, at+size)
+        animation.prepare(morph_channels=True)
+        return animation

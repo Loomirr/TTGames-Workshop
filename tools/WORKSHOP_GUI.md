@@ -51,6 +51,20 @@ does not mean every record was supported: check the log and output manifests.
 Face writing remains experimental, and is not a visual shape-key editor.
 See the included component READMEs/docs for limitations and input preparation.
 
+Manual checks from the repository root:
+
+```sh
+python tools/test_workshop_gui.py
+python tools/test_individual_guis.py
+```
+
+The six toolbox checks exercise forms, a BTGA job and output protection. The
+nine standalone-package checks extract the current per-tool version and open
+its launcher with windows hidden, then import its own backends. They do not
+prove format fidelity or execute every backend on real game data. The toolbox
+0.1.1 package keeps bundled documentation links offline when possible and
+points links to omitted repository files at their online source.
+
 The **LIJ1 Xbox 360 extractor already has its own GUI**, including file/folder
 drag and drop. Download its Windows ZIP separately from the repository's
 `builds/windows` folder and run `LIJ1_360_Texture_Extractor.exe`.

@@ -1,9 +1,11 @@
 # LEGO Marvel's Avengers, PC
 
 Use the separate [character and animation addon](../../formats/character/README.md)
-with the **LEGO Marvel's Avengers** profile. Version 0.4.1 accepts installed
+with the **LEGO Marvel's Avengers** profile. Version 0.4.2 accepts installed
 archives or unpacked asset folders, browses character definitions and searches
 their declared animation sets. Supported ANI-D clips play on native skeletons.
+Verified standalone BSA facial tracks play alongside supported clips; Captain
+America's idle weights matched the decoded source at three sample frames.
 
 Captain America, Thor, Hawkeye, Black Widow, Iron Man Mark 7 and Hulk AOU were
 checked in Blender. A roster preflight found 821 of 882 definitions parser-ready;

@@ -1,13 +1,13 @@
 # TT Character and Animation Importer
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters. Version **0.4.1**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters. Version **0.4.2**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.4.1.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.4.2.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -22,7 +22,7 @@ props/attachments use the file importer below. Some listed definitions may still
 
 For an already extracted file:
 
-1. Use **File Ã¢â€ â€™ Import Ã¢â€ â€™ LEGO Character / Model (.cd/.ghg/.gsc)**.
+1. Use **File > Import > LEGO Character / Model (.cd/.ghg/.gsc)**.
 2. Choose an extracted character **CD** and select the correct game. The CD
    selects its model, costume textures, layer variants and declared attachments.
    **Costume layers** defaults to the gameplay costume. Choose **Cutscene costume**
@@ -62,8 +62,8 @@ scene with facial holdout passes and a compositor. Press F12 in that scene.
 The native depth-only masks are enabled for this pass, preventing overlapping
 teeth and mouth surfaces from drawing in full. Raw imports hide these masks;
 a plain render of the raw import does not reproduce facial masking. The composed
-preview still approximates the game shader and does not supply missing expression
-animation. Both preview choices preserve the original scene and native meshes.
+preview still approximates the game shader and cannot reconstruct missing or
+unsupported expression tracks. Both preview choices preserve the original scene and native meshes.
 
 For extracted AN4 files, **Import AN4 animations** still supports multiple
 files. The addon now decodes the observed `Deflate_v1.0` wrapper itself.
@@ -77,8 +77,22 @@ A listed action may still have an unsupported scalar format or actor layout.
 Native attachment tracks are applied only when one matching skeleton and clip
 can be identified. Gameplay capes and cutscene capes can have different joint
 counts; mismatches remain reported instead of being forced onto the mesh.
-Facial target weight timing, events, audio, IK and gameplay transitions are
-not fully reproduced.
+Supported standalone AN4 facial BSA tracks now drive the imported
+`TT_Target_###` shape keys alongside the clip. This requires a unique matching
+face actor, a verified 53-channel ANI-D block and matching duration (one extra
+end sample is accepted without stretching time). Numeric native target IDs
+are preserved. Unknown layouts and ambiguous matches are reported. A clip
+without a face track returns those keys to Basis rather than retaining the
+previous expression. Reimport and reload your clips with 0.4.2 to add these
+links; an older blend is not upgraded automatically.
+
+To inspect a static target, select a face mesh and open **Object Data
+Properties > Shape Keys**. Adjust one `TT_Target_###` value from zero, then
+return it to zero. Select a clip without facial tracks or temporarily unlink
+the mesh's shape-key action first; active facial keyframes otherwise override
+manual values. Targets have numeric IDs, not verified expression names.
+Composed preview is still needed to assess depth-mask rendering.
+Events, audio, IK and gameplay transitions are not fully reproduced.
 
 ## Export loose native files
 
@@ -109,7 +123,7 @@ Normal padding stays intact. Weight Paint edits must be normalized, use at most
 four influences, and reference only bones already in that part's native palette.
 The verified byte weights keep a total of 255. Rigid joint reassignment, new
 palette bones, changed rest bones and conflicting shared buffers are rejected.
-Reimport with 0.4.1 to establish the normal/material baselines and rigid bindings;
+Reimport with the current 0.4.2 build to establish normal/material baselines and rigid bindings;
 older saved imports do not contain those new validation fields.
 
 Object placement, evaluated modifiers, topology, new skin palettes, material
@@ -117,11 +131,25 @@ node graphs and skeleton changes are not encoded. Native bounds are retained,
 not rebuilt. Texture companions are copied; this is not a Blender image encoder.
 This remains a constrained writer, not arbitrary Blender-to-game serialization.
 
+Version 0.4.2 also reads the verified **unskinned MESH 161 static LMSH1 GSC**
+accessories, DISP 16, UMTL 163 and TXTS 0, restoring attachments such as
+Magneto's helmet. It fixes the two-byte UMTL 174 prefix mismatch that rejected
+other accessories. Texture IDs, UVs and render footers are decoded, but the
+older shader Boolean meanings remain unresolved and shading is approximate.
+Skinned or morph-bearing MESH 161 files are rejected. The new 161 writer check
+covers a constructed UV edit; actual helmet validation covers byte-identical
+no-op export/reimport, not edited-file gameplay.
+
 Material node changes, painted/replaced Blender images and edited loaded clips
 now stop a source-bundle export instead of being silently copied as originals.
 Native material/texture encoding is unfinished. Export the model bundle before
 editing clips, then use the separate active AN4 exporter for supported animation
 edits. That writer does not repack a PAK bank or preserve unsupported events.
+Version 0.4.2 additionally detects edits to the linked facial and attachment
+actions created by this version. Neither exporter writes their edited BSA or
+attachment curves; export is rejected rather than silently losing those edits.
+Unchanged linked tracks keep their original native bytes. Older clip imports
+lack these companion fingerprints; reimport to establish them.
 
 ## Export an edited animation
 
@@ -217,3 +245,9 @@ Normal and weight changes were exported and reimported for one character per
 enabled game. A static Avengers GSC normal edit also passed. Hobbit MESH 170
 face targets passed decoded edits on 48 cached face assets. No new in-game
 validation or general mesh/material/skeleton encoder is implied.
+
+Version 0.4.2 restores verified older LMSH1 static accessories, corrects UMTL
+174 texture alignment and plays supported standalone facial BSA tracks when
+switching clips. Magneto's helmet, face and cape were checked with three idle
+clips. Facial sampling checks also cover Wolverine, B66 Catwoman, Bilbo and
+Captain America. See [compatibility](COMPATIBILITY.md) for scope and failures.

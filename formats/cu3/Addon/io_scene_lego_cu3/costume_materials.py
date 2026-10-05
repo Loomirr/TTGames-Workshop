@@ -76,6 +76,8 @@ class CostumeMaterials:
         surface = nodes.get('Principled BSDF')
         surface.inputs['Roughness'].default_value = .5
         slot = costume_slot(entry)
+        if entry.get('table_version') in (163, 174):
+            self.report.append({'material':entry['name'], 'issue':'Older static shader flag meanings remain unresolved; texture/UV and render footer are decoded, shading is approximate'})
         matched = [o['fields'] for o in definition['objects'] if o['fields'].get('Material')==slot] if definition and slot is not None else []
         texture = next((o for o in matched if o.get('Texture Slot')==0 and 'Texture File' in o), None)
         assigned = False

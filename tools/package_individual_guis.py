@@ -5,7 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
-from workshop_gui import TOOLS, VERSION
+from workshop_gui import TOOLS, VERSION, TOOL_VERSIONS
 
 ROOT = Path(__file__).resolve().parents[1]
 ADDON = ROOT / 'formats/cu3/Addon/io_scene_lego_cu3'
@@ -14,6 +14,12 @@ PACKAGES = dict(zip(TOOLS, (
     'CU3_Dependency_Checker', 'Face_Target_Decoder', 'Face_Target_Writer',
     'TFA_Archive_Index', 'DCSV_Archive_Index')))
 PACKAGES['CU3 Name Editor'] = 'CU3_Name_Editor'
+
+
+def package_version(name):
+    if name not in PACKAGES:
+        raise ValueError('Unknown standalone GUI')
+    return TOOL_VERSIONS.get(name,VERSION)
 
 
 def dependencies(entry):
@@ -47,7 +53,7 @@ def main():
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     for name, slug in PACKAGES.items():
         if args.tool and name!=args.tool:continue
-        version='0.1.2' if name in ('Face targets: decode', 'Face targets: write edited copy') else VERSION
+        version=package_version(name)
         is_editor = name == 'CU3 Name Editor'
         script = 'formats/cu3/scripts/cu3_name_editor_gui.py' if is_editor else TOOLS[name][0]
         files = dependencies(ROOT / script)

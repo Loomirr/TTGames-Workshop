@@ -38,6 +38,27 @@ def tree():
 
 
 class AN4Checks(unittest.TestCase):
+    def test_big_endian_facial_scalar_block(self):
+        raw=tree();at=len(raw)
+        scalar=bytearray(187);scalar[:4]=b'ANID'
+        struct.pack_into('>6H',scalar,4,1,2,0,2,53,0);scalar[19]=0xa4
+        struct.pack_into('>H',scalar,22,2);struct.pack_into('>2f',scalar,28,0,1)
+        struct.pack_into('>9I',scalar,36,80,80,80,80,186,0,0,0,0)
+        struct.pack_into('>2f',scalar,72,1,0)
+        struct.pack_into('>53H',scalar,80,*[15 if i==17 else 14 for i in range(53)])
+        raw+=b'BSA\0'+struct.pack('>4I',20,len(scalar)+20,len(scalar)+20,0)+scalar
+        struct.pack_into('>I',raw,4,len(raw));struct.pack_into('>I',raw,108,at)
+        source=AnimationFile('fixture.an4',data=raw)
+        face=source.morph_animation(source.actors[0])
+        self.assertEqual(face.curves,53);self.assertEqual(face.sample(1)[0][17],1)
+        self.assertEqual(sum(face.sample(1)[0]),1)
+        for field,value in ((at+4,24),(at+12,0xffffffff),(at+16,1),(108,len(raw))):
+            bad=raw[:];struct.pack_into('>I',bad,field,value)
+            with self.assertRaises(FormatError):
+                instance=AnimationFile('fixture.an4',data=bad);instance.morph_animation(instance.actors[0])
+        original=AnimationFile('fixture.an4',data=tree())
+        self.assertIsNone(original.morph_animation(original.actors[0]))
+
     def test_both_byte_orders(self):
         for endian in ('<', '>'):
             raw = animation(endian)

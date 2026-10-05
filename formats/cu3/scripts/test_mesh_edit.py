@@ -57,6 +57,20 @@ def face_fixture(version=175):
 
 
 class MeshEdits(unittest.TestCase):
+    def test_legacy_static_mesh_and_byte_preserving_edits(self):
+        raw=fixture(161).replace(b'DXTV'+struct.pack('>I',169),b'DXTV'+struct.pack('>I',161))
+        before=read_mesh_bytes(raw)
+        self.assertEqual(before['end_offset'],len(raw))
+        noop,_=patch_vertices(raw,edits(raw,{}));self.assertEqual(noop,raw)
+        patched,_=patch_vertices(raw,edits(raw,{'uv':[[.25,.75],[1,0],[0,1]]}))
+        after=read_mesh_bytes(patched)
+        self.assertEqual(after['parts'][0]['vertices'][0]['uv'],[.25,.75])
+        self.assertEqual(after['parts'][0]['triangles'],before['parts'][0]['triangles'])
+        self.assertEqual(len(patched),len(raw))
+        for unsupported in (skin_fixture(161),face_fixture(161)):
+            unsupported=unsupported.replace(b'DXTV'+struct.pack('>I',169),b'DXTV'+struct.pack('>I',161))
+            with self.assertRaises(FormatError):read_mesh_bytes(unsupported)
+
     def test_shared_skin_alias_with_different_palette_is_rejected(self):
         raw=bytearray(skin_fixture());struct.pack_into('>I',raw,8,2)
         raw+=struct.pack('>2I',1,1)+struct.pack('>2I',0xc0000100,1)+struct.pack('>2I',0,0)

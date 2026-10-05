@@ -1,4 +1,4 @@
-"""Blender invariant check for native static positions, UVs and draw bindings."""
+"""Asset-free static draw check. Supply a new output folder after --."""
 import copy
 from pathlib import Path
 import sys
@@ -7,6 +7,10 @@ import bpy
 from mathutils import Vector
 
 root = Path(__file__).resolve().parents[1]
+if '--' not in sys.argv or len(sys.argv[sys.argv.index('--')+1:])!=1:
+    raise ValueError('Supply a new output folder after --')
+output = Path(sys.argv[sys.argv.index('--')+1]).resolve()
+output.mkdir(parents=True,exist_ok=False)
 sys.path.insert(0, str(root / 'Addon'))
 from io_scene_lego_cu3.blender_import import C, row_matrix
 from io_scene_lego_cu3.cu3 import FormatError
@@ -19,7 +23,8 @@ bpy.context.scene.collection.children.link(collection)
 commands = [(0x84,4,0), (0x85,1,9), (0x80,3,0), (0x8b,1,0), (0xb0,3,2),
             (0x83,0,0), (0xb3,0,0), (0x83,0,1), (0xb3,0,0),
             (0x84,4,0), (0x87,0,0), (0x83,0,2), (0xb3,0,1), (0x8e,0,0)]
-source = str((Path.cwd() / 'synthetic-stage.gsc').resolve())
+source = str(output / 'synthetic-stage.gsc')
+Path(source).write_text('Asset-free native static stage fixture',encoding='utf-8')
 positions = [(0,0,0), (1,0,0), (0,1,0)]
 vertices = [dict(position=list(position), uv=[i / 4, .2 + i / 5],
                  uv2=[.1, .2, .3, .4], normal=[0,0,1], color=[32,64,128,255])

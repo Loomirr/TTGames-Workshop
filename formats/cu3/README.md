@@ -8,7 +8,7 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.8** (experimental).
+Current source and packaged build: **0.1.9** (experimental).
 Import now defaults to assembling supported actors, attachments, materials,
 source cameras and experimental static stage geometry. Supply the selected
 CU3 and its installed LB3/LMSH1 game folder or an extracted asset tree. The
@@ -37,7 +37,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.8 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.8.zip)
+Download the [0.1.9 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.9.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the
@@ -242,7 +242,22 @@ scenes. All remain read-only and do not download or run external extractors.
 
 ## Manual checks
 
-No scheduled checks or CI are set up. To check files from your own installation:
+No scheduled checks or CI are set up.
+
+Version 0.1.9 packages the shared verified older LMSH1 static accessory readers
+(unskinned MESH 161, DISP 16, UMTL 163, TXTS 0) and the UMTL 174 prefix fix.
+Older shader Boolean semantics remain unresolved. This does not add ANI-E,
+new supported games or exact stage/face rendering. Standalone BSA clip linking
+belongs to character addon 0.4.2, not this cutscene operator.
+
+The static-stage fixture now creates a hashed synthetic source in a new output
+folder. Run it without game files from the repository root:
+
+```sh
+blender --background --factory-startup --python-exit-code 1 --python formats/cu3/scripts/check_stage_blender.py -- output/static-stage-check
+```
+
+For source-file name checks, run from `formats/cu3`:
 
 ```sh
 python scripts/validate_names.py path/to/extracted.CU3

@@ -35,6 +35,17 @@ def read(raw):
 
 
 class TextureInventory(unittest.TestCase):
+    def test_legacy_zero_has_no_conversion_metadata(self):
+        raw=fixture(1)
+        raw=raw[:12]+struct.pack('>I',0)+raw[28:]
+        result=read(raw)
+        self.assertEqual(result['version'],0)
+        self.assertEqual([r['index'] for r in result['entries']],[0,1,2])
+        self.assertNotIn('offset',result['entries'][1])
+        self.assertEqual(result['entries'][2]['kind'],3)
+        self.assertEqual(result['entries'][0]['width'],4)
+        with self.assertRaises(FormatError):read(raw[:16]+b'BAD!'+raw[20:])
+
     def test_modern_opaque_refs_and_named_cube(self):
         for cube in (False,True):
             name=b'cube\0' if cube else b'color\0'

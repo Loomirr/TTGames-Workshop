@@ -169,6 +169,10 @@ def animate_shape_keys(obj, animation, frames):
     keys = obj.data.shape_keys
     if not keys:
         raise FormatError('No recovered shape keys on mesh')
+    if not isinstance(frames, int) or not 0 < frames <= 16384 or any(
+            not key.name.rsplit('_',1)[1].isdigit() or int(key.name.rsplit('_',1)[1]) >= animation.curves
+            for key in keys.key_blocks if key.name.startswith('TT_Target_')):
+        raise FormatError('Facial target IDs or duration do not match the native scalar block')
     action = bpy.data.actions.new(obj.name + ' / source facial targets')
     slot = action.slots.new('KEY', keys.name)
     bag = action.layers.new('Source facial weights').strips.new(type='KEYFRAME').channelbag(slot, ensure=True)

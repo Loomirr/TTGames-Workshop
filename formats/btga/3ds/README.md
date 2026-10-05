@@ -19,6 +19,24 @@ PICA raw formats are decoded without image generation or recompression.
 Vertical flipping follows our original export convention. Sub-tile mips and
 unknown headers are rejected. Existing output directories are protected.
 
+BTGA GUI 0.1.2 and the current source decoder also check exact low-level PICA
+payload lengths. Direct helper calls now reject short or trailing data instead
+of silently filling missing raw pixels. The FUSE helper checks zero-size entry
+bounds and negative decoded sizes. These are validation fixes, not additional
+ROM or sub-tile layout support.
+
+Run the separate manual, asset-free checks from the repository root:
+
+```sh
+python formats/btga/3ds/test_fuse.py
+python formats/btga/3ds/test_btga.py
+```
+
+FUSE has five standard-library checks; BTGA has six Pillow-dependent checks
+covering known pixels in all 14 supported format codes, malformed data,
+tile/flip order and stored-mip DDS output. Pixel fixtures do not establish
+compatibility with other 3DS games or every archive resource.
+
 `fuse.py` exposes `decompress` and `read_entry` for the observed payload/index
 layout. You supply the verified index row, archive offset and archive bounds.
 It does not discover RomFS, decrypt ROMs or serve as a complete ROM extractor.

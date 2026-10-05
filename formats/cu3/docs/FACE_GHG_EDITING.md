@@ -84,8 +84,10 @@ lower-detail variants are not generated automatically.
 
 The helper binding is established immediately after verified source geometry
 and shape keys are imported. An arbitrary mesh with matching key names cannot
-be exported. The general CU3 import panel still does not automatically import
-face meshes or create these bindings.
+be exported. CU3 scene assembly can import supported native face meshes and
+source bindings. It does not automatically create the separate editing
+collection expected by this face-export operator. Use the verified collection
+workflow above, or the character addon's constrained loose-source exporter.
 
 ## Standalone target workflow
 

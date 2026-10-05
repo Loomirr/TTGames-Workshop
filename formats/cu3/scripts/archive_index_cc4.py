@@ -44,5 +44,13 @@ def index(path):
     return [mapped[i] for i in range(files)]
 
 if __name__=='__main__':
-    import sys
-    rows=index(sys.argv[1]);Path(sys.argv[2]).write_text(json.dumps(rows,indent=2));print('CC4_INDEX',len(rows),'CU3',sum(r['path'].endswith('.CU3') for r in rows))
+    import argparse
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('archive',type=Path)
+    parser.add_argument('output',type=Path,help='New index JSON filename')
+    args=parser.parse_args()
+    if args.output.exists():parser.error('Choose a new output filename')
+    rows=index(args.archive)
+    args.output.parent.mkdir(parents=True,exist_ok=True)
+    with args.output.open('x',encoding='utf-8') as stream:json.dump(rows,stream,indent=2)
+    print('CC4_INDEX',len(rows),'CU3',sum(r['path'].endswith('.CU3') for r in rows))

@@ -25,8 +25,9 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
     sources, patches, vertex_patches = {}, {}, {}
     # Avoid returning a successful native bundle that silently discards a
     # modified clip. Active ANI-D editing has its own constrained writer.
-    from .animation_export import action_fingerprint
+    from .animation_export import action_fingerprint, check_linked_actions
     for clip in rig.tt_clips:
+        if clip.action:check_linked_actions(clip.action)
         if clip.action and clip.action.get('tt_native_pose_fingerprint') and action_fingerprint(clip.action)!=clip.action['tt_native_pose_fingerprint']:
             raise FormatError('Loaded animation has edits. Export it separately with Export active AN4 clip; the source bundle cannot repack edited banks: '+clip.name)
     for obj in [rig] + list(rig.children_recursive):

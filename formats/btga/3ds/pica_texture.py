@@ -8,6 +8,7 @@ from PIL import Image
 
 MOD=((2,8,-2,-8),(5,17,-5,-17),(9,29,-9,-29),(13,42,-13,-42),
      (18,60,-18,-60),(24,80,-24,-80),(33,106,-33,-106),(47,183,-47,-183))
+BITS={0:32,1:24,2:16,3:16,4:16,5:16,6:16,7:8,8:8,9:8,10:4,11:4,12:4,13:8}
 
 def etc_block(word, alpha=(1<<64)-1):
     diff=bool(word&(1<<33));flip=bool(word&(1<<32))
@@ -31,7 +32,11 @@ def etc_block(word, alpha=(1<<64)-1):
     return out
 
 def decode(data,width,height,fmt,flip_y=False):
-    if width%8 or height%8 or min(width,height)<8:raise ValueError('Unsupported tile dimensions')
+    if width%8 or height%8 or not 8<=width<=8192 or not 8<=height<=8192:
+        raise ValueError('Unsupported tile dimensions')
+    if fmt not in BITS:raise ValueError(f'Unsupported format {fmt}')
+    if len(data)!=width*height*BITS[fmt]//8:
+        raise ValueError('PICA texture payload size mismatch')
     out=Image.new('RGBA',(width,height));pixels=out.load();at=0
     if fmt in (12,13):
         for ty in range(0,height,8):
@@ -44,13 +49,11 @@ def decode(data,width,height,fmt,flip_y=False):
                     for y in range(4):
                         for x in range(4):pixels[tx+bx+x,ty+by+y]=block[y*4+x]
     else:
-        bits={0:32,1:24,2:16,3:16,4:16,5:16,6:16,7:8,8:8,9:8,10:4,11:4}
-        if fmt not in bits:raise ValueError(f'Unsupported format {fmt}')
         for ty in range(0,height,8):
             for tx in range(0,width,8):
                 for i in range(64):
                     x=(i&1)|((i>>1)&2)|((i>>2)&4);y=((i>>1)&1)|((i>>2)&2)|((i>>3)&4)
-                    nbits=bits[fmt];byteat=at//8
+                    nbits=BITS[fmt];byteat=at//8
                     v=int.from_bytes(data[byteat:byteat+(nbits+7)//8],'little')
                     if nbits==4:v=v>>(at%8)&15
                     if fmt==0:rgba=(v>>24&255,v>>16&255,v>>8&255,v&255)

@@ -14,6 +14,7 @@ from ._core.costume_materials import CostumeMaterials
 from ._core.blender_import import C, CI, row_matrix, apply_pose, prepare_pose
 from ._core.animation_bank import AnimationBank
 from ._core.animation_catalog import catalog
+from ._core.morph import animate_shape_keys
 
 STORES = ('objects', 'collections', 'meshes', 'armatures', 'materials', 'images', 'actions', 'shape_keys', 'node_groups', 'texts')
 
@@ -52,6 +53,43 @@ def write_report(name, report):
     return text.name
 
 
+def facial_actions(source, actor, child, frames):
+    """Link one verified BSA atomically, without changing existing key data."""
+    morph = source.morph_animation(actor)
+    if morph is None:return []
+    faces = [o for o in child.children if o.type=='MESH' and o.data.shape_keys]
+    # Some LB3 BSA blocks retain one extra end sample (106 vs 105 frames).
+    # Sample the body clip's original range without stretching facial time.
+    if len(actor['records']) != 1 or morph.frames not in (frames, frames+1) or not faces:
+        raise FormatError('Facial BSA needs one matching clip, target meshes and matching duration (at most one extra end sample)')
+    if any(not k.name.rsplit('_',1)[1].isdigit() or int(k.name.rsplit('_',1)[1])>=morph.curves
+           for o in faces for k in o.data.shape_keys.key_blocks if k.name.startswith('TT_Target_')):
+        raise FormatError('Facial target ID exceeds the native BSA channels')
+    before = snapshot()
+    previous = [(o.data.shape_keys,
+                 o.data.shape_keys.animation_data.action if o.data.shape_keys.animation_data else None,
+                 o.data.shape_keys.animation_data.action_slot if o.data.shape_keys.animation_data else None,
+                 [(k, k.slider_min, k.slider_max, k.value) for k in o.data.shape_keys.key_blocks]) for o in faces]
+    result = []
+    try:
+        from .animation_export import action_fingerprint
+        for obj in faces:
+            action = animate_shape_keys(obj, morph, frames)
+            result.append(dict(object=obj.name, action=action.name,
+                               slot=obj.data.shape_keys.animation_data.action_slot.identifier,
+                               fingerprint=action_fingerprint(action)))
+        return result
+    except Exception:
+        rollback(before)
+        for keys, action, slot, values in previous:
+            if keys.animation_data:
+                keys.animation_data.action = action
+                if action:keys.animation_data.action_slot = slot
+            for key, minimum, maximum, value in values:
+                key.slider_min, key.slider_max, key.value = minimum, maximum, value
+        raise
+
+
 def import_character(context, path, assets_root, game, *, definition_path=None, cache=None, attachments=True, assets=None, layer_mode='default'):
     if context.mode != 'OBJECT':
         raise FormatError('Switch to Object Mode before importing')
@@ -87,6 +125,8 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
                 raise FormatError('Cyclic or excessively nested character attachments')
             model = load_model(source)
             expected = (175,) if game in ('LB3', 'AVENGERS') else (169, 170) if game == 'HOBBIT' else (169,)
+            if game == 'LMSH1' and source.suffix.lower() == '.gsc':
+                expected = (161, 169)
             if model['mesh_version'] not in expected:
                 raise FormatError('Model version does not match the selected game')
             factory = lambda m, e, d: materials(m, e, d, attachment_tint=parent[2].get('Tint Colour') if parent else None)
@@ -206,7 +246,7 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                     action.name = path.stem + ' / ' + record['name']
                     if data is None:
                         action['tt_native_animation_source'] = str(path.resolve())
-                    attachment_actions = []
+                    attachment_actions, face_tracks = [], []
                     for child in rig.children_recursive:
                         if child.type != 'ARMATURE' or not child.get('tt_character_skeleton'):
                             continue
@@ -228,6 +268,15 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                             child_action.name = action.name + ' / ' + child.name
                             attachment_actions.append(dict(object=child.name, action=child_action.name,
                                 slot=child.animation_data.action_slot.identifier))
+                            from .animation_export import action_fingerprint
+                            attachment_actions[-1]['fingerprint'] = action_fingerprint(child_action)
+                            # Facial scalars are a separate BSA block, not bone
+                            # channels. Preserve the native target IDs and sample
+                            # only when the actor and clip duration agree.
+                            try:
+                                face_tracks.extend(facial_actions(source, a, child, r['animation'].frames))
+                            except (ValueError, KeyError, RuntimeError) as error:
+                                report['issues'].append(f'{record["name"]} / {child.name} facial targets: {error}')
                         except (ValueError, KeyError, RuntimeError) as error:
                             rollback(attachment_before)
                             if child.animation_data:
@@ -237,6 +286,7 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                             report['issues'].append(f'{record["name"]} / {child.name}: {error}')
                     source.frames = record['animation'].frames
                     action['tt_attachment_actions'] = json.dumps(attachment_actions)
+                    action['tt_facial_actions'] = json.dumps(face_tracks)
                     from .animation_export import action_fingerprint
                     action['tt_native_pose_fingerprint'] = action_fingerprint(action)
                     action['tt_character_status'] = 'Native skeleton AN4 pose; original root translation retained. Compatible attachment tracks are linked; FPS is a preview assumption and events remain separate.'

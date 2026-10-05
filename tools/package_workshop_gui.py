@@ -2,9 +2,26 @@
 import hashlib
 import json
 from pathlib import Path
+import re
+from urllib.parse import unquote, urlsplit
 from zipfile import ZipFile, ZIP_DEFLATED
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def markdown_for_package(path, included):
+    """Keep offline links when bundled; send other repo links to the source."""
+    def link(match):
+        parsed = urlsplit(match.group(2))
+        if parsed.scheme or parsed.netloc or not parsed.path:
+            return match.group()
+        resolved = (path.parent / unquote(parsed.path)).resolve()
+        if resolved in included or not resolved.is_relative_to(ROOT) or not resolved.exists():
+            return match.group()
+        url = 'https://github.com/Loomirr/TTGames-Workshop/blob/main/' + resolved.relative_to(ROOT).as_posix()
+        if parsed.fragment:url += '#' + parsed.fragment
+        return match.group(1) + url + match.group(3)
+    return re.sub(r'(\[[^\]\n]*\]\()([^\s)]+)(\))',link,path.read_text(encoding='utf-8'))
 
 
 def main():
@@ -12,7 +29,8 @@ def main():
     files = {ROOT / name for name in (
         'Launch Workshop GUI.pyw', 'tools/workshop_gui.py', 'tools/WORKSHOP_GUI.md',
         'docs/LICENSING.md', 'README.md', 'formats/cu3/scripts/cu3_name_editor.py',
-        'formats/cu3/scripts/cu3_name_editor_gui.py', 'formats/btga/3ds/pica_texture.py')}
+        'formats/cu3/scripts/cu3_name_editor_gui.py', 'formats/btga/3ds/pica_texture.py',
+        'formats/btga/3ds/FORMAT.md')}
     files.update(ROOT / data[0] for data in TOOLS.values())
     # Headless CU3 helpers import sibling parser modules, bypassing Blender's entry point.
     files.update((ROOT / 'formats/cu3/Addon/io_scene_lego_cu3').glob('*.py'))
@@ -25,7 +43,10 @@ def main():
         for path in sorted(files):
             if path.suffix not in ('.py', '.pyw', '.md'):
                 raise ValueError(f'Unexpected package file: {path}')
-            archive.write(path, path.relative_to(ROOT).as_posix())
+            name = path.relative_to(ROOT).as_posix()
+            if path.suffix == '.md':
+                archive.writestr(name,markdown_for_package(path,files))
+            else:archive.write(path,name)
     manifest_path = ROOT / 'builds/manifest.json'
     manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     relative = target.relative_to(ROOT / 'builds').as_posix()

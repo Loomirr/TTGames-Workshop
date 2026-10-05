@@ -29,9 +29,9 @@ def decompress(data,expected):
 
 def read_entry(stream,row,archive_base,archive_size):
     size=row['packed']>>5;flags=row['packed']&31;offset=row['offset']
-    if archive_base<0 or archive_size<0 or offset<0:
+    if archive_base<0 or archive_size<0 or not 0<=offset<=archive_size:
         raise ValueError('Invalid archive bounds')
-    if flags not in (0,12,13) or size>128*1024*1024:
+    if flags not in (0,12,13) or not 0<=size<=128*1024*1024:
         raise ValueError('Unsupported FUSE record')
     if not size:return b''
     stream.seek(archive_base+offset)

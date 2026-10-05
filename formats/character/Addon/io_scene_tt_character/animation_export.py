@@ -23,6 +23,18 @@ def action_fingerprint(action):
     return hashlib.sha256(json.dumps(payload,separators=(',',':')).encode()).hexdigest()
 
 
+def check_linked_actions(action):
+    """Native bundle/body writers do not serialize edited companion actions."""
+    import bpy
+    for field in ('tt_attachment_actions', 'tt_facial_actions'):
+        for track in json.loads(action.get(field, '[]')):
+            expected = track.get('fingerprint')
+            if not expected:continue  # Older imported clips lack this baseline.
+            companion = bpy.data.actions.get(track['action'])
+            if companion is None or action_fingerprint(companion) != expected:
+                raise FormatError('Linked attachment/facial action has edits; native companion animation writing is unsupported: '+track['action'])
+
+
 def export_action(context,rig,destination,*,omit_auxiliary=False):
     destination=Path(destination).expanduser().resolve()
     if destination.suffix.casefold()!='.an4' or destination.exists() or destination.with_suffix('.AN4.json').exists():
@@ -34,6 +46,7 @@ def export_action(context,rig,destination,*,omit_auxiliary=False):
     if rig.animation_data and any(not track.mute for track in rig.animation_data.nla_tracks):raise FormatError('Mute NLA tracks before active-action export')
     action=rig.animation_data.action if rig.animation_data else None
     if not action or not action.get('tt_native_pose_fingerprint'):raise FormatError('Select a newly imported native AN4 clip')
+    check_linked_actions(action)
     skeleton=json.loads(rig['tt_character_skeleton']);check_rig(rig,skeleton)
     if action.get('tt_authored_action'):
         entry=json.loads(action['tt_authored_action']);source_path=Path(entry['source'])

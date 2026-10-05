@@ -30,22 +30,34 @@ face actors in the local extracted corpus. Other layouts are rejected.
 
 ## Source tools
 
-`Addon/io_scene_lego_cu3/morph.py` contains the target decoder, the observed BSA
-weight reader and Blender shape-key helpers. The decoder currently uses
-offsets recorded by the existing mesh extractor; it is not a standalone GHG
-mesh reader. The scene builder must preserve the corrected source vertex order.
+`Addon/io_scene_lego_cu3/morph.py` contains the target decoder, the observed CU3
+BSA weight reader and Blender shape-key helpers. `native_mesh.py` now supplies
+validated target offsets directly from supported GHGs. The current Face Target
+Decoder 0.1.2 therefore needs no extraction log; `--log` remains an optional
+cross-check for older verified layouts. The scene builder must preserve native
+vertex order, Basis and target IDs.
 
 To export a target companion without importing Blender:
 
 ```text
-python scripts/decode_face_targets.py FACE_MODEL.GHG --log FACE_MODEL.log --output FACE_MODEL.morph.json
+python formats/cu3/scripts/decode_face_targets.py FACE_MODEL.GHG --output FACE_MODEL.morph.json
 ```
 
-This is an experimental source utility. It does not add a complete mesh/face
-import workflow to the current addon panel. A constrained native target writer
-and Blender editing-collection exporter are now available; see
+This utility exports target data, not a complete Blender scene. Supported face
+meshes can be loaded through CU3 scene assembly or the separate character
+importer. A constrained native target writer and Blender editing-collection
+exporter are also available; see
 [face GHG editing](FACE_GHG_EDITING.md). Their output is checked by decoding,
 but edited face GHGs have not been tested in-game yet.
+
+Character addon 0.4.2 adds standalone **big-endian** AN4 BSA playback through
+`an4.py`, separate from the **little-endian** CU3 reader. The observed blocks
+contain 53-channel ANI-D weights indexed by `TT_Target_###`. Unique matching
+face actors and compatible durations are required. This update is included in
+the character package. CU3 0.1.9 includes the shared readers but its cutscene
+operator uses the separate CU3 animation path; it does not offer standalone
+character clip linking. Face GUI 0.1.2 retains its earlier target coverage.
+See [character playback](../../character/README.md).
 
 ## What is still unresolved
 

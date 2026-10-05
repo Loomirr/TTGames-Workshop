@@ -12,7 +12,7 @@ def read_display(path, part_count):
         raise FormatError('Native display section missing')
     c = Cursor(data, at + 4)
     version = c.get('I')
-    if version not in (18, 21, 23, 24, 26, 32):
+    if version not in (16, 18, 21, 23, 24, 26, 32):
         raise FormatError(f'DISP {version} requires a separate verified reader')
     dx = version in (26, 32)
     def array(size=None):
@@ -44,6 +44,13 @@ def read_display(path, part_count):
         for size in (2, 4):
             c.take(4)
             array(size)
+        if version == 16:
+            # Three additional per-clip scalar arrays precede the specials.
+            # Treating the first count as the specials count loses hats/props.
+            for _ in range(3):
+                c.expect(b'ROTV', '4s')
+                if array(4) != len(clips):
+                    raise FormatError('DISP 16 auxiliary count differs from clip table')
         c.take(4)
     names_at = data.find(b'LBTN')
     names_start = names_at + 12

@@ -3,7 +3,7 @@
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
-- Character addon 0.4.1: independent LMSH1/LB3/Hobbit/Avengers character and declared
+- Character addon 0.4.2: independent LMSH1/LB3/Hobbit/Avengers character and declared
   animation browsers, supported ANI-D playback, native TT inner decompression,
   matching attachment tracks, separate live/composed face previews and loose native-source
   export. Explicit default/cutscene costume layers and native material role IDs
@@ -12,7 +12,7 @@ all formats or games are now supported.
   in Blender 5.2.2, with three actions each and finite evaluated poses/meshes.
   A further four-character Blender check covers Gandalf, Thorin, Killer Croc and
   Hulk with three clips each. Empty conversion-metadata texture stores now load.
-  Full roster preflights found 342/467 LMSH1, 280/361 LB3 and 375/417 Hobbit
+  Full roster preflights found 374/467 LMSH1, 280/361 LB3 and 375/417 Hobbit
   definitions passing the probed readers. These counts are not visual certification.
   Recursive attachment configuration, textures, facial timing and all clips are
   not covered by that audit. Existing vertex edits and constrained active ANI-D
@@ -24,6 +24,17 @@ all formats or games are now supported.
   instead of silently copying their original native data.
   Hobbit MESH 170 face-target writing is enabled for the observed offset layout;
   48 cached faces passed decoded no-op and edit checks. No new in-game test was performed.
+  Version 0.4.2 restores verified older static LMSH1 accessories and their
+  texture stores, fixes UMTL 174 texture alignment, and links supported
+  standalone BSA facial weights to loaded clips. Magneto's helmet, face and
+  cape were checked with three idle clips. Facial samples also matched source
+  values for Wolverine, B66 Catwoman, Bilbo and Captain America. Black Widow's
+  bracelets, Professor X's chair and Sabretooth's backpack passed unchanged
+  loose-source export/reimport. Older shader flag meanings and live facial
+  masking remain approximate. Facial/attachment action edits are rejected
+  on export; their native curves are not rewritten. These changes are bundled
+  in the character download. CU3 0.1.9 also packages the shared accessory
+  readers; standalone facial clip linking remains a character feature.
   Avengers adds 821/882 parser-ready definitions, sample Blender assembly/playback,
   modern texture/material readers and unpacked-folder round trips. TFA/DCSV/LMSH2/LOTR archive inspection is available, with explicit
   model and animation version limits. See [compatibility](../formats/character/COMPATIBILITY.md).
@@ -34,7 +45,7 @@ all formats or games are now supported.
   log is optional on the CLI and no longer needed in the GUI.
   Face writer 0.1.2 adds constrained MESH 170 target edits, with native-part validation.
 
-- CU3 0.1.8: partial LMSH1/LB3 actor, attachment, material and camera assembly
+- CU3 0.1.9: partial LMSH1/LB3 actor, attachment, material and camera assembly
   from an installed game folder or extracted assets. The addon defaults to
   assembly, detects the verified CU3 versions 18/19 and remembers per-game
   folders. Original Python archive readers load requested companions into an
@@ -49,11 +60,15 @@ all formats or games are now supported.
   and attachment tint selection reduce overlapping models and incorrect
   accessory colors. Six portable stage tests and a synthetic Blender builder
   check cover native bindings and geometry invariants, not full-scene fidelity.
-  TFA versions 22Ã¢â‚¬â€œ27 support reference inspection: 426 files were structurally
+  TFA versions 22–27 support reference inspection: 426 files were structurally
   checked. Its two private animation examples contain rigs only. TFA/DCSV
   ANI-E playback and full scene assembly remain disabled. Name rebuilding and
   hash/layout-locked face target editing have separate validation scopes.
   The workflow/dependency audit is in [WORKFLOW.md](WORKFLOW.md).
+  Version 0.1.9 packages verified older static LMSH1 accessories and UMTL 174
+  texture alignment. Synthetic Blender checks cover stage draw invariants,
+  normals, composed facial masks, shader helpers and live playback. Full scene
+  reconstruction and in-game fidelity remain separate unresolved work.
 - LSW1 HGP: original PC character reader; ten headers in the prior local sample
   remain unsupported. Version 0.1.3 corrects palette color-space handling;
   color/material-role checks cover 1,827 records in 139 readable files.
@@ -71,6 +86,10 @@ all formats or games are now supported.
   the separate character addon supports additional validated native skeleton layouts.
 - 3DS BTGA: observed 56-byte texture header, PICA tiles, stored mips. The FUSE
   helper reads indexed payloads; it does not unpack encrypted ROMs.
+  BTGA GUI 0.1.2 rejects short/trailing raw PICA payloads before allocating
+  pixels. Six asset-free texture tests cover known raw/ETC pixels, tile/flip
+  order, stored mips and DDS bytes; five FUSE command/bounds tests are separate.
+  The optional toolbox 0.1.1 is now packaged from the current sources.
 
 Character projects, LOTDK mapping and Fortnite tools are intentionally excluded
 from the public source. They remain in the private migrated archive.
@@ -78,3 +97,8 @@ from the public source. They remain in the private migrated archive.
 Run portable checks manually with `python tools/check_repository.py`.
 Blender-dependent and original-file tests are documented in each component.
 There are no scheduled checks or CI workflows in this first version.
+
+Public Markdown encoding and relative file links are checked with
+`python tools/check_docs.py`, also included in the manual repository check.
+This does not verify external URLs or certify support claims. Those claims
+require the format, Blender, visual and in-game evidence described above.

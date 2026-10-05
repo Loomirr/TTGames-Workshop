@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 4, 1), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 4, 2), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -176,7 +176,13 @@ def set_clip(self, context):
     self.animation_data.action = item.action
     self.animation_data.action_slot = slot
     tracks = json.loads(item.action.get('tt_attachment_actions', '[]'))
+    faces = json.loads(item.action.get('tt_facial_actions', '[]'))
     for child in self.children_recursive:
+        if child.type == 'MESH' and child.data.shape_keys:
+            keys = child.data.shape_keys
+            if keys.animation_data:keys.animation_data.action = None
+            for key in keys.key_blocks:
+                if key.name.startswith('TT_Target_'):key.value = 0.0
         if child.type == 'ARMATURE' and child.get('tt_character_skeleton') and child.animation_data:
             child.animation_data.action = None
             for bone in child.pose.bones:
@@ -190,6 +196,14 @@ def set_clip(self, context):
         child.animation_data_create()
         child.animation_data.action = action
         child.animation_data.action_slot = next((s for s in action.slots if s.identifier == track['slot']), None)
+    for track in faces:
+        child = next((o for o in self.children_recursive if o.name==track['object'] or o.get('tt_preview_source')==track['object']), None)
+        action = bpy.data.actions.get(track['action'])
+        if child is None or child.type!='MESH' or not child.data.shape_keys or action is None:continue
+        keys = child.data.shape_keys
+        keys.animation_data_create()
+        keys.animation_data.action = action
+        keys.animation_data.action_slot = next((s for s in action.slots if s.identifier==track['slot']), None)
     if context and context.scene:
         scene = context.scene
         scene.frame_start, scene.frame_end = 1, max(1, item.frames)

@@ -4,14 +4,14 @@ import subprocess
 import sys
 import tempfile
 from zipfile import ZipFile
-from package_individual_guis import PACKAGES, ROOT, VERSION
+from package_individual_guis import PACKAGES, ROOT, package_version
 
 
 def main():
     for name, slug in PACKAGES.items():
         with tempfile.TemporaryDirectory() as temporary:
             target = Path(temporary)
-            with ZipFile(ROOT / 'builds/python' / f'{slug}_GUI-{VERSION}.zip') as archive:
+            with ZipFile(ROOT / 'builds/python' / f'{slug}_GUI-{package_version(name)}.zip') as archive:
                 archive.extractall(target)
             script = '''
 from pathlib import Path

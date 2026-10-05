@@ -34,6 +34,9 @@ def main():
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_mesh_edit.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_an4_edit.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_face_decoder_cli.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'tools/check_docs.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/btga/3ds/test_fuse.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_archive_cc4_cli.py')],check=True,cwd=ROOT)
     from prune_builds import keep_latest
     assert not keep_latest(), 'Superseded build packages are still published'
     manifest=ROOT/'builds/manifest.json'
@@ -53,6 +56,6 @@ def main():
                         assert re.fullmatch(r'windows/LIJ1_360_Texture_Extractor-\d+\.\d+\.\d+-win64\.zip',package['path']) and name=='LIJ1_360_Texture_Extractor.exe',name
         print('Build package hashes/integrity and no-game-asset checks passed.')
     print('Source syntax/config checks passed:',counts)
-    print('Portable CU3 tests passed. Blender and original-file tests are separate.')
+    print('Portable native/archive/package and FUSE tests passed. Blender, GUI, Pillow and original-file tests are separate.')
 
 if __name__=='__main__':main()

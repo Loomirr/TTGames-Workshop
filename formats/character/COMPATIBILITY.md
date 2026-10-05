@@ -1,6 +1,6 @@
 # PC character compatibility, 5 October 2026
 
-Version 0.4.1 focuses on the PC NXG/DX11 games. Handheld character support is
+Version 0.4.2 focuses on the PC NXG/DX11 games. Handheld character support is
 separate work and is postponed. Shared file extensions do not imply shared
 binary layouts. The Blender game selector offers LMSH1, LB3, The Hobbit and Avengers;
 the other profiles below are inspection tools, not complete importers.
@@ -31,17 +31,20 @@ the other profiles below are inspection tools, not complete importers.
 
 ## Validation
 
-All 170 portable checks pass, including independently constructed archive,
+All 176 native/archive/package checks pass, including independently constructed archive,
 skeleton, display, material-role and facial target fixtures. Package integrity
 checks confirm the ZIP contains tools and documentation, with no game assets.
+The general repository review also adds five separate FUSE bounds/command
+checks; these do not broaden NXG/DX11 character support.
 
 Full installed-roster preflights were run with the current readers:
 
 | Game | Definitions checked | Parser-ready |
 | --- | ---: | ---: |
-| LMSH1 | 467 | 342 |
+| LMSH1 | 467 | 374 |
 | LB3 | 361 | 280 |
 | The Hobbit | 417 | 375 |
+| Avengers | 882 | 821 |
 
 These are character definitions across minifig, small, bigfig and creature
 families, including alternate and inherited definitions. They are not counts
@@ -59,6 +62,53 @@ The initial 0.3.0 check reported missing conversion metadata for Gandalf's cape;
 remain approximate. No new in-game export
 test was performed. Facial shape targets are readable, but cutscene target-weight
 timing is still incomplete.
+
+## Version 0.4.2 accuracy checks
+
+- The verified unskinned LMSH1 MESH 161 GSC / DXTV 161, DISP 16, UMTL 163
+  and TXTS 0 readers restore Magneto's helmet at its native attachment marker.
+  Other skin/morph layouts in MESH 161 still fail explicitly. Remaining UMTL
+  172/164 and DISP 17 layouts have not been enabled.
+- UMTL 174's shader prefix is two bytes shorter than the later prefix.
+  Correcting it restores texture indices and 15 previously rejected cached
+  accessory models. Older Boolean shader semantics are not verified;
+  vertex-albedo and opacity flags remain unknown, with an approximation notice.
+- The LMSH1 audit improved from 342/467 in 0.4.1 to 374/467 definitions passing
+  the probed readers. Black Widow's bracelets, Professor X's chair and
+  Sabretooth's backpack were imported, exported unchanged and reimported from
+  loose files in Blender 5.2.2. The recovered parts are present in inspected
+  renders; this does not certify their final shader appearance.
+- Standalone big-endian AN4 BSA blocks now supply 53-channel facial weights
+  to the matched face attachment. The BSA header, target IDs and duration are
+  checked before action creation. One extra terminal face sample is accepted
+  at the body clip's original timing. Little-endian CU3 BSA uses its separate
+  existing reader; ANI-E and unknown layouts remain rejected.
+- Three Magneto idle clips produced six facial mesh actions each. Wolverine,
+  B66 Catwoman, Bilbo and Captain America idle checks also matched decoded
+  native weights at the first, middle and last frames. Native no-op source
+  bundles remained unchanged, and switching to a clip with no BSA reset keys
+  to Basis. Magneto's helmet, face and cape and Catwoman's composed face were
+  visually inspected. Live clipping and shaders remain approximate.
+- An asset-free Blender check covers facial action switching, viewing copies,
+  bad-duration rejection, rollback after a partial failure and rejection of
+  edited linked actions on native export. Existing shape coordinates and Basis
+  stay intact. BSA weight and attachment-action editing are not encoded by
+  the native exporters. No new in-game validation was performed.
+
+Character 0.4.2 and CU3 0.1.9 contain the shared accessory-reader fixes.
+Standalone facial clip linking is exclusive to the character addon. Face GUI
+0.1.2 downloads retain their earlier target coverage.
+
+Run the synthetic Blender check without game files:
+
+```sh
+blender --background --factory-startup --python-exit-code 1 --python formats/character/check_face_clips_blender.py -- output/face-clip-check
+```
+
+Use a fresh output folder. This is an action/state check, not visual certification
+of a game character. Missing companions, unknown materials, facial render
+differences and unsupported native mesh layouts still prevent complete roster
+coverage; the counts above must not be presented as all-character accuracy.
 
 ## Other installed PC games
 

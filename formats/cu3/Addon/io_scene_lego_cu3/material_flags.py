@@ -4,12 +4,12 @@ from pathlib import Path
 
 
 def footer(data,end,version):
-    if not 174 <= version <= 202 and version not in (229,232,234,235):raise ValueError("Material footer version outside the observed family")
+    if not 174 <= version <= 202 and version not in (163,229,232,234,235):raise ValueError("Material footer version outside the observed family")
     flags='old_alpha old_atst afail aref cull zmode stencilMode noprepass filter utc vtc colour fill only2d stencil_shadows castShadows old_autoStencil colourWriteMask alwaysUpdateRefraction sortLast'.split()
     if version>=190: flags.append('externalFixupTarget')
     flags.append('alphaTestMode')
     tail='isCreaseMeshMaterial hasVariants wasSerialized legoStudMaterial maskShadows sortAfterDeferred sortAfterRefraction skipValidation specialDepthSorting forceAlphaLightingSupport noAutoScreenDoor compileLiveCubemapGenShader compileToonShader shadowImpostor shadowsFromFrontFaces doUntexturedTPage forceTPageRemap'.split()
-    if version>=164:tail.remove('sortAfterDeferred')
+    if version>=163:tail.remove('sortAfterDeferred')
     if version>=187: tail.append('forceTPageSurfType')
     if version>=191: tail.append('forceTPageAlphaFade')
     modern = version in (229,232,234,235)

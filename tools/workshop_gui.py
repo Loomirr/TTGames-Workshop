@@ -11,6 +11,8 @@ from tkinter.scrolledtext import ScrolledText
 
 ROOT = Path(__file__).resolve().parents[1]
 VERSION = '0.1.1'
+TOOL_VERSIONS = {'3DS BTGA to DDS / PNG': '0.1.2', 'Face targets: decode': '0.1.2',
+                 'Face targets: write edited copy': '0.1.2', 'DCSV archive index': '0.1.2'}
 # Fields: label, kind, command-line flag (None means positional), default.
 TOOLS = {
     '3DS BTGA to DDS / PNG': (
@@ -139,7 +141,7 @@ class Workshop:
         self.outputs = []
         self.saved = {}
         self.current = None
-        version='0.1.2' if tool in ('Face targets: decode', 'Face targets: write edited copy') else VERSION
+        version=TOOL_VERSIONS.get(tool,VERSION)
         window.title(f'{tool or "TTGames Workshop — Standalone Tools"} {version}')
         window.geometry('880x700')
         window.minsize(700, 600)

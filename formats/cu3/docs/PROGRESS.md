@@ -1,7 +1,23 @@
-# Progress — 0.1.8 experimental
+# Progress — 0.1.9 experimental
 
-Updated October 4, 2026. This records the current implementation and checks;
+Updated October 5, 2026. This records the current implementation and checks;
 it isn't a promise that every cutscene or game is supported.
+
+## 0.1.9: shared accessory readers and tool review
+
+The cutscene download now includes the shared verified static MESH 161 / DISP
+16 / UMTL 163 / TXTS 0 readers and corrected UMTL 174 texture alignment.
+Skinned or morph-bearing MESH 161 and unknown layouts remain rejected. These
+readers restored Magneto's helmet and other attachments in character checks;
+that is not a full cutscene fidelity test. Older Boolean shader meanings remain
+unknown and rendering is approximate.
+
+Blender 5.2.2 synthetic checks cover native normals, static-stage bindings,
+composed facial holdouts, shader albedo/opacity helpers and live mask/camera
+playback. The stage fixture now supplies the source file required by the
+native hash baseline, in a user-selected output folder. The [tool review](../../../docs/TOOL_REVIEW_2026-10-05.md)
+separates these checks from actual scene reconstruction and in-game validation.
+No new game test or ANI-E/full-scene support is claimed.
 
 ## 0.1.8: game-folder imports and recovered static stages
 

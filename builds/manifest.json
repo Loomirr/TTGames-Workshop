@@ -1,14 +1,14 @@
 {
   "packages": [
     {
-      "path": "blender/TT_Character_Importer_0.4.1.zip",
-      "bytes": 117636,
-      "sha256": "e7cc9144af36e221bd50545411e09676a1aadbfc2e391b380b0ad325c69303b7"
+      "path": "blender/TT_Character_Importer_0.4.2.zip",
+      "bytes": 122045,
+      "sha256": "b4bd6a8fe8a0786c0281753edd9e4b8b31d34a7ed38cfac3b7861d16184bde90"
     },
     {
-      "path": "blender/TT_Cutscene_Importer_0.1.8.zip",
-      "bytes": 88396,
-      "sha256": "3af6031655e412c62d0f780e97e6054ce9d3b200026d5230d77fc0da0e9666d7"
+      "path": "blender/TT_Cutscene_Importer_0.1.9.zip",
+      "bytes": 109818,
+      "sha256": "fbf712612968af8592b3ea1601a33e4896750a68c25e748b479c2c08062f611d"
     },
     {
       "path": "blender/lsw1_hgp_importer-0.1.3.zip",
@@ -16,9 +16,9 @@
       "sha256": "6466cc3864b2a5ed3c1447951264112c4dabe929a4edd83fbd269f043fd5a583"
     },
     {
-      "path": "python/BTGA_Texture_Converter_GUI-0.1.1.zip",
-      "bytes": 9297,
-      "sha256": "774b1074a28e13d200d8918cf3c7947a20d01a0bf1557043162220e6506de2d9"
+      "path": "python/BTGA_Texture_Converter_GUI-0.1.2.zip",
+      "bytes": 9427,
+      "sha256": "c61e043448cd284ae7ad4c0bfcbc0c9afab4505494d49c207b6d1af5284c072b"
     },
     {
       "path": "python/CU3_Dependency_Checker_GUI-0.1.1.zip",
@@ -31,9 +31,9 @@
       "sha256": "0336f3d5b1aef789fe0daa2ffde3da6f07a1a5ff95c51b215e1a82575de1e5d7"
     },
     {
-      "path": "python/DCSV_Archive_Index_GUI-0.1.1.zip",
-      "bytes": 7634,
-      "sha256": "d0c33d0a104ef0ebe2b03455d31790ae5c63904d5791cfb2e955343dbd5e9733"
+      "path": "python/DCSV_Archive_Index_GUI-0.1.2.zip",
+      "bytes": 7856,
+      "sha256": "3d62f7e197befa265eb9b6d3f70e950dac821ad7cd164d785b6ff513c1266e7b"
     },
     {
       "path": "python/Face_Target_Decoder_GUI-0.1.2.zip",
@@ -61,9 +61,9 @@
       "sha256": "4b3a3dd81d8d838f6212c813b507db43579f0cb6085e7fb0ec217395c93979bc"
     },
     {
-      "path": "python/TTGames_Workshop_GUI-0.1.0.zip",
-      "bytes": 159905,
-      "sha256": "bf09bdd9695cf83fb80914f5497c1108641e57fadedd342a6cbd97f4924cae80"
+      "path": "python/TTGames_Workshop_GUI-0.1.1.zip",
+      "bytes": 187759,
+      "sha256": "4abc04f14c7797f97a1a40ca638d5ef0b9fc84b6f3ea1182eacdaa5542b8e18c"
     },
     {
       "path": "windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip",

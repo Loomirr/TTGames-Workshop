@@ -1,6 +1,6 @@
 # Installed-game companion loading
 
-Available in CU3 importer 0.1.8. Choose **Assemble available scene assets**
+Available in CU3 importer 0.1.9 (introduced in 0.1.8). Choose **Assemble available scene assets**
 (the default), keep **Detect from CU3** for supported LMSH1/LB3 files, and set
 **Game or extracted asset folder**. Later imports can leave that field blank
 to use the corresponding saved folder in addon preferences. Preferences also

@@ -27,6 +27,24 @@ def fixture(clip=0xffffffff):
 
 
 class DisplayTests(unittest.TestCase):
+    def test_legacy_static_auxiliary_arrays_before_specials(self):
+        names=b'Accessory\0'
+        data=b'LBTN'+struct.pack('>2I',64,len(names))+names+b'PSID'+struct.pack('>I',16)
+        data+=struct.pack('>I',0)+b'ROTV'+struct.pack('>IBBI',1,0xb3,0,0)
+        data+=b'ROTV'+struct.pack('>IH4I',1,0,1,0,1,0)
+        data+=b'ROTV'+struct.pack('>IH',1,1)+b'ROTV'+struct.pack('>II',1,0)
+        for value in (123,0,0):data+=b'ROTV'+struct.pack('>II',1,value)
+        body=bytearray(208)
+        struct.pack_into('>I16f',body,0,0,1,0,0,0,0,1,0,0,0,0,1,0,2,3,4,1)
+        struct.pack_into('>4I',body,180,0,0x80000402,1,123)
+        data+=b'ROTV'+struct.pack('>I',1)+body
+        result=self.read(data)['specials'][0]
+        self.assertEqual(result['name'],'Accessory')
+        self.assertEqual(result['matrix'][12:15],[2,3,4])
+        self.assertEqual(result['parts'],[{'part':0,'material':0}])
+        malformed=data.replace(b'ROTV'+struct.pack('>II',1,123),b'ROTV'+struct.pack('>II',2,123),1)
+        with self.assertRaises(ValueError):self.read(malformed)
+
     def read(self,data):
         # Windows can restrict TemporaryDirectory permissions; use a file.
         with tempfile.NamedTemporaryFile(suffix='.gsc',delete=False) as f:

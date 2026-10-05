@@ -4,6 +4,8 @@ Use the separate [character and animation addon](../../formats/character/README.
 with the **The Hobbit** game profile. It accepts the installed game's archives
 or an extracted asset tree, browses character definitions and searches their
 declared animation sets. The current build is experimental.
+Version 0.4.2 adds supported standalone BSA facial tracks to clip playback;
+Bilbo's idle target values matched the source at three sample frames.
 
 Bilbo and Gandalf were checked in Blender with idle, run and walk clips. The
 full roster audit and remaining model/material limits are documented in the

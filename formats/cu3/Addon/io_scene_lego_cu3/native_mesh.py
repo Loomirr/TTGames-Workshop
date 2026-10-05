@@ -48,7 +48,7 @@ class MeshReader:
     def __init__(self, data, at):
         self.c = Cursor(data, at + 4)
         self.version = self.c.get('I')
-        if self.version not in (169, 170, 175):
+        if self.version not in (161, 169, 170, 175):
             raise FormatError(f'Native MESH version {self.version} is not supported')
         self.dx = self.version == 175
         self.buffers = {}
@@ -77,7 +77,7 @@ class MeshReader:
         item = {'kind': kind, 'record_offset': at, 'count': count, 'flags': flags}
         if kind == 'vertex':
             c.expect(b'DXTV', '4s')
-            c.expect(169)
+            c.expect(161 if self.version == 161 else 169)
             descriptors = [c.get('3B') for _ in range(c.count(32))]
             if not descriptors or len({a[0] for a in descriptors}) != len(descriptors):
                 raise FormatError('Empty or duplicate native vertex descriptors')
@@ -134,6 +134,8 @@ class MeshReader:
                 ids.append(c.get('I'))
             targets = None
             if ids:
+                if self.version == 161:
+                    raise FormatError('MESH 161 target streams are not verified')
                 terminal = c.at - 4
                 targets = read_targets(c.data, terminal, len(ids), vertex_count, self.dx)
                 if targets['table_offset'] != target_table:
@@ -157,6 +159,8 @@ class MeshReader:
                                    streams=streams, index_buffer=indices, first_index=first_index,
                                    index_count=index_count, first_vertex=first_vertex,
                                    vertex_count=vertex_count, palette=palette, morphs=targets))
+            if self.version == 161 and palette:
+                raise FormatError('Only unskinned MESH 161 static accessories are verified')
         if self.bases is not None and len(self.bases) != 1:
             raise FormatError('Ambiguous native buffer reference base')
         base = next(iter(self.bases)) if self.bases else None
@@ -170,6 +174,8 @@ class MeshReader:
             return item
         for part in self.parts:
             self.decode_part(part, resolve)
+            if self.version == 161 and any('indices' in v or 'packed_weights' in v for v in part['vertices']):
+                raise FormatError('MESH 161 skin streams are not verified')
         return dict(schema='tt.native-mesh.v1', mesh_version=self.version,
                     end_offset=c.at, reference_base=base, parts=self.parts)
 
@@ -231,7 +237,7 @@ def read_mesh_bytes(data):
     candidates = []
     at = data.find(b'HSEM')
     while at >= 0:
-        if at + 8 <= len(data) and int.from_bytes(data[at+4:at+8], 'big') in (169, 170, 175):
+        if at + 8 <= len(data) and int.from_bytes(data[at+4:at+8], 'big') in (161, 169, 170, 175):
             candidates.append(at)
         at = data.find(b'HSEM', at + 4)
     if len(candidates) != 1:

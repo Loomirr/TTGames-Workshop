@@ -17,6 +17,41 @@ def fixture(version,mask=15,variant=0xffffffff):
     return raw+struct.pack('>2I',123,2)
 
 class MaterialFlagTests(unittest.TestCase):
+    def test_174_prefix_two_byte_boundary_and_opaque_flags(self):
+        raw=bytearray(0x3c1)
+        struct.pack_into('>3I',raw,0,2,2,2)
+        struct.pack_into('>I',raw,104,1)
+        for i in range(16):struct.pack_into('>2I',raw,122+i*8,1 if i==0 else 0,0 if i==0 else 0xffffffff)
+        struct.pack_into('>4I',raw,329,4,10,2,4)
+        struct.pack_into('>18i',raw,406,3,*([-1]*17))
+        name=b'OlderAttachment\0';raw+=struct.pack('>H',len(name))+name
+        model=b'LTMU'+struct.pack('>3I',174,1,1)+raw+fixture(174)+b'ROTV'+bytes(17)+b'TDML'
+        fields,end=shader_prefix(raw,0,174)
+        self.assertEqual(end,406);self.assertEqual(fields['shaderVersion'],4)
+        with patch.object(Path,'read_bytes',return_value=model):
+            entry=read_materials(Path('fixture.GHG'))['materials'][0]
+        self.assertEqual(entry['texture_ids'],[3]+[-1]*17)
+        self.assertIsNone(entry['fields']['vertAlbedo'])
+        self.assertIsNone(entry['fields']['canAlphaBlend'])
+
+    def test_legacy_static_shader_prefix_and_footer(self):
+        raw=bytearray(0x3c1)
+        struct.pack_into('>3I',raw,0,2,2,2)
+        for i in range(16):struct.pack_into('>2I',raw,120+i*8,1 if i==0 else 0,0 if i==0 else 0xffffffff)
+        struct.pack_into('>4I',raw,319,4,10,2,4)
+        struct.pack_into('>18i',raw,397,3,*([-1]*17))
+        name=b'LegacyAccessory\0';raw+=struct.pack('>H',len(name))+name
+        model=b'LTMU'+struct.pack('>3I',163,1,1)+raw+fixture(163)+b'ROTV'+bytes(17)+b'TDML'
+        with patch.object(Path,'read_bytes',return_value=model):
+            entry=read_materials(Path('fixture.GSC'))['materials'][0]
+        self.assertEqual(entry['fields']['uvSets'][0],(1,0))
+        self.assertEqual(entry['texture_ids'],[3]+[-1]*17)
+        self.assertEqual(entry['render_flags']['colourWriteMask'],15)
+        self.assertEqual(entry['render_flags']['firstVariantIdx'],0xffffffff)
+        self.assertIsNone(entry['fields']['vertAlbedo'])
+        struct.pack_into('>I',raw,124,99)
+        with self.assertRaises(ValueError):shader_prefix(raw,0,163)
+
     def test_modern_shader_and_footer_boundaries(self):
         for version in (229,232,234,235):
             prefix_size=0x1ae if version==229 else 0x1ad if version==232 else 0x1af

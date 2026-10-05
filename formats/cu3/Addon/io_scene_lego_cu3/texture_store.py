@@ -15,16 +15,16 @@ def read_texture_store(path):
     if at < 0:
         raise FormatError('Missing typed TXTS texture inventory')
     version = r.get('I', at+4)
-    if version not in (1, 12, 14):
+    if version not in (0, 1, 12, 14):
         raise FormatError(f'Unsupported TXTS version {version}')
     # The conversion-metadata string is length-prefixed and may be empty.
     # Do not search later texture names/payloads for a coincidental CONVDATE.
-    length = r.get('I', at+8)
+    length = r.get('I', at+8) if version else 0
     marker = at+12
     empty_c_string = version == 14 and length == 1 and data[marker:marker+1] == b'\0'
     if length and not empty_c_string and (not 8 <= length <= 65536 or data[marker:marker+8] != b'CONVDATE'):
         raise FormatError('Unsupported texture conversion metadata')
-    cursor = marker+length
+    cursor = marker+length if version else at+8
     if data[cursor:cursor+4] != b'ROTV':
         raise FormatError('Invalid texture inventory boundary')
     count = r.get('I', cursor+4)
@@ -35,14 +35,14 @@ def read_texture_store(path):
     for index in range(count):
         digest = r.get('16s', cursor).hex()
         cursor += 16
-        length = r.get('I', cursor) if version == 1 else r.get('H', cursor+3)
-        cursor += 4 if version == 1 else 5
+        length = r.get('I', cursor) if version in (0, 1) else r.get('H', cursor+3)
+        cursor += 4 if version in (0, 1) else 5
         if not 0 <= length <= 65535:
             raise FormatError('Invalid texture name length')
         name = r.string(cursor, cursor+length) if length else ''
         cursor += length
-        kind = r.get('I', cursor) >> 8 if version == 1 else r.get('B', cursor)
-        cursor += 4 if version == 1 else 1
+        kind = r.get('I', cursor) >> 8 if version in (0, 1) else r.get('B', cursor)
+        cursor += 4 if version in (0, 1) else 1
         entry = dict(index=index, name=name, kind=kind, hash=digest)
         if version == 14:
             format_id = r.get('I', cursor)
