@@ -1,11 +1,23 @@
 # PC character compatibility, 5 October 2026
 
-Version 0.4.3 focuses on the PC NXG/DX11 games. Handheld character support is
+Version 0.5.3 retains the PC NXG/DX11 readers and adds a separate static LEGO
+Fortnite exported-asset profile. Handheld character support is
 separate work and is postponed. Shared file extensions do not imply shared
 binary layouts. The Blender game selector offers LMSH1, LB3, The Hobbit and Avengers;
-the other profiles below are inspection tools, not complete importers.
+the other TT profiles below are inspection tools, not complete importers.
+Fortnite uses an external Unreal extraction bridge or existing JSON/PNG/GLB
+exports, not the TT archive readers. Its discovered roster is not verified
+import coverage. See [Fortnite coverage](../fortnite/README.md).
 
-## New working coverage
+## Current face and material checks
+
+The 0.5.3 pass covers selected characters from all four supported TT character
+profiles. It fixes Avengers texture indexing, cutout alpha, facial preview
+layering and verified Hobbit/LB3 packed normal maps. This is not whole-roster
+or exact in-game shader certification. See the
+[validation report](../../docs/FACE_ACCURACY_0.5.3.md).
+
+## Earlier working coverage
 
 Version 0.4.3 selects the nearest verified accessory LOD and corrects the
 MESH 169 / UMTL 176 LMSH1 arm print UV choice. No new game profile is enabled.
@@ -36,13 +48,14 @@ from the remaining head/face, mirroring and shading reports.
 
 ## Validation
 
-The 188-test repository suite passes, including independently constructed archive,
+The repository's constructed tests pass, including independent archive,
 skeleton, display, material-role and facial target fixtures. Package integrity
 checks confirm the ZIP contains tools and documentation, with no game assets.
 The general repository review also adds five separate FUSE bounds/command
 checks; these do not broaden NXG/DX11 character support.
 
-Full installed-roster preflights were run with the current readers:
+Earlier installed-roster parser preflights produced the counts below. They
+predate the 0.5.3 material changes and are not a current whole-roster visual audit:
 
 | Game | Definitions checked | Parser-ready |
 | --- | ---: | ---: |

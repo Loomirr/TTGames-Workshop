@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 4, 3), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 5, 3), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -16,9 +16,11 @@ from ._core.asset_index import open_assets
 
 GAMES = [('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
          ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models'),
-         ('AVENGERS', "LEGO Marvel's Avengers", 'Observed PC DX11 characters')]
+         ('AVENGERS', "LEGO Marvel's Avengers", 'Observed PC DX11 characters'),
+         ('FORTNITE', 'LEGO Fortnite', 'Static models from exported LEGO recipes/baked meshes; no animations')]
 _catalog = []
 _catalog_assets = None
+_catalog_source = None
 
 
 class TTCHAR_Preferences(bpy.types.AddonPreferences):
@@ -27,16 +29,28 @@ class TTCHAR_Preferences(bpy.types.AddonPreferences):
     lmsh1: StringProperty(name='LMSH1 game / extracted folder', subtype='DIR_PATH')
     avengers: StringProperty(name='Avengers game / extracted folder', subtype='DIR_PATH')
     hobbit: StringProperty(name='The Hobbit game / extracted folder', subtype='DIR_PATH')
+    fortnite: StringProperty(name='LEGO Fortnite game / Paks / exported folder', subtype='DIR_PATH', description='Fortnite installation, Content/Paks folder, or an existing Exports/Models library; archive exports use a separate cache')
+    fortnite_extractor: StringProperty(name='Optional LEGO Fortnite extractor', subtype='FILE_PATH', description='Separately built Workshop.Fortnite.Extractor executable; no external tools are bundled')
+    fortnite_settings: StringProperty(name='Private Fortnite extractor settings', subtype='FILE_PATH', description='Private JSON with mappings, key-file and Oodle paths; Paks mode sets source and cache output automatically')
     cache: StringProperty(name='Optional asset cache', subtype='DIR_PATH')
 
     def draw(self, context):
-        for prop in ('lb3', 'lmsh1', 'hobbit', 'avengers', 'cache'):
+        for prop in ('lb3', 'lmsh1', 'hobbit', 'avengers', 'fortnite', 'fortnite_extractor', 'fortnite_settings', 'cache'):
             self.layout.prop(self, prop)
 
 
 def preferences(context):
     addon = context.preferences.addons.get(__package__)
     return addon.preferences if addon else None
+
+
+def fortnite_source(prefs):
+    from .fortnite_backend import resolve_source
+    if not prefs or not prefs.fortnite:
+        raise ValueError('Set the LEGO Fortnite game, Paks or exported-library folder first')
+    return resolve_source(bpy.path.abspath(prefs.fortnite),
+        bpy.path.abspath(prefs.cache) if prefs.cache else None,
+        bpy.path.abspath(prefs.fortnite_settings) if prefs.fortnite_settings else None)
 
 
 def character_catalog(assets):
@@ -61,7 +75,7 @@ class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
     resource: EnumProperty(name='Character', items=lambda self, context: _catalog)
 
     def invoke(self, context, event):
-        global _catalog_assets, _catalog
+        global _catalog_assets, _catalog, _catalog_source
         prefs = preferences(context)
         game = context.scene.tt_character_game
         root = getattr(prefs, game.lower()) if prefs else ''
@@ -69,6 +83,21 @@ class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
             self.report({'ERROR'}, 'Set the game folder in addon preferences or the TT Character panel first')
             return {'CANCELLED'}
         try:
+            if game == 'FORTNITE':
+                from .fortnite_catalog import ExportLibrary
+                selected = fortnite_source(prefs)
+                if selected.paks and (not prefs.fortnite_extractor or not prefs.fortnite_settings):
+                    raise ValueError('Paks browsing needs the optional Fortnite extractor and private settings in addon preferences')
+                _catalog_source = selected
+                if selected.paks and not (selected.root/'lego-fortnite-index.json').is_file():
+                    bpy.ops.tt_character.fortnite_extract('INVOKE_DEFAULT', index_only=True)
+                    return {'CANCELLED'}
+                _catalog_assets = ExportLibrary(selected.root)
+                _catalog = [(v['resource'], v['label'] + ' [' + v['code'] + '] (' + v['mode'] + ')', v['resource']) for v in _catalog_assets.catalog()]
+                if not _catalog:
+                    raise ValueError('No LEGO Fortnite dataless recipes or baked character exports found')
+                context.window_manager.invoke_search_popup(self)
+                return {'RUNNING_MODAL'}
             _catalog_assets = open_assets(bpy.path.abspath(root), game,
                 cache_root=bpy.path.abspath(prefs.cache) if prefs.cache else None)
             _catalog = character_catalog(_catalog_assets)
@@ -85,9 +114,25 @@ class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
             self.report({'ERROR'}, 'Open the character browser again')
             return {'CANCELLED'}
         try:
-            path = _catalog_assets.find_exact(self.resource)
             prefs = preferences(context)
             game = context.scene.tt_character_game
+            if game == 'FORTNITE':
+                from .fortnite_importer import import_fortnite
+                from .fortnite_catalog import MissingExport
+                if _catalog_source != fortnite_source(prefs):
+                    raise ValueError('The Fortnite folder or archive build changed; open the character browser again')
+                entry = next(v for v in _catalog_assets.catalog() if v['resource'] == self.resource)
+                try:
+                    _catalog_assets.plan(entry)
+                except MissingExport:
+                    if not entry.get('backend_resource') or not prefs.fortnite_extractor or not prefs.fortnite_settings:
+                        raise
+                    bpy.ops.tt_character.fortnite_extract('INVOKE_DEFAULT', resource=self.resource)
+                    return {'FINISHED'}
+                rig, report = import_fortnite(context, _catalog_assets.root, self.resource)
+                self.report({'INFO'}, f'Imported {rig.name}; static source printing and normals. See TT LEGO Fortnite report for shader limits.')
+                return {'FINISHED'}
+            path = _catalog_assets.find_exact(self.resource)
             rig, report = import_character(context, path, Path(bpy.path.abspath(getattr(prefs, game.lower()))), game,
                 cache=Path(bpy.path.abspath(prefs.cache)) if prefs.cache else None, assets=_catalog_assets)
         except (ValueError, OSError, KeyError, RuntimeError) as error:
@@ -120,6 +165,9 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
         if not self.properties.is_property_set('game'):
             self.game = context.scene.tt_character_game
         prefs = preferences(context)
+        if self.game == 'FORTNITE':
+            self.report({'ERROR'}, 'Use Browse game characters for LEGO Fortnite exported recipes; CD/GHG/GSC import is for TT games')
+            return {'CANCELLED'}
         root = self.assets or (getattr(prefs, self.game.lower()) if prefs else '') or str(Path(self.filepath).parent)
         try:
             rig, report = import_character(context, Path(self.filepath), Path(bpy.path.abspath(root)), self.game,
@@ -289,6 +337,12 @@ class TTCHAR_OT_preview(bpy.types.Operator):
     def execute(self, context):
         from .preview import create_preview
         rig = find_character(context.object)
+        if context.scene.tt_character_game == 'FORTNITE':
+            from .fortnite_importer import find_fortnite
+            rig = find_fortnite(context.object)
+            if self.composed_faces:
+                self.report({'ERROR'}, 'LEGO Fortnite uses a different facial shader; the TT composed-mask helper does not apply')
+                return {'CANCELLED'}
         if rig is None:
             return {'CANCELLED'}
         try:
@@ -296,7 +350,9 @@ class TTCHAR_OT_preview(bpy.types.Operator):
         except (ValueError, RuntimeError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
-        self.report({'INFO'}, 'F12 renders composed facial masks' if self.composed_faces else 'Use camera view and Material Preview; Space plays animations')
+        self.report({'INFO'}, 'F12 renders composed facial masks' if self.composed_faces else
+                    'Use camera view and Material Preview to inspect the static model' if rig.get('tt_fortnite_static') else
+                    'Use camera view and Material Preview; Space plays animations')
         return {'FINISHED'}
 
 
@@ -362,11 +418,26 @@ class TTCHAR_PT_tools(bpy.types.Panel):
         if prefs:
             layout.prop(prefs, context.scene.tt_character_game.lower(), text='Game folder')
         layout.operator('import_scene.tt_game_character', text='Browse game characters', icon='VIEWZOOM')
+        if context.scene.tt_character_game == 'FORTNITE':
+            from .fortnite_importer import find_fortnite
+            character = find_fortnite(context.object)
+            if character:
+                layout.label(text=character.name, icon='MESH_DATA')
+                layout.operator('tt_character.preview', text='Create static character preview scene', icon='SCENE_DATA')
+            layout.label(text='Static models, source colors, printing and normals.')
+            layout.label(text='Game/Paks folder or existing export library.')
+            layout.label(text='Facial atlas and special shaders remain approximate.')
+            if prefs and prefs.fortnite_extractor and prefs.fortnite_settings:
+                layout.operator('tt_character.fortnite_extract', text='Refresh installed LEGO outfit index').index_only=True
+            return
         layout.operator('import_scene.tt_character', text='Import character / model')
         layout.operator('import_anim.tt_an4', text='Import AN4 animations')
         rig = find_rig(context.object)
         if rig:
             layout.label(text=rig.name, icon='ARMATURE_DATA')
+            layout.operator('tt_character.preview', icon='SCENE_DATA')
+            layout.label(text='Use camera view in the preview for facial masking.')
+            layout.operator('tt_character.preview', text='Create composed face preview', icon='RENDER_STILL').composed_faces=True
             layout.prop(rig, 'tt_animation_search', text='', icon='VIEWZOOM')
             layout.operator('tt_character.refresh_animations')
             if rig.tt_animation_assets:
@@ -376,8 +447,6 @@ class TTCHAR_PT_tools(bpy.types.Panel):
             layout.label(text='Loaded clips')
             layout.template_list('TTCHAR_UL_clips', '', rig, 'tt_clips', rig, 'tt_clip_index', rows=5)
             layout.operator('screen.animation_play', text='Play / Pause', icon='PLAY')
-            layout.operator('tt_character.preview', icon='SCENE_DATA')
-            layout.operator('tt_character.preview', text='Create composed face preview', icon='RENDER_STILL').composed_faces=True
             layout.operator('tt_character.export_sources', icon='EXPORT')
             if rig.animation_data and rig.animation_data.action:
                 layout.operator('tt_character.export_action', icon='EXPORT')
@@ -397,7 +466,76 @@ def menu_import(self, context):
     self.layout.operator(IMPORT_ANIM_OT_tt_an4.bl_idname)
 
 
-CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools)
+_fortnite_job = False
+
+
+class TTCHAR_OT_fortnite_extract(bpy.types.Operator):
+    bl_idname = 'tt_character.fortnite_extract'
+    bl_label = 'Extract LEGO Fortnite character'
+    bl_options = {'REGISTER', 'UNDO'}
+    index_only: BoolProperty(default=False)
+    resource: StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return not _fortnite_job and context.mode == 'OBJECT'
+
+    def invoke(self, context, event):
+        global _fortnite_job
+        from concurrent.futures import ThreadPoolExecutor
+        from .fortnite_backend import run_backend
+        from .fortnite_catalog import ExportLibrary
+        prefs = preferences(context)
+        try:
+            self._selected = fortnite_source(prefs)
+            self._root = self._selected.root
+            if not prefs.fortnite_extractor or not prefs.fortnite_settings:
+                raise ValueError('Set the optional Fortnite extractor and private settings in addon preferences')
+            source = None
+            if not self.index_only:
+                entry = next((v for v in ExportLibrary(self._root).catalog() if v['resource']==self.resource), None)
+                if not entry or not entry.get('backend_resource'):
+                    raise ValueError('Character has no installed-game inventory reference')
+                source = entry['backend_resource']
+        except (ValueError, OSError, KeyError) as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        self._executor = ThreadPoolExecutor(max_workers=1)
+        self._future = self._executor.submit(run_backend, bpy.path.abspath(prefs.fortnite_extractor),
+            bpy.path.abspath(prefs.fortnite_settings), self._root, 'index' if self.index_only else 'export', source,
+            paks=self._selected.paks)
+        self._scene = context.scene
+        _fortnite_job = True
+        self._timer = context.window_manager.event_timer_add(.25, window=context.window)
+        context.window_manager.modal_handler_add(self)
+        context.workspace.status_text_set('Indexing LEGO Fortnite outfits...' if self.index_only else 'Extracting LEGO Fortnite model and textures...')
+        return {'RUNNING_MODAL'}
+
+    def modal(self, context, event):
+        global _fortnite_job
+        if not self._future.done():
+            return {'PASS_THROUGH'}
+        context.window_manager.event_timer_remove(self._timer)
+        self._executor.shutdown(wait=False)
+        _fortnite_job = False
+        context.workspace.status_text_set(None)
+        try:
+            self._future.result()
+            if context.scene != self._scene or context.scene.tt_character_game != 'FORTNITE' or self._selected != fortnite_source(preferences(context)):
+                self.report({'INFO'}, 'Extraction complete; return to the LEGO Fortnite browser to import')
+            elif self.index_only:
+                bpy.ops.import_scene.tt_game_character('INVOKE_DEFAULT')
+            else:
+                from .fortnite_importer import import_fortnite
+                obj, report = import_fortnite(context, self._root, self.resource)
+                self.report({'INFO'}, 'Imported ' + obj.name + '; see TT LEGO Fortnite report for shader limits')
+        except (ValueError, OSError, KeyError, RuntimeError) as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
+CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools, TTCHAR_OT_fortnite_extract)
 
 
 def register():

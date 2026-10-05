@@ -1,5 +1,54 @@
 # Changelog
 
+## TT face and material corrections — 5 October 2026
+
+- Character 0.5.3 / CU3 0.1.12 correct Avengers material texture indexing and
+  bounded UV metadata; uncertain modern shader flags remain opaque.
+- Apply verified cutout alpha, retain solid beard/mask printing outside facial
+  clipping and include root-linked body meshes in compositor depth holdouts.
+- Extend verified packed normals to Hobbit/LB3 layouts and bind their actual
+  mesh UV channels without changing native coordinates or topology.
+- Move character preview buttons above the animation list. Facial rendering
+  remains approximate; see [sample checks](docs/FACE_ACCURACY_0.5.3.md).
+
+## Fortnite recipe fixes and Whiplash hair normals — 5 October 2026
+
+- Character 0.5.2 follows declared head materials rather than guessed filenames,
+  handles the verified standard-head color selector and checks missing model/map
+  companions before import so installed extraction can retry partial output.
+- Deduplicates mounted Fortnite package references in the bridge and browser;
+  this installation contains 2,376 distinct figure sources. Discovery is not
+  tested coverage. Adds a separate static preview scene with the correct profile.
+- Character 0.5.2 / CU3 0.1.11 load layout-gated packed LMSH1 surface normal maps,
+  reproducing the missing grooves on Whiplash's hair without changing meshes,
+  source normals, bones or native vertex payloads.
+- Updates the issue and support notes: Whiplash's facial masking and expression
+  fidelity remain incomplete, as do Fortnite split arm colors and extra roles.
+
+## Fortnite Paks-folder browsing — 5 October 2026
+
+- Character 0.5.1 accepts the Fortnite installation or Content/Paks folder in
+  the same Game folder field as other profiles. Export libraries still work.
+- Automatically separates exports into build-specific caches and supplies
+  source/output paths to the configured extraction bridge. Private template
+  paths remain relative to their original file; key contents are not copied.
+- Archive/dependency metadata changes select a new cache. Game files and the
+  settings template remain untouched. The external extractor is still required
+  for cooked archives; no new model/material coverage is claimed.
+
+## LEGO Fortnite static character profile — 5 October 2026
+
+- Character 0.5.0 adds LEGO Fortnite export-library browsing, generic default
+  dataless recipes and supported baked skeletal meshes. Animations stay disabled.
+- Reconstructs native plastic LUT colors, layered printing and normal maps;
+  retains source shader textures. Unknown selectors/replacement roles fail clearly.
+- Adds an optional original .NET installed-game extraction bridge using external
+  reviewed Unreal dependencies. No keys, mappings, external tools or runtimes
+  are bundled; outputs remain separate from the game. Highest-mip extraction
+  rejects unavailable streamed texture payloads instead of silently blurring prints.
+- Documentation distinguishes discovery, tested imports and incomplete Unreal
+  facial/special shader reconstruction. Character-specific projects remain private.
+
 ## Issue #1: minifigure LODs and LMSH1 arm printing — 5 October 2026
 
 - Character 0.4.3 / CU3 0.1.10 select the nearest verified accessory LOD,

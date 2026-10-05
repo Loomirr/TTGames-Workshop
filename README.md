@@ -15,8 +15,9 @@ game does not mean support for every TT game that uses the same extension.
 
 | Area | What is here | Current status |
 | --- | --- | --- |
-| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.4.3 experimental; LMSH1/LB3/Hobbit/Avengers, supported facial playback, older static accessories, constrained vertex/face and ANI-D export |
-| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, installed-game actor and static stage loading, name editor, source animation and face tools | 0.1.10 experimental; shared accessory-reader fixes, partial LMSH1/LB3 assembly, TFA/DCSV reference inspection |
+| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.5.3 experimental; LMSH1/LB3/Hobbit/Avengers plus static LEGO Fortnite exports; constrained TT native editing |
+| [LEGO Fortnite](formats/fortnite/README.md) | Static exported models, recipe materials and optional installed-game extraction bridge | Early JSON/PNG/GLB import; Unreal readers and runtimes supplied separately, shaders incomplete |
+| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, installed-game actor and static stage loading, name editor, source animation and face tools | 0.1.12 experimental; shared accessory-reader fixes, partial LMSH1/LB3 assembly, TFA/DCSV reference inspection |
 | [LSW1 HGP models](formats/hgp/lsw1/README.md) | Character meshes, native skeletons, corrected palette colors, textures, face alpha and normal maps | 0.1.3; original 2005 PC game only |
 | [LIJ1 Xbox 360 prototype textures](formats/nu20/lij1-xbox360/README.md) | Drag-and-drop Windows DDS extractor and format notes | 0.1.2; BC1/2/3/5, float, cubemaps, TEX and font textures |
 | [LMSH1 AN4 animation](formats/an4/lmsh1/README.md) | Scalar decoder, corrected rotation sampler and experimental BVH export | Observed ANI-D layouts and original Marvel rig |
@@ -57,7 +58,8 @@ ignored `local/`; see
 [the local workspace guide](docs/LOCAL_WORKSPACE.md).
 
 Character-specific experiments, suit profiles, LOTDK texture mapping and
-Fortnite research are also kept local. This repo focuses on reusable TT file
+historical Fortnite projects are also kept local. The reusable Fortnite profile
+contains tool code only and keeps its external dependencies separate. This repo focuses on reusable TT file
 format tools and importers, rather than character projects.
 
 ## Contributing

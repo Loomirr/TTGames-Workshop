@@ -13,6 +13,9 @@ original=[tuple(v.co) for v in detail.data.vertices]
 bpy.ops.mesh.primitive_plane_add(size=1,location=(0,0,0.1));mask=bpy.context.object
 mask['source_model']='FACE_FIXTURE';mask['tt_colour_write_mask']=0
 original_mask=[tuple(v.co) for v in mask.data.vertices]
+bpy.ops.mesh.primitive_plane_add(size=1,location=(0,0,.2));printing=bpy.context.object
+printing.name='Native cutout printing';printing['source_model']='FACE_FIXTURE';printing['tt_colour_write_mask']=15
+printing['tt_native_alpha_test']=5;printing['tt_native_draw_order']=0;printing['tt_native_cast_shadows']=False
 excluded=bpy.data.collections.new('Excluded variant fixture');scene.collection.children.link(excluded)
 bpy.ops.mesh.primitive_cube_add(location=(10,0,0));variant=bpy.context.object
 for collection in list(variant.users_collection):collection.objects.unlink(variant)
@@ -24,7 +27,10 @@ for frame,camera in [(1,first),(5,second)]:scene.timeline_markers.new(str(frame)
 assert bpy.ops.scene.tt_live_preview(detail_level=2)=={'FINISHED'}
 live=bpy.context.scene
 assert live!=scene and live.get('tt_live_preview')
-copy=next(o for o in live.objects if o.type=='MESH' and o.get('tt_colour_write_mask')==15)
+copy=next(o for o in live.objects if o.type=='MESH' and o.get('tt_colour_write_mask')==15 and o.get('tt_native_alpha_test')!=5)
+copyprint=next(o for o in live.objects if o.get('tt_native_alpha_test')==5)
+assert not copyprint.modifiers.get('TT live facial clipping')
+assert copyprint.modifiers.get('TT facial depth bias') and not printing.modifiers
 copymask=next(o for o in live.objects if o.type=='MESH' and o.get('tt_colour_write_mask')==0)
 assert copy.data!=detail.data and copy.data.shape_keys!=detail.data.shape_keys
 assert [tuple(v.co) for v in detail.data.vertices]==original

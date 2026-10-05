@@ -19,6 +19,7 @@ def create_preview(context, rig, *, composed_faces=False):
 
 def build_preview(context, rig, *, composed_faces=False):
     scene = bpy.data.scenes.new(rig.name + (' / Composed face preview' if composed_faces else ' / Animation preview'))
+    scene.tt_character_game = context.scene.tt_character_game
     scene.render.fps = 30
     copies = {}
     for source in [rig] + list(rig.children_recursive):
@@ -56,12 +57,14 @@ def build_preview(context, rig, *, composed_faces=False):
     low = Vector(tuple(min(p[i] for p in points) for i in range(3)))
     high = Vector(tuple(max(p[i] for p in points) for i in range(3)))
     center, extent = (low+high)/2, max((high-low).length, .1)
+    front = -1 if rig.get('tt_fortnite_static') else 1
     data = bpy.data.cameras.new('Character preview camera')
     camera = bpy.data.objects.new(data.name, data)
     scene.collection.objects.link(camera)
-    camera.location = center + Vector((0, extent*2.5, extent*.12))
+    camera.location = center + Vector((0, front*extent*2.5, extent*.12))
     camera.rotation_euler = (center-camera.location).to_track_quat('-Z','Y').to_euler()
     data.type, data.ortho_scale = 'ORTHO', extent*1.2
+    data.clip_start = max(extent*.001, .00001)
     scene.camera = camera
     scene.render.resolution_x, scene.render.resolution_y, scene.render.resolution_percentage = 720, 900, 100
     scene.world = bpy.data.worlds.new('Character preview world')
@@ -72,7 +75,7 @@ def build_preview(context, rig, *, composed_faces=False):
         light.energy, light.shape, light.size = power*extent*extent*.05, 'DISK', extent*2
         obj = bpy.data.objects.new(light.name, light)
         scene.collection.objects.link(obj)
-        obj.location = center + Vector(offset)*extent
+        obj.location = center + Vector((offset[0],front*offset[1],offset[2]))*extent
         obj.rotation_euler = (center-obj.location).to_track_quat('-Z','Y').to_euler()
     if preview_rig.type == 'ARMATURE' and preview_rig.pose.bones:
         evaluated = preview_rig.evaluated_get(depsgraph)
@@ -91,7 +94,9 @@ def build_preview(context, rig, *, composed_faces=False):
         scene['tt_character_preview_notes'] = 'F12 renders the composed facial depth-mask passes. Native shaders and expression timing remain approximate; source scene is preserved.'
     else:
         prepare_live(scene, detail_level=3)
-        scene['tt_character_preview_notes'] = 'Use camera view and Material Preview for live depth-mask clipping. Geometry-node clipping approximates native depth tests; source scene is preserved.'
+        scene['tt_character_preview_notes'] = ('Static LEGO Fortnite model, source colors/printing/normals; facial atlases and special shaders remain incomplete. Source scene is preserved.'
+            if rig.get('tt_fortnite_static') else
+            'Use camera view and Material Preview for live depth-mask clipping. Geometry-node clipping approximates native depth tests; source scene is preserved.')
     context.window.scene = scene
     context.view_layer.objects.active = preview_rig
     preview_rig.select_set(True)

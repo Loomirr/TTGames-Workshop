@@ -5,9 +5,9 @@ import math
 from pathlib import Path
 import bpy
 from .cu3 import FormatError
-from .material_preview import attach_vertex_albedo, attach_vertex_opacity
+from .material_preview import attach_vertex_albedo, attach_vertex_opacity, attach_normal_map
 from .texture_store import read_texture_store
-from .native_materials import costume_slot, costume_uv_index
+from .native_materials import costume_slot, costume_uv_index, surface_normal_binding
 
 def multiply_base_tint(material, tint, label, property_name):
     if len(tint)!=3 or not all(math.isfinite(v) and v>=0 for v in tint):
@@ -50,7 +50,7 @@ class CostumeMaterials:
             self.images[key] = image
         return self.images[key]
 
-    def model_image(self, model, index):
+    def model_texture(self, model, index):
         source = Path(model['source'])
         relative = source.relative_to(self.assets.root).with_suffix('.NXG_TEXTURES')
         path = self.assets.find_exact(relative.as_posix(), required=False)
@@ -66,8 +66,11 @@ class CostumeMaterials:
             raise FormatError(f'Texture {index} in {path.name} is an external/shared slot')
         if entry['kind'] == 3:
             raise FormatError('VTF data cannot be used as surface albedo')
-        return self.dds_image((path,index), store['data'][entry['offset']:entry['end']],
-                              path.stem+f' / texture {index}')
+        return path, entry, store['data'][entry['offset']:entry['end']]
+
+    def model_image(self, model, index):
+        path, entry, data = self.model_texture(model, index)
+        return self.dds_image((path,index), data, path.stem+f' / texture {index}')
 
     def __call__(self, model, entry, definition, attachment_tint=None):
         material = bpy.data.materials.new(Path(model['source']).stem+' / '+entry['name'])
@@ -107,7 +110,7 @@ class CostumeMaterials:
                 image = self.model_image(model, entry['texture_ids'][0])
                 node = nodes.new('ShaderNodeTexImage');node.image=image
                 links.new(node.outputs['Color'], surface.inputs['Base Color'])
-                if entry['fields']['canAlphaBlend']:
+                if entry['fields']['canAlphaBlend'] or entry['fields'].get('alphaTest') == 5:
                     links.new(node.outputs['Alpha'], surface.inputs['Alpha'])
                 uv_index = entry['fields']['uvSets'][0][1]
                 if uv_index == 0xffffffff:uv_index = 0
@@ -134,5 +137,29 @@ class CostumeMaterials:
             multiply_base_tint(material,attachment_tint,'Character attachment tint','tt_attachment_tint')
         attach_vertex_opacity(material, native_ignore_vertex_opacity=bool(entry['fields']['ignoreVertexOpacity']),
                               native_can_alpha_blend=bool(entry['fields']['canAlphaBlend']))
+        if entry['fields'].get('alphaTest') == 5 and surface.inputs['Alpha'].is_linked:
+            # Preserve cutouts even when the native material is not blended.
+            # Alpha-test reference is stored as an eight-bit footer value.
+            alpha = surface.inputs['Alpha']
+            threshold = nodes.new('ShaderNodeMath');threshold.operation = 'GREATER_THAN'
+            threshold.inputs[1].default_value = entry['render_flags']['aref']/255
+            links.new(alpha.links[0].from_socket, threshold.inputs[0])
+            links.new(threshold.outputs[0], alpha)
+            if hasattr(material, 'surface_render_method'):material.surface_render_method='DITHERED'
+            material['tt_native_alpha_reference'] = entry['render_flags']['aref']
+        normal = surface_normal_binding(entry, model['mesh_version'])
+        if normal:
+            try:
+                path, texture, data = self.model_texture(model, normal['texture'])
+                at = data.find(b'DDS ')
+                if texture['kind'] != 1 or at < 0 or data[at+84:at+88] != b'DXT5':
+                    raise FormatError('Native surface normal needs the verified embedded DXT5 layout')
+                image = self.dds_image((path,normal['texture'],'normal'), data, path.stem+f' / normal {normal["texture"]}')
+                attach_normal_map(material, image, packed_x_alpha=normal['packed_x_alpha'],
+                                  uv_map=f'Source uv {normal["uv"]}')
+                material['tt_native_normal_source'] = str(path)
+                material['tt_native_normal_texture'] = normal['texture']
+            except (ValueError, RuntimeError, OSError) as error:
+                self.report.append({'material':entry['name'], 'issue':str(error)})
         material['tt_material_status'] = 'Costume texture/tint or native vertex color; full shader reconstruction incomplete'
         return material

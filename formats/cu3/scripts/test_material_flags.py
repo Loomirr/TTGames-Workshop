@@ -3,7 +3,7 @@ import unittest,struct,sys,types
 from pathlib import Path
 R=Path(__file__).resolve().parents[1];p=types.ModuleType('io_scene_lego_cu3');p.__path__=[str(R/'Addon/io_scene_lego_cu3')];sys.modules[p.__name__]=p
 from io_scene_lego_cu3.material_flags import footer,read_render_flags
-from io_scene_lego_cu3.native_materials import costume_slot,costume_uv_index,shader_prefix,read_materials
+from io_scene_lego_cu3.native_materials import costume_slot,costume_uv_index,shader_prefix,read_materials,surface_normal_binding
 from unittest.mock import patch
 
 def fixture(version,mask=15,variant=0xffffffff):
@@ -17,6 +17,34 @@ def fixture(version,mask=15,variant=0xffffffff):
     return raw+struct.pack('>2I',123,2)
 
 class MaterialFlagTests(unittest.TestCase):
+    def normal_entry(self):
+        return dict(table_version=176,texture_ids=[-1]*6+[3]+[-1]*11,
+            fields=dict(surfaceMapMethod=1,surfaceMapFormat0=5,uvSets=[(0,0xffffffff)]*4+[(1,0)]+[(0,0xffffffff)]*11))
+
+    def test_verified_normal_slot_and_uv(self):
+        self.assertEqual(surface_normal_binding(self.normal_entry(),169),dict(texture=3,uv=0,packed_x_alpha=True))
+        for mesh, table in ((170,191),(175,196),(175,202),(175,232),(175,234)):
+            entry=self.normal_entry();entry['table_version']=table
+            self.assertEqual(surface_normal_binding(entry,mesh),dict(texture=3,uv=0,packed_x_alpha=True))
+
+    def test_normal_version_gate(self):
+        for mesh,table in ((175,176),(169,175),(169,232)):
+            entry=self.normal_entry();entry['table_version']=table
+            self.assertIsNone(surface_normal_binding(entry,mesh))
+
+    def test_unknown_surface_encoding_is_not_a_normal(self):
+        entry=self.normal_entry();entry['fields']['surfaceMapFormat0']=4
+        self.assertIsNone(surface_normal_binding(entry,169))
+
+    def test_normal_requires_enabled_valid_uv(self):
+        for uv in ((0,0),(1,0xffffffff),(1,16)):
+            entry=self.normal_entry();entry['fields']['uvSets'][4]=uv
+            self.assertIsNone(surface_normal_binding(entry,169))
+
+    def test_absent_normal_texture_not_assigned(self):
+        entry=self.normal_entry();entry['texture_ids'][6]=-1
+        self.assertIsNone(surface_normal_binding(entry,169))
+
     def test_174_prefix_two_byte_boundary_and_opaque_flags(self):
         raw=bytearray(0x3c1)
         struct.pack_into('>3I',raw,0,2,2,2)
@@ -54,15 +82,21 @@ class MaterialFlagTests(unittest.TestCase):
 
     def test_modern_shader_and_footer_boundaries(self):
         for version in (229,232,234,235):
-            prefix_size=0x1ae if version==229 else 0x1ad if version==232 else 0x1af
+            prefix_size={229:0x1ae,232:0x1a9,234:0x1ab,235:0x1ab}[version]
             shader_at=0x181 if version==229 else 0x180 if version==232 else 0x182
             raw=bytearray(0x480)
             struct.pack_into('>I',raw,0,2)
             struct.pack_into('>4I',raw,shader_at,4,10,2,0)
+            if version in (232,234,235):
+                uv_at=0x9a if version==232 else 0x9c
+                struct.pack_into('>I',raw,uv_at-18,2);raw[uv_at-1]=4
+                for i in range(17):struct.pack_into('>2I',raw,uv_at+i*8,1 if i in (0,4) else 0,2 if i==4 else 0 if i==0 else 0xffffffff)
             fields,end=shader_prefix(raw,0,version)
             self.assertEqual(end,prefix_size);self.assertEqual(fields['shaderVersion'],4)
-            struct.pack_into('>17iI',raw,prefix_size,*([-1]*17),17)
-            raw[prefix_size+72:prefix_size+89]=bytes([4]*17)
+            slots=18 if version in (232,234,235) else 17
+            texture_ids=[-1]*slots;texture_ids[0]=2;texture_ids[6]=5
+            struct.pack_into('>'+str(slots)+'iI',raw,prefix_size,*texture_ids,17)
+            raw[prefix_size+slots*4+4:prefix_size+slots*4+21]=bytes([4]*17)
             name_at=0x40a if version==229 else 0x3fd if version==232 else 0x3ff
             name=b'NativeMaterial\0';struct.pack_into('>H',raw,name_at,len(name));raw[name_at+2:name_at+2+len(name)]=name
             flags=bytearray(76);flags[3]=125;flags[15]=15
@@ -74,8 +108,15 @@ class MaterialFlagTests(unittest.TestCase):
             with patch.object(Path,'read_bytes',return_value=model):
                 material=read_materials(Path('fixture.GHG'))['materials'][0]
             self.assertEqual(material['texture_formats'],[4]*17)
-            self.assertEqual(material['texture_ids'],[-1]*17)
-            if version==229:self.assertIsNone(material['fields']['vertAlbedo'])
+            self.assertEqual(material['texture_ids'],texture_ids)
+            if version in (229,232,234,235):self.assertIsNone(material['fields']['vertAlbedo'])
+            if version in (232,234,235):
+                self.assertEqual(material['fields']['uvSets'][0],(1,0))
+                self.assertEqual(material['fields']['uvSets'][4],(1,2))
+                self.assertEqual(material['fields']['numBones'],4)
+                self.assertEqual(material['fields']['numUVSets'],2)
+                struct.pack_into('>I',raw,uv_at+4,99)
+                with self.assertRaises(ValueError):shader_prefix(raw,0,version)
 
     def test_native_costume_role_overrides_name_guess(self):
         self.assertEqual(costume_slot({'name':'LEFTARM_GAME:VARIANT_AUTO','render_flags':{'special_id':24}}),24)

@@ -8,7 +8,7 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.10** (experimental).
+Current source and packaged build: **0.1.12** (experimental).
 Import now defaults to assembling supported actors, attachments, materials,
 source cameras and experimental static stage geometry. Supply the selected
 CU3 and its installed LB3/LMSH1 game folder or an extracted asset tree. The
@@ -19,6 +19,10 @@ nested scenes, rigid props, original lighting, audio and effects are not
 automatically reconstructed. Faces and native shaders also need more work.
 Game assets and example Blender scenes are not included here.
 
+Version 0.1.12 corrects facial preview layering, cutout alpha and Avengers texture
+references in the shared model reader. Verified packed surface-normal maps now
+also cover selected Hobbit/LB3 layouts. See the
+[face accuracy report](../../docs/FACE_ACCURACY_0.5.3.md) for checks and limits.
 Version 0.1.10 includes the shared model fixes for nearest-detail accessory
 LODs and the verified LMSH1 arm print UV layout. Stage draw-pool interpretation
 and source camera/animation axes remain unchanged. Reimport to rebuild actors;
@@ -42,7 +46,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.10 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.10.zip)
+Download the [0.1.12 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.12.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

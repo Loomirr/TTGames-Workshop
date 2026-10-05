@@ -36,6 +36,26 @@ def costume_uv_index(entry, mesh_version):
     return 0 if value == 0xffffffff else value
 
 
+def surface_normal_binding(entry, mesh_version):
+    """Verified packed surface0 layouts; other formats remain unassigned.
+
+    The gated LMSH1/Hobbit/LB3-family layouts store the DXT5 normal in texture slot 6 and its UV
+    selector in pair 4. Surface format 5 packs tangent X in alpha, Y in green
+    and Z in blue. File payload validation happens before creating nodes.
+    """
+    fields = entry['fields']
+    if (mesh_version, entry.get('table_version')) not in {
+            (169, 176), (170, 191), (175, 196), (175, 202), (175, 232), (175, 234)}:
+        return None
+    if fields.get('surfaceMapMethod') != 1 or fields.get('surfaceMapFormat0') != 5:
+        return None
+    texture = entry['texture_ids'][6]
+    enabled, uv = fields['uvSets'][4]
+    if texture < 0 or enabled != 1 or uv not in range(16):
+        return None
+    return dict(texture=texture, uv=uv, packed_x_alpha=True)
+
+
 def shader_prefix(data, start, version):
     if version == 163:
         # Older static NXG accessories have a separate bounded prefix. Boolean
@@ -141,7 +161,29 @@ def shader_prefix(data, start, version):
         read(f'lightType{i} lightModel{i}')
         read(f'softShadow{i}', 'B')
     read('sceneZAccess shadowZAccess PCFMethod rainSplashSurfaceType')
-    if modern:
+    if version in (232, 234, 235):
+        # These records retain eighteen texture IDs. The previous reader
+        # consumed the first as an opaque prefix, shifting every texture.
+        # UVs likewise start before the guessed later flag block. Keep that
+        # flag block opaque until its individual meanings are established.
+        r = Reader(data)
+        uv_at = 0x9a if version == 232 else 0x9c
+        fields['numUVSets'] = r.get('I', start + uv_at - 18)
+        fields['numBones'] = r.get('B', start + uv_at - 1)
+        fields['uvSets'] = [r.get('2I', start + uv_at + i*8) for i in range(17)]
+        if fields['numUVSets'] > 17 or fields['numBones'] > 4 or any(
+                enabled not in (0, 1) or uv not in (*range(16), 0xffffffff)
+                for enabled, uv in fields['uvSets']):
+            raise FormatError('Unverified modern material UV/bone prefix')
+        verified = ('version shaderType lightingModel substanceMode roughnessMode fresnelAlphaMode '
+                    'blendMode alphaTest alphaFadeSource surfaceMapMethod surfaceMapFormat0 '
+                    'surfaceMapFormat1 surfaceMapFormat2 surfaceMapFormat3 surfaceMapFormatVTFN '
+                    'occlusion refraction reflection numUVSets numBones uvSets '
+                    'shaderVersion GPUVendor colourSpace').split()
+        fields = {key: fields[key] for key in verified}
+        fields['opaqueShaderFlags'] = list(data[start+uv_at+17*8:start+(0x180 if version==232 else 0x182)])
+        fields['vertAlbedo'] = fields['canAlphaBlend'] = fields['ignoreVertexOpacity'] = fields['zBias'] = None
+    elif modern:
         read('opaqueModernTexturePrefix')
     if version == 174:
         # The verified earlier prefix is two bytes shorter. Its Boolean
@@ -199,7 +241,7 @@ def read_materials(path):
             continue
         fields, texture_at = shader_prefix(data, candidate, version)
         modern = version in (229, 232, 234, 235)
-        slots = 17 if modern else 18
+        slots = 17 if version == 229 else 18
         ids = list(r.get(f'{slots}i', texture_at))
         if any(i < -1 or i > 65536 for i in ids):
             continue
@@ -207,9 +249,10 @@ def read_materials(path):
             raise FormatError('Overlapping native material fields')
         formats = []
         if modern:
-            if r.get('I', texture_at+slots*4) != slots:
+            format_count = r.get('I', texture_at+slots*4)
+            if format_count != 17:
                 raise FormatError('Native material texture-format count differs from slots')
-            formats = list(r.get(f'{slots}B', texture_at+slots*4+4))
+            formats = list(r.get(f'{format_count}B', texture_at+slots*4+4))
             if fields['version'] != 2 or fields['shaderVersion'] != 4 or fields['numUVSets'] > 17:
                 raise FormatError('Unverified modern shader prefix values')
         entries.append({'index':len(entries), 'offset':candidate, 'table_version':version, 'name':raw[:-1].decode('ascii'),

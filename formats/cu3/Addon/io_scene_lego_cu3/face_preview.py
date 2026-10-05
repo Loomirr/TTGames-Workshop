@@ -10,6 +10,33 @@ def face_objects(scene):
             (obj.get('source_model','').startswith('FACE_') or obj.get('source_model')=='SpiderFace')]
 
 
+def masked_detail(obj):
+    """Keep cutout printing and unbiased legacy surfaces in the solid pass.
+
+    Missing provenance retains the historical inspection behavior. This is
+    a preview classification, not a complete native draw-stage implementation.
+    """
+    return obj.get('tt_colour_write_mask') == 0 or not (
+        obj.get('tt_native_alpha_test') == 5 or obj.get('tt_native_z_bias') == 0)
+
+
+def prepare_depth(objects):
+    """Resolve coplanar preview surfaces in native draw order, after skinning."""
+    for obj in objects:
+        mask = obj.get('tt_colour_write_mask') == 0
+        if 'tt_native_draw_order' not in obj:
+            if mask:depth_bias_modifier(obj)
+            continue
+        if masked_detail(obj):
+            distance = .0003 * (obj['tt_native_draw_order'] + 1)
+        elif obj.get('tt_native_cast_shadows') and obj.get('tt_native_alpha_test') != 5:
+            continue  # Authored solid hair/beard geometry, not a flat decal.
+        else:
+            distance = .001
+        depth_bias_modifier(obj, distance, camera_only=mask)
+        obj['tt_face_preview_pass'] = 'masked detail' if masked_detail(obj) else 'solid printing'
+
+
 def prepare_render(scene):
     """Set up scene-local source surfaces, including initially hidden masks."""
     objects=face_objects(scene)
@@ -22,7 +49,9 @@ def prepare_render(scene):
         raise ValueError('Make a full scene copy before preparing facial render layers')
     collection=bpy.data.collections.new('TT native facial surfaces')
     scene.collection.children.link(collection)
+    prepare_depth(objects)
     for obj in objects:
+        if not masked_detail(obj):continue
         for owner in list(obj.users_collection):owner.objects.unlink(obj)
         collection.objects.link(obj)
         if obj in masks:
@@ -33,7 +62,15 @@ def prepare_render(scene):
             # participate in the facial pass for holdout masking to work.
             obj.hide_render=False
             obj.hide_set(False,view_layer=scene.view_layers[0])
-            depth_bias_modifier(obj)
+    # Character preview copies can have meshes linked directly to the scene.
+    # They must be depth occluders in the facial pass, just like meshes inside
+    # collections; otherwise the two passes shade the head differently.
+    direct=[obj for obj in scene.collection.objects if obj.type=='MESH']
+    if direct:
+        solid=bpy.data.collections.new('TT solid source surfaces')
+        scene.collection.children.link(solid)
+        for obj in direct:
+            scene.collection.objects.unlink(obj);solid.objects.link(obj)
     scene.view_layers[0].update()
     setup_layers(scene,collection)
     scene.render.engine='CYCLES'
@@ -52,7 +89,7 @@ def depth_mask_material():
     material['tt_colour_write_mask']=0
     return material
 
-def depth_bias_modifier(obj, distance=.001):
+def depth_bias_modifier(obj, distance=.001, *, camera_only=True):
     """A rendering offset after skin/morph evaluation; never edits Basis."""
     modifier=obj.modifiers.get('TT facial depth bias')
     if modifier:return modifier
@@ -67,8 +104,9 @@ def depth_bias_modifier(obj, distance=.001):
     modifier=obj.modifiers.new('TT facial depth bias','NODES');modifier.node_group=tree
     obj['tt_preview_depth_bias']=distance
     # Source masks have castShadow=0; holdout must only affect the camera ray.
-    for prop in ('visible_shadow','visible_diffuse','visible_glossy','visible_transmission','visible_volume_scatter'):
-        if hasattr(obj,prop):setattr(obj,prop,False)
+    if camera_only:
+        for prop in ('visible_shadow','visible_diffuse','visible_glossy','visible_transmission','visible_volume_scatter'):
+            if hasattr(obj,prop):setattr(obj,prop,False)
     return modifier
 
 def setup_layers(scene, face_collection):

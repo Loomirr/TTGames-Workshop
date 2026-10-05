@@ -8,6 +8,14 @@ automatically rebuilt. Preserve edited scenes before reimporting.
 
 ## Corrected
 
+- The reporter's newer example identifies **LMSH1 Whiplash**. Character 0.5.2
+  and CU3 0.1.11 additionally load its hair's declared packed DXT5 normal map.
+  This is gated to the observed MESH 169 / UMTL 176 surface0 format 5 layout,
+  texture slot 6 and native UV selector 4. Tangent X comes from alpha, Y from
+  green and Z from blue; the normal image is treated as non-color channel data.
+  Other surface encodings remain unsupported. Before/after composed renders
+  show recovered hair grooves; the source geometry and native normals remain
+  intact, and unchanged native export still has zero patched vertex bytes.
 - Static hair and hats were using the first, far-distance display clip.
   The model builder now selects the nearest/highest-detail clip from the
   native, consecutive LOD table. It validates finite descending distance
@@ -63,8 +71,9 @@ complete scene or shader fidelity.
 
 ## Still being investigated
 
-- **Head textures/faces:** the report needs exact character names and a
-  screenshot showing the failure. Animated facial detail meshes, base head
+- **Head textures/faces:** Whiplash is now reproduced; its raw facial
+  surfaces overlap without the native depth-mask approximation, while the
+  composed result still lacks complete facial/expression fidelity. Animated facial detail meshes, base head
   printing and depth-only masks are different systems. Faces still need the
   live/composed preview helpers and the native shader remains approximate.
   Storm's skinned hair additionally needs the currently unsupported UMTL 172
@@ -79,5 +88,19 @@ complete scene or shader fidelity.
   targets; replacing authored normals can erase intentional hard edges.
   A visible seam example is needed before changing this behavior.
 
+The black points and lines over the reporter's body are Blender rig overlays.
+Disable viewport overlays to inspect the surfaces, or create the separate
+character preview. This does not repair the underlying facial shader limits.
+
 The issue remains open for these unresolved items. The confirmed fixes can be
 tested independently in the latest character and cutscene downloads.
+
+## Follow-up: four-game face and skinned-detail reports
+
+Character 0.5.3 and CU3 0.1.12 address the follow-up screenshots of Axel Alonso,
+Thrain, Alfred and Captain America AOU. Fixes cover the shifted Avengers texture
+list, native alpha cutouts, solid face printing versus masked facial details,
+and verified Hobbit/LB3 packed normal maps. The sampled body LOD tables already
+select their highest-detail parts; no speculative LOD or topology change was made.
+See the [evidence and limits](FACE_ACCURACY_0.5.3.md). These local checks do not
+close the remaining fidelity or mirroring reports, and are not in-game validation.

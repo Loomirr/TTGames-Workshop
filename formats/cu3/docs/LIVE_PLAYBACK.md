@@ -49,3 +49,8 @@ blender --background --factory-startup --python-exit-code 1 --python scripts/che
 This covers copied meshes/keys, animated clipping, camera-cut driver remapping,
 unchanged original geometry and rollback for unsupported cameras. Actual
 viewport capture and original-file scene checks are separate private tests.
+
+In 0.1.12, solid beard/mask printing stays outside camera-ray facial clipping.
+Verified packed normal maps and native alpha cutouts improve selected source
+materials. Create a fresh preview after reimporting; existing saved previews
+are not rewritten. The draw-order depth offsets remain approximations.

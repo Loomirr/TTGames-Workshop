@@ -3,7 +3,23 @@
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
-- Character addon 0.4.3: independent LMSH1/LB3/Hobbit/Avengers character and declared
+- LEGO Fortnite static profile (character 0.5.2): searchable exported recipe and
+  baked-model assembly, original plastic LUT colors, layered printing and normals.
+  Four Wolverine-family outfits passed offline Blender assembly; Wolverine and
+  Peely were extracted from the installed 42.30 build into a fresh cache and
+  imported. The deduplicated streamed inventory contains 2,376 figure sources; that
+  is not tested import coverage. Runtime facial atlases and special shaders are
+  incomplete. The optional bridge uses external Unreal dependencies and rejects
+  unavailable full-resolution mips. Version 0.5.2 accepts install/Paks folders,
+  creates separate build caches and preserves the private settings template.
+  Eleven constructed cache/settings checks pass; installed Blender checks cover
+  live Paks indexing, Wolverine/Peely imports and fresh Wolverine extraction.
+  A broader 0.5.2 check decodes 41 recipes and imports twelve of fourteen selected
+  figures; split arm colors and an unverified neck accessory are explicitly
+  rejected. See [the import audit](FORTNITE_IMPORT_AUDIT.md) for exact scope.
+  See [setup and limits](../formats/fortnite/README.md).
+
+- Character addon 0.5.3: independent LMSH1/LB3/Hobbit/Avengers character and declared
   animation browsers, supported ANI-D playback, native TT inner decompression,
   matching attachment tracks, separate live/composed face previews and loose native-source
   export. Explicit default/cutscene costume layers and native material role IDs
@@ -45,7 +61,7 @@ all formats or games are now supported.
   log is optional on the CLI and no longer needed in the GUI.
   Face writer 0.1.2 adds constrained MESH 170 target edits, with native-part validation.
 
-- CU3 0.1.10: partial LMSH1/LB3 actor, attachment, material and camera assembly
+- CU3 0.1.12: partial LMSH1/LB3 actor, attachment, material and camera assembly
   from an installed game folder or extracted assets. The addon defaults to
   assembly, detects the verified CU3 versions 18/19 and remembers per-game
   folders. Original Python archive readers load requested companions into an
@@ -102,3 +118,6 @@ Public Markdown encoding and relative file links are checked with
 `python tools/check_docs.py`, also included in the manual repository check.
 This does not verify external URLs or certify support claims. Those claims
 require the format, Blender, visual and in-game evidence described above.
+
+The [0.5.3 face accuracy report](FACE_ACCURACY_0.5.3.md) records the four-game
+material and facial preview corrections, sample checks and remaining limits.

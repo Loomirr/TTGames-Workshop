@@ -53,8 +53,7 @@ Live setup now also applies the composed preview's small post-skin depth
 offset to its zero-colour facial raycast targets. Without it, coplanar mask
 surfaces exposed repeated teeth and mouth interiors in the LMSH1 Stark Tower
 example. This remains an explicit rendering approximation: eye/brow clipping
-and fine mouth edges still differ from game rendering. Only mask modifiers
-change; source Basis coordinates and topology remain intact.
+and fine mouth edges still differ from game rendering. Preview modifiers change; source Basis coordinates and topology remain intact.
 
 The revised private V6 viewing copies render new Cycles/compositor movie caches
 from those repaired source stages, with recovered audio and editable scenes
@@ -101,3 +100,14 @@ blender --background --factory-startup --python scripts/check_face_preview_blend
 V5 close-ups are much cleaner, but full shot alignment, exact shaders,
 procedural sand, some facial control timing and VFX remain incomplete. This
 does not establish a universal face importer or an in-game face writer.
+
+## Current pass separation (0.1.12)
+
+Verified alpha-cutout printing and unbiased legacy solid face surfaces remain
+with the body. Mouth/eye detail uses the masked pass. Root-linked body meshes
+also become depth holdouts, preventing differently shaded rectangular patches.
+Preview offsets use native draw order for coplanar masked surfaces, after
+skinning; they approximate depth bias and are not decoded game shader values.
+The live helper uses the same classification. Reimport and create a new preview
+to obtain source metadata needed by these changes. See the
+[four-game checks](../../../docs/FACE_ACCURACY_0.5.3.md).

@@ -69,7 +69,7 @@ def create_model(model, name, collection, definition=None, material_factory=None
     companion = dict(schema='tt.relative-position-targets.v1', mesh_version=model['mesh_version'],
         sha256=hashlib.sha256(Path(model['source']).read_bytes()).hexdigest(),
         parts={str(p['index']):p['morphs'] for p in model['parts'] if p['morphs']})
-    for special, binding, part, joint, transform in prepared:
+    for draw_order, (special, binding, part, joint, transform) in enumerate(prepared):
         vertices = part['vertices']
         mesh = bpy.data.meshes.new(f'{name} / {special["name"]} / {part["index"]}')
         mesh.from_pydata([transform @ Vector(v['position'][:3]) for v in vertices], [], part['triangles'])
@@ -110,7 +110,9 @@ def create_model(model, name, collection, definition=None, material_factory=None
             baseline.data.foreach_set('vector',[x for normal in mesh.corner_normals for x in normal.vector])
         index = binding['material']
         entry = model['materials'][index]
-        if index not in materials:
+        uv_names = tuple(mesh.uv_layers.keys())
+        material_key = (index, uv_names)
+        if material_key not in materials:
             if material_factory:
                 material = material_factory(model, entry, definition)
             else:
@@ -121,8 +123,24 @@ def create_model(model, name, collection, definition=None, material_factory=None
                     node.layer_name = 'SourceColor'
                     material.node_tree.links.new(node.outputs['Color'], material.node_tree.nodes['Principled BSDF'].inputs['Base Color'])
                 material['tt_material_status'] = 'Vertex-color inspection; texture/lighting reconstruction incomplete'
-            materials[index] = material
-        mesh.materials.append(materials[index])
+            # Packed UV pairs can occupy more than one source attribute.
+            # Keep export-layer names but resolve the shader's ordinal UV
+            # selector against all recovered pairs, including a third pair.
+            for node in material.node_tree.nodes if material.node_tree else ():
+                if node.type not in {'UVMAP', 'NORMAL_MAP'} or not node.uv_map.startswith('Source uv '):continue
+                number = int(node.uv_map.rsplit(' ',1)[1])
+                if number < len(uv_names):node.uv_map = uv_names[number]
+                elif uv_names:
+                    raise FormatError(f'Material UV selector {number} exceeds native mesh channels')
+            materials[material_key] = material
+        mesh.materials.append(materials[material_key])
+        obj['tt_native_cast_shadows'] = bool(entry['render_flags']['castShadows'])
+        obj['tt_native_draw_order'] = draw_order
+        obj['tt_native_alpha_test'] = entry['fields'].get('alphaTest', -1)
+        if 175 <= entry['table_version'] <= 202:
+            obj['tt_native_z_bias'] = entry['fields']['zBias']
+        if hasattr(obj, 'visible_shadow'):
+            obj.visible_shadow = bool(entry['render_flags']['castShadows'])
         bind_materials(obj)
         if entry['render_flags']['colourWriteMask']==0:
             obj['tt_colour_write_mask'] = 0

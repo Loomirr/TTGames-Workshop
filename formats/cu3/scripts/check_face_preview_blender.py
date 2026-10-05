@@ -18,11 +18,21 @@ face.data.shape_keys.key_blocks['TT_Target_003'].value=.5;bpy.context.view_layer
 assert max(abs((v.co-w).x-.125) for v,w in zip(evaluated.data.vertices,original))<1e-7
 bpy.ops.mesh.primitive_plane_add();mask=bpy.context.object;mask['source_model']='FACE_FIXTURE';mask['tt_colour_write_mask']=0
 before=[v.co.copy() for v in mask.data.vertices]
+bpy.ops.mesh.primitive_plane_add(location=(3,0,0));printing=bpy.context.object
+printing['source_model']='FACE_FIXTURE';printing['tt_colour_write_mask']=15
+printing['tt_native_alpha_test']=5;printing['tt_native_draw_order']=0
+printing['tt_native_cast_shadows']=False
+original_print=[v.co.copy() for v in printing.data.vertices]
 assert bpy.ops.scene.tt_facial_preview()=={'FINISHED'}
 assert bpy.context.scene.get('tt_face_preview')
 assert len(bpy.context.scene.view_layers)==2
 assert mask.modifiers.get('TT facial depth bias')
 assert max((v.co-w).length for v,w in zip(mask.data.vertices,before))==0
 assert mask.visible_shadow is False
+assert printing['tt_face_preview_pass']=='solid printing'
+assert max((v.co-w).length for v,w in zip(printing.data.vertices,original_print))==0
+solid=next(c for c in bpy.context.scene.view_layers['TT facial surfaces'].layer_collection.children if printing.name in c.collection.objects)
+assert solid.holdout
+assert not bpy.context.scene.view_layers['TT solid surfaces'].layer_collection.children[solid.name].exclude
 addon.unregister()
 print('FACE_PREVIEW_REGRESSION_PASSED: zero static defaults, weighted target geometry, registration, depth layers, source coordinates unchanged',flush=True)

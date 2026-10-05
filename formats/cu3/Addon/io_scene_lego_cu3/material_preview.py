@@ -45,11 +45,12 @@ def attach_vertex_opacity(material, *, native_ignore_vertex_opacity, native_can_
     material['tt_vertex_opacity_layer']=layer
     return True
 
-def attach_normal_map(material, image, packed_x_alpha=False, flip_green=True):
+def attach_normal_map(material, image, packed_x_alpha=False, flip_green=True, uv_map=None):
     tree=material.node_tree;nodes=tree.nodes;links=tree.links
     principled=next((n for n in nodes if n.type=='BSDF_PRINCIPLED'),None)
     if not principled or principled.inputs['Normal'].is_linked:return False
     image.colorspace_settings.name='Non-Color'
+    if packed_x_alpha:image.alpha_mode='CHANNEL_PACKED'
     texture=nodes.new('ShaderNodeTexImage');texture.image=image;texture.label='Native tangent-space normal'
     split=nodes.new('ShaderNodeSeparateColor');links.new(texture.outputs['Color'],split.inputs[0])
     combine=nodes.new('ShaderNodeCombineColor')
@@ -60,6 +61,10 @@ def attach_normal_map(material, image, packed_x_alpha=False, flip_green=True):
     else:links.new(split.outputs['Green'],combine.inputs['Green'])
     links.new(split.outputs['Blue'],combine.inputs['Blue'])
     normal=nodes.new('ShaderNodeNormalMap');links.new(combine.outputs[0],normal.inputs['Color']);links.new(normal.outputs[0],principled.inputs['Normal'])
+    if uv_map is not None:
+        uv=nodes.new('ShaderNodeUVMap');uv.uv_map=uv_map
+        links.new(uv.outputs['UV'],texture.inputs['Vector'])
+        normal.uv_map=uv_map
     material['tt_normal_encoding']='X=alpha, Y=green, Z=blue' if packed_x_alpha else 'RGB normal'
     material['tt_normal_green_flipped']=flip_green
     return True

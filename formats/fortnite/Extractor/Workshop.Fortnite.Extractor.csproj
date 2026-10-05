@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(CUE4ParseRoot)' != '' And '$(CUE4ParseBinRoot)' == ''">
+    <ProjectReference Include="$(CUE4ParseRoot)/CUE4Parse-Conversion/CUE4Parse-Conversion.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(CUE4ParseBinRoot)' != ''">
+    <Reference Include="$(CUE4ParseBinRoot)/*.dll" />
+    <None Include="$(CUE4ParseBinRoot)/runtimes/**/*" Link="runtimes/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="$(CUE4ParseBinRoot)/runtimes/win-x64/native/*.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Condition="'$(OS)' == 'Windows_NT'" />
+  </ItemGroup>
+  <Target Name="RequireExternalReader" BeforeTargets="ResolveReferences" Condition="'$(CUE4ParseRoot)' == '' And '$(CUE4ParseBinRoot)' == ''">
+    <Error Text="Supply -p:CUE4ParseRoot=path/to/reviewed/CUE4Parse. External readers/runtimes are not bundled." />
+  </Target>
+</Project>

@@ -1,17 +1,35 @@
 # TT Character and Animation Importer
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters. Version **0.4.3**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.3**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.4.3.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.3.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
 An optional extraction cache must be outside the game installation.
+
+For **LEGO Fortnite**, select the installation or `FortniteGame/Content/Paks`
+folder. The optional separately built Unreal extraction bridge indexes it and
+extracts selected outfits into a separate cache in the background. Existing
+exported JSON/PNG/GLB libraries also work without an extractor. No external
+reader, mappings, keys or proprietary runtime is bundled. This profile has no
+animations or native export. See [Fortnite setup and limits](../fortnite/README.md).
+Version 0.5.2 follows declared recipe head materials, handles the verified
+standard-head color selector, retries incomplete installed-mode exports and
+deduplicates archive discovery. Its static preview button creates a separate
+scene. The [broader Fortnite audit](../../docs/FORTNITE_IMPORT_AUDIT.md) separates
+successful sample imports from unsupported layouts.
+
+Version 0.5.3 corrects Avengers texture references, native alpha cutouts and
+facial preview pass separation. Verified packed normal maps now also work on
+selected Hobbit and LB3 layouts, including their packed UV channels. Reimport
+to apply the changes and create a fresh preview scene. See the
+[face accuracy checks and remaining limits](../../docs/FACE_ACCURACY_0.5.3.md).
 
 ## Import a character
 

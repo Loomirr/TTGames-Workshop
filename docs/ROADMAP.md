@@ -12,9 +12,9 @@ and cutscene completeness come before adding more game profiles.
 - Expand DCSV coverage with explicit version gates and original-file checks.
 - Consolidate reusable model/texture readers as their layouts are verified.
 
-LEGO Fortnite is a possible later addition. Keep the current character-specific
-experiments private until the tool accepts user-selected LEGO characters and
-can extract their meshes, textures, variants and material data. Check several
-different characters before adding it publicly, document any unsupported paths,
-and retain third-party dependencies externally. The first version contains no
-Fortnite tools, LOTDK mapper or suit/character project scripts.
+The early LEGO Fortnite profile now accepts user-selected exported recipes and
+baked models, with an optional installed-game extraction bridge. Broaden its
+replacement-part and material coverage, recover source display names and finish
+static facial atlas rendering. Roster discovery does not establish import or
+visual accuracy. Keep character experiments, LOTDK mapping and external readers
+private/separate; see [Fortnite coverage](../formats/fortnite/README.md).

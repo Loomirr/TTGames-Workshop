@@ -25,6 +25,11 @@ game format, byte order, skeleton, material layout or build system.
   repos or game engine source into this repository without license review.
 - Update support notes when coverage changes. Keep documentation plain and
   clear; AI assistance is acknowledged in the README.
+- After updating a Blender addon for this workstation, install the newest
+  validated build into the user's current Blender profile and verify the
+  installed version loads. Back up replaced files under ignored `local/`,
+  preserve preferences and projects, and report if a restart is needed.
+- Keep GitHub issue replies short: fixes, version/commit and remaining needs.
 - Commit and push when requested. Do not create scheduled checks or automation.
 
 The private historical workspace is documented in `docs/LOCAL_WORKSPACE.md`.
