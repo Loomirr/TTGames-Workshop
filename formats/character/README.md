@@ -1,13 +1,13 @@
 # TT Character and Animation Importer
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.6**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.7**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.6.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.7.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -32,6 +32,14 @@ to apply the changes and create a fresh preview scene. See the
 [face accuracy checks and remaining limits](../../docs/FACE_ACCURACY_0.5.3.md).
 
 ## Import a character
+
+Version 0.5.7 adds shared-source conflict rejection, verified staged output,
+strict resource identity, bounded archive/DDS reads and raw skin-weight
+diagnostics. Normal-helper availability is visible in preview diagnostics.
+These are safety and validation improvements within the existing format gates;
+new original-file and in-game verification remain local follow-up work. See
+[the checkpoint](../../docs/HANDOFF_P2_P5_CHECKPOINT.md) and
+[remaining handoff](../../TTGames_Workshop_Remaining_Handoff.md).
 
 Version 0.5.6 preserves attachment texture dependencies when an optional import
 fails and records consumed companion revisions for native export. Changed
@@ -140,6 +148,19 @@ Events, audio, IK and gameplay transitions are not fully reproduced.
 
 ## Export loose native files
 
+Version 0.5.7 groups all imported instances by canonical source path. Identical
+proposed payloads produce one output file. Divergent proposals, including one
+edited and one unchanged instance, reject the entire export with the source and
+instance names before output is published.
+
+The complete bundle is staged in a private sibling directory, reread and checked
+against its SHA-256 inventory and manifest, then published only if the chosen
+destination is still absent. Existing files, folders and symbolic links are
+never replaced. A failed write removes only this operation's staging directory;
+a second export can retry at the same unused destination. Publication uses the
+platform's exclusive rename primitive on the same filesystem; it does not
+promise cross-filesystem atomicity or survival of sudden power loss.
+
 Select the character and use **Export loose native files / supported edits**.
 Choose a fresh folder outside the installed game and extraction cache. This
 writes native model files, character definitions, texture companions and the
@@ -167,7 +188,7 @@ Normal padding stays intact. Weight Paint edits must be normalized, use at most
 four influences, and reference only bones already in that part's native palette.
 The verified byte weights keep a total of 255. Rigid joint reassignment, new
 palette bones, changed rest bones and conflicting shared buffers are rejected.
-Reimport with the current 0.4.3 build to establish normal/material baselines and rigid bindings;
+Reimport with the current build to establish normal/material baselines and rigid bindings;
 older saved imports do not contain those new validation fields.
 
 Object placement, evaluated modifiers, topology, new skin palettes, material

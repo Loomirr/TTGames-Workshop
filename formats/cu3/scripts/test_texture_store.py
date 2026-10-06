@@ -25,6 +25,7 @@ def fixture(version=12):
         struct.pack_into('<I',header,4,124)
         struct.pack_into('<2I',header,12,4,4)
         struct.pack_into('<I',header,76,32)
+        struct.pack_into('<I',header,80,4);header[84:88]=b'DXT1'
         raw += header+b'\xff'*8
     return bytes(raw)
 
@@ -54,7 +55,9 @@ class TextureInventory(unittest.TestCase):
             if cube:raw+=struct.pack('>H',len(name))+name+b'\x05'
             else:raw+=struct.pack('>3H',2,2,7)
             dds=bytearray(128);dds[:4]=b'DDS ';struct.pack_into('<I',dds,4,124);struct.pack_into('<2I',dds,12,4,4);struct.pack_into('<I',dds,76,32)
-            row=read(raw+dds+bytes(8))['entries'][0]
+            struct.pack_into('<I',dds,80,4);dds[84:88]=b'DXT1'
+            if cube:struct.pack_into('<I',dds,112,0xfe00)
+            row=read(raw+dds+bytes(48 if cube else 8))['entries'][0]
             self.assertEqual(row['name'],name[:-1].decode());self.assertEqual(row['width'],4)
             if not cube:self.assertEqual(row['opaque_refs'],[2,7])
             if cube:
@@ -100,6 +103,32 @@ class TextureInventory(unittest.TestCase):
         raw = bytearray(fixture());struct.pack_into('>I',raw,12,35)
         with self.assertRaisesRegex(FormatError,'version'):read(bytes(raw))
         with self.assertRaises(FormatError):read(fixture()[:45])
+
+    def test_trailers_are_not_given_to_the_image_reader(self):
+        raw=fixture();second=raw.rfind(b'DDS ')
+        raw=raw[:second]+b'native trailer'+raw[second:]+b'final trailer'
+        rows=read(raw)['entries']
+        self.assertEqual(raw[rows[0]['trailer_offset']:rows[0]['trailer_end']],b'native trailer')
+        self.assertEqual(raw[rows[2]['trailer_offset']:rows[2]['trailer_end']],b'final trailer')
+        self.assertEqual(rows[0]['end']-rows[0]['offset'],136)
+
+    def test_valid_dds_header_inside_pixels_is_not_an_inventory_entry(self):
+        raw=fixture();first=raw.index(b'DDS ');second=raw.rfind(b'DDS ')
+        header=bytearray(raw[first:first+128]);struct.pack_into('<2I',header,12,32,32)
+        pixels=bytearray(512);pixels[32:168]=raw[second:]
+        raw=raw[:first]+header+pixels+raw[second:]
+        rows=read(raw)['entries']
+        self.assertEqual(rows[0]['end']-rows[0]['offset'],640)
+        self.assertEqual(rows[2]['offset'],rows[0]['end'])
+
+    def test_declared_mips_cannot_consume_the_next_texture(self):
+        raw=bytearray(fixture());first=raw.index(b'DDS ')
+        struct.pack_into('<I',raw,first+28,3)
+        with self.assertRaisesRegex(FormatError,'boundaries'):read(bytes(raw))
+
+    def test_extra_complete_payload_is_rejected(self):
+        raw=fixture();image=raw[raw.rfind(b'DDS '):]
+        with self.assertRaisesRegex(FormatError,'extra payload'):read(raw+image)
 
 
 if __name__ == '__main__':unittest.main()

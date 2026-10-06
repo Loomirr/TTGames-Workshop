@@ -9,6 +9,8 @@ import struct
 from .cu3 import FormatError
 
 MAX_OUTPUT = 256 * 1024 * 1024
+MAX_PACKED = 256 * 1024 * 1024
+MAX_BLOCKS = 65536
 
 
 class Bits:
@@ -16,7 +18,7 @@ class Bits:
         self.data, self.position = data, 0
 
     def take(self, count):
-        if self.position + count > len(self.data) * 8:
+        if count < 0 or self.position + count > len(self.data) * 8:
             raise FormatError('Truncated TT deflate bitstream')
         value = 0
         for i in range(count):
@@ -86,14 +88,29 @@ DIST_BASE = (1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,153
 DIST_BITS = (0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13)
 
 
-def decompress(data, max_output=MAX_OUTPUT):
+def decompress(data, max_output=MAX_OUTPUT, *, max_packed=MAX_PACKED,
+               max_blocks=MAX_BLOCKS):
+    """Decode one verified wrapper, with no recursive codec guessing.
+
+    Only the final partial byte may remain after the final block. Whole
+    trailing bytes or another wrapper require an independently known frame.
+    """
+    if (not isinstance(max_output, int) or not 0 <= max_output <= MAX_OUTPUT or
+            not isinstance(max_packed, int) or not 0 <= max_packed <= MAX_PACKED or
+            not isinstance(max_blocks, int) or not 0 < max_blocks <= MAX_BLOCKS):
+        raise FormatError('Invalid TT deflate decoding limits')
+    if len(data) > max_packed:
+        raise FormatError('TT deflate packed input exceeds limit')
     if len(data) < 36 or data[:32] != b'Deflate_v1.0'.ljust(32, b'\0'):
         raise FormatError('Invalid TT deflate wrapper')
     expected = struct.unpack_from('<I', data, 32)[0]
-    if not 0 < expected <= min(max_output, MAX_OUTPUT):
+    if not 0 < expected <= max_output:
         raise FormatError('TT deflate output exceeds limit')
-    bits, output, final = Bits(data[36:]), bytearray(), False
+    bits, output, final, blocks = Bits(data[36:]), bytearray(), False, 0
     while not final:
+        blocks += 1
+        if blocks > max_blocks:
+            raise FormatError('TT deflate block count exceeds limit')
         final, kind = bits.take(1), bits.take(2)
         if kind == 2:
             bits.position = (bits.position + 7) // 8 * 8
@@ -131,4 +148,8 @@ def decompress(data, max_output=MAX_OUTPUT):
                 output.append(output[-distance])
     if len(output) != expected:
         raise FormatError('TT deflate output size mismatch')
+    if (bits.position + 7) // 8 != len(bits.data):
+        raise FormatError('Trailing bytes after final TT deflate block')
+    if output.startswith(b'Deflate_v1.0'):
+        raise FormatError('Nested TT deflate wrapper framing is not verified')
     return bytes(output)

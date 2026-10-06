@@ -17,6 +17,49 @@ FIELDS = {0: 'position', 1: 'normal', 2: 'color', 3: 'tangent',
           9: 'indices', 10: 'packed_weights'}
 
 
+def decode_skin_weights(indices, packed_weights, palette):
+    """Retain authored UNORM8 totals before preparing normalized view weights.
+
+    Unused 255 indices can carry nonzero bytes. Report those discarded bytes;
+    do not hide them by reporting only the normalized weights. Multiple native
+    slots may address the same joint; combine them before Blender's REPLACE
+    assignment would otherwise discard an earlier influence.
+    """
+    if len(indices) != 4 or len(packed_weights) != 4 or any(
+            not isinstance(value, int) or not 0 <= value <= 255
+            for value in (*indices, *packed_weights)):
+        raise FormatError('Unsupported native byte skin index/weight encoding')
+    retained = {}
+    sentinel_slots = []
+    skipped_weight = retained_slots = 0
+    for slot, (index, weight) in enumerate(zip(indices, packed_weights)):
+        if index == 255:
+            sentinel_slots.append(slot)
+            skipped_weight += weight
+            continue
+        if not weight:
+            continue
+        if index >= len(palette):
+            raise FormatError('Skin index exceeds native palette')
+        joint = palette[index]
+        if not isinstance(joint, int) or joint < 0:
+            raise FormatError('Invalid native skin palette joint')
+        retained[joint] = retained.get(joint, 0) + weight
+        retained_slots += 1
+    raw_total = sum(packed_weights)
+    retained_total = sum(retained.values())
+    diagnostics = dict(encoding='unorm8', raw_integer_total=raw_total,
+                       retained_integer_total=retained_total,
+                       raw_total=raw_total/255, retained_total=retained_total/255,
+                       skipped_sentinel_slots=sentinel_slots,
+                       skipped_sentinel_integer_weight=skipped_weight,
+                       skipped_sentinel_weight=skipped_weight/255,
+                       merged_duplicate_influences=retained_slots-len(retained),
+                       normalized=bool(retained_total))
+    weights = [(joint, weight/retained_total) for joint, weight in retained.items()] if retained_total else []
+    return weights, diagnostics
+
+
 class Cursor:
     def __init__(self, data, at=0):
         self.reader = Reader(data)
@@ -209,15 +252,10 @@ class MeshReader:
             if 'indices' in vertex or 'packed_weights' in vertex:
                 if not {'indices', 'packed_weights'} <= vertex.keys():
                     raise FormatError('Incomplete native skin weights')
-                pairs = []
-                for joint, weight in zip(vertex['indices'], vertex['packed_weights']):
-                    if not weight or joint == 255:
-                        continue
-                    if joint >= len(part['palette']):
-                        raise FormatError('Skin index exceeds native palette')
-                    pairs.append((part['palette'][joint], weight))
-                total = sum(w for _, w in pairs)
-                vertex['weights'] = [(j, w / total) for j, w in pairs] if total else []
+                if attributes[9][1] != 7 or attributes[10][1] != 8:
+                    raise FormatError('Unsupported native skin attribute encoding')
+                vertex['weights'], vertex['weight_diagnostics'] = decode_skin_weights(
+                    vertex['indices'], vertex['packed_weights'], part['palette'])
             vertices.append(vertex)
         buffer = resolve(part['index_buffer'])
         if part['first_index'] + part['index_count'] > buffer['count'] or part['index_count'] % 3:

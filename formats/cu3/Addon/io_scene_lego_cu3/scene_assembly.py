@@ -9,7 +9,7 @@ import bpy
 from mathutils import Matrix
 from .cu3 import FormatError
 from .asset_index import open_assets
-from .dependencies import ResourceResolver, dependency_report, actor_resource
+from .dependencies import ResourceResolver, dependency_report, actor_resource, active_attachments
 from .native_model_blender import load_model, create_model
 from .costume_materials import CostumeMaterials
 from .cinematic_blender import import_cameras
@@ -18,6 +18,10 @@ from .cinematic import visibility
 from .morph import actor_morph_animation, animate_shape_keys
 from .face_live import prepare_live
 from .scene_inputs import prepare_resources
+from .profiles import profile_identity, validate_profile_model
+from .resource_identity import model_resource_identity
+from .animation_ownership import attachment_tracks
+from .skeleton import attachment_locator
 
 
 STORES = ('scenes','objects','collections','meshes','armatures','cameras','lights',
@@ -41,6 +45,7 @@ def assemble(cut, asset_root, profile, context, *, assets=None, static_environme
     suffix = resolver.suffix
     initial, original = snapshot(), context.scene
     report = {'source':str(cut.path), 'profile':profile, 'actors':[], 'materials':[], 'issues':[],
+              'profile_identity':profile_identity(profile,structure_versions={'CU3':cut.version,'embedded_AN4':getattr(cut,'tree_version',None)}),
               'dependencies':dependencies,
               'configuration':configuration,
               'limitations':['Recovered static stage draws approximate environment visibility; nested scenes, rigid props, audio, source lighting, events and VFX are not yet automatically assembled.',
@@ -53,12 +58,15 @@ def assemble(cut, asset_root, profile, context, *, assets=None, static_environme
         path, definition = resolved['model'], resolved['definition']
         if path not in models:
             models[path] = load_model(path)
+        validate_profile_model(profile,path,models[path]['mesh_version'])
         return models[path], definition
     imported = set()
     def build(actor, model, definition, name, parent=None, depth=0):
         if depth > 8:
             raise FormatError('Attachment nesting exceeds the verified limit')
         skeleton = model['skeleton']
+        identity = model_resource_identity(model['source'],skeleton,assets=assets,definition=definition,game=profile,
+                                            reference=parent[2]['Resource File'] if parent else resolver.actor_reference(actor['name']) if actor else '')
         record = None
         if actor:
             if skeleton is None:
@@ -73,13 +81,10 @@ def assemble(cut, asset_root, profile, context, *, assets=None, static_environme
         def model_material(model, entry, definition):
             return materials(model, entry, definition, attachment_tint=attachment_tint)
         rig, parts = create_model(model, name, collection, definition, model_material)
+        rig['tt_native_resource_identity'] = json.dumps(identity)
         if parent:
             parent_rig, parent_skeleton, attachment = parent
-            logical = attachment['Locator']
-            remap = parent_skeleton['post_poi_bytes']
-            if not 0 <= logical < len(remap) or remap[logical] >= len(parent_skeleton['points_of_interest']):
-                raise FormatError('Attachment locator is outside native skeleton table')
-            point = parent_skeleton['points_of_interest'][remap[logical]]
+            point = attachment_locator(parent_skeleton,attachment['Locator'])
             anchor = bpy.data.objects.new(name+' / native attachment', None)
             collection.objects.link(anchor)
             constraint = anchor.constraints.new('COPY_TRANSFORMS')
@@ -97,43 +102,43 @@ def assemble(cut, asset_root, profile, context, *, assets=None, static_environme
                     if obj.data.shape_keys:
                         animate_shape_keys(obj, morph, cut.frames)
             imported.add(actor['index'])
-        row = {'name':name, 'model':str(model['source']), 'meshes':len(parts), 'animated':actor is not None}
+        row = {'name':name, 'model':str(model['source']), 'meshes':len(parts), 'animated':actor is not None,
+               'resource_identity':identity}
         report['actors'].append(row)
         if definition and skeleton:
-            character = definition['character']
-            mask = character.get('Default Layers',0) if character.get('Use Default Layers',-1)&2 else character.get('Cutscene Layers',0)
-            for item in definition['objects']:
-                if item['class']!='Character Attachment':
-                    continue
-                attachment = item['fields']
-                if 'Resource File' not in attachment:
-                    report['issues'].append({'actor':name, 'issue':'Attachment resource fields are not decoded'})
-                    continue
-                if not mask & (1 << attachment['Layer']):
-                    continue
+            children, ownership_inputs = [], []
+            for index, attachment in enumerate(active_attachments(definition,renderer_suffix=suffix)):
+                try:
+                    child_model, child_definition = resource(attachment['Resource File'])
+                    children.append((index,attachment,child_model,child_definition))
+                    if child_model['skeleton']:
+                        child_identity = model_resource_identity(child_model['source'],child_model['skeleton'],assets=assets,
+                            definition=child_definition,reference=attachment['Resource File'],game=profile)
+                        ownership_inputs.append({'id':index,'parent_id':None,'skeleton':child_model['skeleton'],'identity':child_identity})
+                except (ValueError,OSError,KeyError,RuntimeError) as error:
+                    report['issues'].append({'actor':name,'resource':attachment['Resource File'],'issue':str(error)})
+            matches, ownership_issues = attachment_tracks(cut.actors,actor,ownership_inputs,None) if actor else ({},[])
+            report['issues'].extend(dict(issue,actor=name) for issue in ownership_issues)
+            for index, attachment, child_model, child_definition in children:
                 before = snapshot()
                 child_rows = len(report['actors'])
                 child_imported = imported.copy()
+                material_rows = len(report['materials'])
+                saved_images,saved_stores = dict(materials.images),dict(materials.stores)
                 try:
-                    child_model, child_definition = resource(attachment['Resource File'])
-                    child_skeleton = child_model['skeleton']
-                    matches = []
-                    if actor and child_skeleton:
-                        declared = {child_skeleton['joints'][0]['name'].casefold()}
-                        if child_definition:
-                            declared.add(child_definition['character']['Skeleton Name'].casefold())
-                        matches = [a for a in cut.actors if a['parent']==actor['index'] and a['name'].casefold() in declared]
-                    if len(matches)>1:
-                        raise FormatError('Attachment matches multiple source animation nodes')
-                    child_actor = matches[0] if matches else None
+                    match = matches.get(index)
+                    child_actor = match['actor'] if match else None
                     child_rig, child_parts = build(child_actor, child_model, child_definition,
                                                    name+' / '+attachment['Resource File'],
                                                    (rig,skeleton,attachment), depth+1)
+                    if match:child_rig['tt_animation_ownership'] = json.dumps(match['evidence'])
                     if actor and not child_actor:
                         apply_actor_visibility(cut, actor, [child_rig]+[p for p in child_parts if p.get('tt_colour_write_mask')!=0])
                 except (ValueError, OSError, KeyError, RuntimeError) as error:
                     rollback(before)
-                    materials.images.clear()
+                    materials.images.clear();materials.images.update(saved_images)
+                    materials.stores.clear();materials.stores.update(saved_stores)
+                    del report['materials'][material_rows:]
                     del report['actors'][child_rows:]
                     imported.intersection_update(child_imported)
                     report['issues'].append({'actor':name, 'resource':attachment['Resource File'], 'issue':str(error)})

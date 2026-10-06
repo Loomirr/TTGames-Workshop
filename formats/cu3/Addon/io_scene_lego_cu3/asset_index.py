@@ -1,7 +1,7 @@
 """Case-insensitive lookup under an explicitly selected extracted asset root."""
 from pathlib import Path, PurePosixPath
-import hashlib
 from .cu3 import FormatError
+from .resource_identity import logical_reference
 
 
 def open_assets(root, profile, cache_root=None):
@@ -37,33 +37,26 @@ class AssetIndex:
         return self.find(reference, required=required, exact=True)
 
     def find(self, reference, suffix='', extension='', required=True, exact=False):
-        clean = str(reference).replace('\\', '/')
-        if clean.startswith('/'):
-            raise FormatError('Asset reference must be relative to the selected game root')
+        clean = logical_reference(reference)
         parts = PurePosixPath(clean).parts
-        if not parts or '..' in parts or ':' in clean:
-            raise FormatError('Asset reference must be relative to the selected game root')
         basename = PurePosixPath(clean).name
         if extension:
             stem = PurePosixPath(basename).stem
             if suffix and not stem.casefold().endswith(suffix.casefold()):stem += suffix
             basename = stem + extension
         candidates = self.files.get(basename.casefold(), [])
-        if exact:
+        if exact or len(parts) > 1:
             ending = '/'.join((*parts[:-1], basename)).casefold()
             candidates = [p for p in candidates if p.relative_to(self.root).as_posix().casefold()==ending]
-        elif len(candidates) > 1 and len(parts) > 1:
-            ending = '/'.join((*parts[:-1], basename)).casefold()
-            exact = [p for p in candidates if p.as_posix().casefold().endswith('/'+ending)]
-            if exact:
-                candidates = exact
         if len(candidates) > 1:
-            hashes = {hashlib.sha256(p.read_bytes()).digest() for p in candidates}
-            if len(hashes) == 1:
-                return sorted(candidates)[0]
-            raise FormatError(f'Ambiguous asset reference: {reference}; multiple different files match')
+            paths = sorted(p.relative_to(self.root).as_posix() for p in candidates)
+            collision = len({p.casefold() for p in paths}) < len(paths)
+            reason = 'case-colliding logical paths' if collision else 'ambiguous basenames in different logical paths'
+            # Identical bytes do not establish resource ownership or equal
+            # companions. A DLC clone may have different sibling dependencies.
+            raise FormatError(f'Ambiguous asset reference: {reference}; {reason}: ' + ', '.join(paths))
         if candidates:
             return candidates[0]
         if required:
-            raise FormatError(f'Missing asset: {basename}')
+            raise FormatError('Missing asset: ' + '/'.join((*parts[:-1], basename)))
         return None

@@ -164,4 +164,42 @@ class MaterialFlagTests(unittest.TestCase):
         raw=b'x'*64+fixture(202,variant=99)+b'ROTV'+bytes(17)+b'TDML'
         with self.assertRaises(ValueError):read_render_flags(raw,[dict(name='bad',offset=0)],202)
 
+    def test_shader_fields_cannot_borrow_bytes_from_the_next_region(self):
+        for version,size in ((163,397),(174,406),(229,0x1ae),(232,0x1a9)):
+            raw=bytes(2048)
+            with self.subTest(version=version),self.assertRaisesRegex(ValueError,'span'):
+                shader_prefix(raw,0,version,limit=size-1)
+
+    def test_name_and_texture_spans_cannot_overlap_footer(self):
+        raw=b'x'*64+fixture(202)+b'ROTV'+bytes(17)+b'TDML'
+        for field in ('name_end','texture_end','prefix_end'):
+            entry=dict(name='bad',offset=0);entry[field]=65
+            with self.assertRaisesRegex(ValueError,'overlaps'):
+                read_render_flags(raw,[entry],202,table_end=len(raw)-4)
+
+    def test_tdml_inside_a_material_is_not_a_table_boundary(self):
+        raw=bytearray(0x3c1);struct.pack_into('>3I',raw,0,2,2,2)
+        for i in range(16):struct.pack_into('>2I',raw,120+i*8,0,0xffffffff)
+        struct.pack_into('>4I',raw,319,4,10,2,4)
+        struct.pack_into('>18i',raw,397,*([-1]*18))
+        raw[650:654]=b'TDML'
+        name=b'MarkerInOpaqueField\0';raw+=struct.pack('>H',len(name))+name
+        model=b'LTMU'+struct.pack('>3I',163,1,1)+raw+fixture(163)+b'ROTV'+bytes(17)+b'TDML'
+        with patch.object(Path,'read_bytes',return_value=model):
+            parsed=read_materials(Path('fixture.DX11.GSC'))
+        entry=parsed['materials'][0]
+        self.assertEqual(entry['name'],'MarkerInOpaqueField')
+        self.assertLessEqual(entry['name_end'],entry['footer_offset'])
+        self.assertEqual(parsed['table_end'],len(model))
+        # Adjacent unverified versions do not inherit this layout from a suffix.
+        for version in (164,172,173,228,230,231,233,236):
+            bad=bytearray(model);struct.pack_into('>I',bad,4,version)
+            with patch.object(Path,'read_bytes',return_value=bad),self.assertRaisesRegex(ValueError,'version/count'):
+                read_materials(Path('fixture.NXG.GSC'))
+
+    def test_explicit_table_boundary_is_validated(self):
+        raw=b'x'*64+fixture(202)+b'ROTV'+bytes(17)+b'FAKE'
+        with self.assertRaisesRegex(ValueError,'boundary'):
+            read_render_flags(raw,[dict(name='material',offset=0)],202,table_end=len(raw)-4)
+
 if __name__=='__main__':unittest.main()

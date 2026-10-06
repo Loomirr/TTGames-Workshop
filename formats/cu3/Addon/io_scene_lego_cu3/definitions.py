@@ -142,13 +142,17 @@ def read_definition(path):
         objects.append({'class':classes[cls], 'offset':start, 'size':end-start,
                         'fields':values, 'decoded_end':pos, 'complete':pos==end})
     return {'source':str(Path(path).resolve()), 'source_sha256':source_sha256,
-            'version':version, 'objects':objects}
+            'version':version, 'byte_order':'little', 'objects':objects,
+            'structure_identity':{'format':'typed-definition', 'version':version, 'byte_order':'little'},
+            'unparsed_scope':'Nested resource objects and unknown field types remain undecoded; dependency closure covers retained declarations only.'}
 
 
 def character_definition(path):
     result = read_definition(path)
     definitions = [o for o in result['objects'] if o['class']=='Character Definition' and 'Skeleton Name' in o['fields']]
     if len(definitions) != 1:
-        raise FormatError('Expected one character definition with a skeleton name')
+        offsets=', '.join(hex(o['offset']) for o in definitions)
+        raise FormatError('Expected one character definition with a skeleton name; found '+str(len(definitions))+
+                          (' at '+offsets if offsets else ''))
     result['character'] = definitions[0]['fields']
     return result

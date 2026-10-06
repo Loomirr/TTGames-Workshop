@@ -1,5 +1,6 @@
 """Synthetic DAT/LZ2K tests: no game payloads or external decoders required."""
 import hashlib
+import os
 import struct
 import shutil
 import sys
@@ -8,6 +9,7 @@ import types
 import unittest
 import zlib
 import uuid
+from unittest.mock import patch
 from pathlib import Path
 
 package = types.ModuleType('io_scene_lego_cu3')
@@ -60,6 +62,10 @@ class Compression(unittest.TestCase):
     def test_truncated_bits_rejected(self):
         with self.assertRaises(FormatError):decode_lz2k_chunk(blocks((3,65,0))[:3],3)
 
+    def test_lz2k_whole_trailing_bytes_rejected(self):
+        with self.assertRaisesRegex(FormatError, 'Trailing'):
+            decode_lz2k_chunk(blocks((3,65,0)) + b'\0', 3)
+
     def test_bad_constant_rejected(self):
         with self.assertRaises(FormatError):decode_lz2k_chunk(blocks((1,511,0)),3)
 
@@ -85,8 +91,69 @@ class Compression(unittest.TestCase):
     def test_unknown_compression_rejected(self):
         with self.assertRaises(FormatError):decode_entry(b'ZIPX',4)
 
+    def test_packed_limit_and_chunk_work_limit(self):
+        payload = struct.pack('<4sII', b'ZLIB', 1, 1) + b'A'
+        with self.assertRaisesRegex(FormatError, 'packed input'):
+            decode_entry(payload, 1, max_packed=len(payload) - 1)
+        with self.assertRaisesRegex(FormatError, 'chunk count'):
+            decode_entry(payload * 3, 3, max_chunks=2)
+
+    def test_late_invalid_frame_does_not_invoke_decompressor(self):
+        packed = zlib.compress(b'abc' * 30)
+        good = struct.pack('<4sII', b'ZLIB', 90, len(packed)) + packed
+        bad = struct.pack('<4sII', b'ZLIB', 1, 999) + b'A'
+        with patch('io_scene_lego_cu3.archive_compression.zlib.decompressobj') as decoder:
+            with self.assertRaisesRegex(FormatError, 'declared bounds'):
+                decode_entry(good + bad, 91)
+            decoder.assert_not_called()
+
+    def test_trailing_data_and_exact_cumulative_size(self):
+        packed = zlib.compress(b'abc' * 30)
+        for extra in (b'trailer', zlib.compress(b'other')):
+            payload = packed + extra
+            with self.assertRaises(FormatError):
+                decode_entry(struct.pack('<4sII', b'ZLIB', 90, len(payload)) + payload, 90)
+        with self.assertRaises(FormatError):
+            decode_entry(struct.pack('<4sII', b'LZ2K', 3, 3) + b'abc', 4)
+
+    def test_mode_three_is_rejected_even_for_synthetic_working_zlib(self):
+        raw = b'abc' * 30
+        compressor = zlib.compressobj(wbits=-15)
+        packed = compressor.compress(raw) + compressor.flush()
+        # LOTR's observed length order differs; ordinary zlib here is only a
+        # refusal fixture and is not evidence for the original LOTR codec.
+        for lengths in ((len(raw), len(packed)), (len(packed), len(raw))):
+            with self.assertRaisesRegex(FormatError, 'storage mode 3'):
+                decode_entry(struct.pack('<4sII', b'DFLT', *lengths) + packed,
+                             len(raw), storage_mode=3)
+
+    def test_explicit_stored_mode_does_not_guess_codec_from_file_magic(self):
+        self.assertEqual(decode_entry(b'ZLIB', 4, storage_mode=0), b'ZLIB')
+
 
 class ArchiveProvider(unittest.TestCase):
+    def test_original_root_sentinel_is_not_an_unresolved_parent(self):
+        for version in (-5, -6):
+            with self.subTest(version=version):
+                archive(self.dat)
+                data = bytearray(self.dat.read_bytes())
+                offset = struct.unpack_from('<I', data)[0]
+                struct.pack_into('<i', data, offset, version)
+                struct.pack_into('<hhiI', data, offset + 28, 1, 0, -1, 0xffff)
+                # Add a real file-name record after the root sentinel.
+                data[offset + 28:offset + 40] += struct.pack('<hhiI', 0, -1, 0, 0)
+                struct.pack_into('<I', data, offset + 24, 2)
+                struct.pack_into('<I', data, 4, len(data) - offset)
+                self.dat.write_bytes(data)
+                self.assertEqual(index_v6(self.dat, version_expected=version)[0]['path'], 'SAMPLE.CD')
+
+    def test_path_stamp_uses_handle_metadata_not_directory_metadata(self):
+        from io_scene_lego_cu3.archive_assets import _path_archive_stamp, _archive_stamp
+        with self.dat.open('rb') as stream:
+            expected = _archive_stamp(os.fstat(stream.fileno()))
+        with patch.object(Path, 'stat', side_effect=AssertionError('Directory metadata is not a handle stamp')):
+            self.assertEqual(_path_archive_stamp(self.dat), expected)
+
     def setUp(self):
         base=Path(tempfile.gettempdir()).resolve()
         self.root=base/('tt-archive-test-'+uuid.uuid4().hex);self.root.mkdir()
@@ -145,6 +212,62 @@ class ArchiveProvider(unittest.TestCase):
         self.assertEqual(provider.find_exact('sample.cd').read_bytes(),b'abc')
         self.assertIsNone(provider.find_exact('wrong/sample.cd',required=False))
         with self.assertRaises(FormatError):provider.find_exact('wrong/sample.cd')
+
+    def test_qualified_lookup_never_falls_back_to_unrelated_basename(self):
+        provider=self.provider()
+        self.assertIsNone(provider.find('wrong/sample.cd',required=False))
+        with self.assertRaisesRegex(FormatError,'Missing'):
+            provider.find('wrong/sample.cd')
+
+    def test_basename_ambiguity_is_not_resolved_by_equal_payloads(self):
+        archive(self.dat,b'abc',name='First/Sample.CD')
+        archive(self.game/'GAME0.DAT',b'abc',name='Second/Sample.CD')
+        provider=self.provider()
+        with self.assertRaisesRegex(FormatError,'Ambiguous.*basename'):
+            provider.find('sample.cd')
+        self.assertEqual(provider.find('First/Sample.CD').read_bytes(),b'abc')
+
+    def test_case_colliding_logical_paths_rejected_without_decoding(self):
+        archive(self.dat,b'abc',name='Sample.CD')
+        archive(self.game/'GAME0.DAT',b'abc',name='SAMPLE.CD')
+        provider=self.provider()
+        with patch.object(provider,'_read') as decoder, self.assertRaisesRegex(FormatError,'Case-colliding'):
+            provider.find('sample.cd')
+        decoder.assert_not_called()
+
+    def test_cumulative_budget_applies_before_reading_alias_candidates(self):
+        archive(self.game/'GAME0.DAT',b'abc')
+        provider=ArchiveAssetIndex(self.game,'LB3',self.root/'cache',max_total_bytes=5)
+        with patch.object(provider,'_read') as decoder, self.assertRaisesRegex(FormatError,'Cumulative'):
+            provider.find('SAMPLE.CD')
+        decoder.assert_not_called()
+
+    def test_changed_archive_is_rejected_after_indexing(self):
+        provider=self.provider()
+        archive(self.dat,b'changed')
+        with self.assertRaisesRegex(FormatError,'changed since'):
+            provider.find('SAMPLE.CD')
+
+    def test_cache_hit_does_not_hide_changed_archive(self):
+        provider = self.provider()
+        cached = provider.find('SAMPLE.CD')
+        original = self.dat.stat()
+        replacement = self.game / 'replacement.dat'
+        archive(replacement, b'xyz')
+        os.utime(replacement, ns=(original.st_atime_ns, original.st_mtime_ns))
+        replacement.replace(self.dat)
+        with self.assertRaisesRegex(FormatError, 'changed since'):
+            provider.find('SAMPLE.CD')
+        self.assertEqual(cached.read_bytes(), b'abc')
+        fresh = self.provider()
+        self.assertNotEqual(fresh.root, provider.root)
+        self.assertEqual(fresh.find('SAMPLE.CD').read_bytes(), b'xyz')
+
+    def test_archive_spelling_retained_separately_from_path_hash(self):
+        archive(self.dat,name='Characters/Sample.CD')
+        rows=index_v6(self.dat)
+        self.assertEqual(rows[0]['path'],'Characters/Sample.CD')
+        self.assertEqual(self.provider().find_exact('characters/sample.cd').read_bytes(),b'abc')
 
     def test_index_overlap_rejected(self):
         data=bytearray(self.dat.read_bytes());at=struct.unpack_from('<I',data)[0]

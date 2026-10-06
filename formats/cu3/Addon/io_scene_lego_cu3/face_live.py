@@ -5,7 +5,7 @@ details behind them are removed after skinning, allowing the head to show
 through in a single viewport pass. This is an approximation, not a TT shader.
 """
 import bpy
-from .geometry_normals import capture_normals, restore_normals
+from .geometry_normals import capture_normals, restore_normals, normal_preservation_status
 
 
 def copy_layer_flags(source, destination):
@@ -168,7 +168,11 @@ def prepare_live(scene, detail_level=3):
     scene.sync_mode = 'FRAME_DROP'
     scene['tt_live_preview'] = 'Source camera mask approximation. Orbiting is for mesh inspection; use camera view for facial clipping.'
     scene['tt_preview_kind'] = 'LIVE'
+    capability = normal_preservation_status()
+    scene['tt_preview_normals_preserved'] = capability['supported']
+    scene['tt_preview_normal_limit'] = capability['limitation'] or ''
     return {'detail_parts': len(planned), 'hidden_depth_parts': len(masks), 'subdivision_level': detail_level,
-            'corner_normals_preserved': hasattr(bpy.types, 'GeometryNodeSetMeshNormal'),
+            'corner_normals_preserved': capability['supported'],
+            'normal_preservation': capability,
             'biased_depth_masks': len(biased_masks),
             'depth_bias_note':'Post-skin offsets follow available native draw order; cutout printing stays outside mask clipping. Preview approximation, not native shader equivalence.'}

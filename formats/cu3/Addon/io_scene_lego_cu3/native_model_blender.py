@@ -17,18 +17,21 @@ from .face_edit_blender import bind_source
 from .mesh_edit_blender import bind_vertices
 from .material_edit_guard import bind_materials
 from .model_validation import validate_model, validate_draw, matrix
+from .geometry_normals import normal_preservation_status
 
 
-def load_model(path):
+def load_model(path, *, skeleton_identity=None):
     def stage(label, reader):
         try:return reader()
         except (FormatError, ValueError) as error:
             raise FormatError(f'{Path(path).name} [{label}]: {error}') from error
     model = stage('mesh decoding', lambda: read_mesh(path))
     model['display'] = stage('display decoding', lambda: read_display(path, len(model['parts'])))
-    model['skeleton'] = stage('skeleton decoding', lambda: read_skeleton(path)) if path.suffix.lower()=='.ghg' else None
+    model['skeleton'] = stage('skeleton decoding', lambda: read_skeleton(
+        path, display=model['display'], identity=skeleton_identity)) if path.suffix.lower()=='.ghg' else None
     model['materials'] = stage('material decoding', lambda: read_materials(path)['materials'])
     model['validation'] = stage('decoded model validation', lambda: validate_model(model))
+    model['validation']['blender_capabilities'] = dict(normal_preservation=normal_preservation_status())
     if hashlib.sha256(Path(path).read_bytes()).hexdigest()!=model['source_sha256']:
         raise FormatError('Native model changed during decoding: '+str(path))
     return model

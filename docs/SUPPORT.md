@@ -3,6 +3,13 @@
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
+The current experimental candidates, Character 0.5.7 and CU3 0.1.16, add
+shared-source/export safeguards, bounded archive/DDS readers, explicit identity
+and raw-weight/fidelity diagnostics. The current pass preserves the existing
+format gates; original-game regression and workstation installation are pending.
+See [the P2–P5 evidence and limits](HANDOFF_P2_P5_CHECKPOINT.md). Historical
+original-file results below remain attached to their stated versions.
+
 Character 0.5.6 adds attachment rollback and consumed companion revision guards;
 CU3 0.1.15 adds the shared model revision check. No new profile or shader layout
 is enabled. See [the focused P1 checkpoint](HANDOFF_P1_CHECKPOINT.md).

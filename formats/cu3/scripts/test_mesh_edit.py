@@ -93,6 +93,26 @@ class MeshEdits(unittest.TestCase):
             self.assertEqual(sum(new['vertices'][0]['packed_weights']),255)
             self.assertGreater(report['changed_bytes'],0);self.assertEqual(len(output),len(raw))
 
+    def test_duplicate_joint_weights_are_combined_without_changing_source(self):
+        raw=bytearray(skin_fixture());part=read_mesh_bytes(raw)['parts'][0]
+        row=part['attribute_layout']['indices'];at=row['offset']
+        raw[at:at+4]=bytes([0,0,255,255]);raw=bytes(raw)
+        part=read_mesh_bytes(raw)['parts'][0]
+        self.assertEqual(part['vertices'][0]['weights'],[(3,1.)])
+        self.assertEqual(part['vertices'][0]['weight_diagnostics']['merged_duplicate_influences'],1)
+        changed,_=patch_vertices(raw,edits(raw,{'weights':[v['weights'] for v in part['vertices']]}))
+        self.assertEqual(changed,raw)
+
+    def test_sentinel_bytes_survive_noop_and_are_reported(self):
+        raw=bytearray(skin_fixture());part=read_mesh_bytes(raw)['parts'][0]
+        at=part['attribute_layout']['packed_weights']['offset'];raw[at+2]=37;raw=bytes(raw)
+        part=read_mesh_bytes(raw)['parts'][0];vertex=part['vertices'][0]
+        self.assertEqual(vertex['weight_diagnostics']['raw_integer_total'],292)
+        self.assertEqual(vertex['weight_diagnostics']['retained_integer_total'],255)
+        self.assertEqual(vertex['weight_diagnostics']['skipped_sentinel_integer_weight'],37)
+        changed,_=patch_vertices(raw,edits(raw,{'weights':[v['weights'] for v in part['vertices']]}))
+        self.assertEqual(changed,raw)
+
     def test_skin_and_normal_invalid_edits_rejected(self):
         raw=skin_fixture()
         for change in ({'weights':[[[99,1]]]*3},{'weights':[[[3,.4]]]*3},

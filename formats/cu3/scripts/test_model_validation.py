@@ -10,6 +10,7 @@ pkg.__path__ = [str(Path(__file__).resolve().parents[1]/'Addon/io_scene_lego_cu3
 sys.modules[pkg.__name__] = pkg
 from validation_fixture.model_validation import validate_model, validate_draw, matrix
 from validation_fixture.cu3 import FormatError
+from validation_fixture.native_mesh import decode_skin_weights
 
 
 def fixture():
@@ -67,6 +68,53 @@ class ValidationTests(unittest.TestCase):
         result=validate_model(model)
         self.assertEqual(result['warnings'][0]['code'],'non_unit_weight_sums')
         self.assertEqual(model['parts'][0]['vertices'][0]['weights'],[(0,.5)])
+
+    def test_source_weight_totals_survive_normalization(self):
+        model=fixture();vertex=model['parts'][0]['vertices'][0]
+        vertex['weights'],vertex['weight_diagnostics']=decode_skin_weights(
+            [0,255,255,255],[128,127,0,0],[0])
+        self.assertEqual(vertex['weights'],[(0,1.)])
+        report=validate_model(model)
+        codes={row['code'] for row in report['warnings']}
+        self.assertIn('non_unit_retained_weight_totals',codes)
+        self.assertIn('nonzero_sentinel_weights',codes)
+        self.assertNotIn('non_unit_raw_weight_totals',codes)
+        totals=report['parts'][0]['source_weight_totals']
+        self.assertEqual(totals['raw_min'],1.)
+        self.assertAlmostEqual(totals['retained_max'],128/255)
+        self.assertAlmostEqual(totals['skipped_sentinel_weight'],127/255)
+
+    def test_zero_weights_and_repeated_joint_diagnostics(self):
+        model=fixture()
+        vertex=model['parts'][0]['vertices'][0]
+        vertex['weights'],vertex['weight_diagnostics']=decode_skin_weights([0,1,255,255],[64,64,0,0],[0,0])
+        self.assertEqual(vertex['weights'],[(0,1.)])
+        self.assertIn('duplicate_skin_influences',{row['code'] for row in validate_model(model)['warnings']})
+        vertex['weights'],vertex['weight_diagnostics']=decode_skin_weights([255]*4,[0]*4,[])
+        self.assertIn('zero_retained_weight_totals',{row['code'] for row in validate_model(model)['warnings']})
+        with self.assertRaisesRegex(FormatError,'skin association'):validate_draw(model,dict(part=0,material=0),None)
+
+    def test_skin_decoder_rejects_mismatched_nonbyte_and_outside_palette(self):
+        for indices,weights,palette in (([0],[1],[0]),([0]*4,[1.0]*4,[0]),
+                                        ([0,1,255,255],[128,127,0,0],[0]),
+                                        ([0]*4,[-1,0,0,0],[0])):
+            with self.assertRaises(FormatError):decode_skin_weights(indices,weights,palette)
+
+    def test_malformed_weight_diagnostics_fail_with_scoped_format_errors(self):
+        _, valid = decode_skin_weights([0,255,255,255],[255,0,0,0],[0])
+        missing_slots = dict(valid)
+        del missing_slots['skipped_sentinel_slots']
+        malformed = [[], {}, missing_slots]
+        malformed += [dict(valid, skipped_sentinel_slots=value)
+                      for value in (None, '123', [4], [0,0], [False], [[0]])]
+        malformed += [dict(valid, merged_duplicate_influences=value)
+                      for value in (None, '1', -1, 4, True)]
+        for diagnostics in malformed:
+            with self.subTest(diagnostics=diagnostics):
+                model = fixture()
+                model['parts'][0]['vertices'][0]['weight_diagnostics'] = diagnostics
+                with self.assertRaisesRegex(FormatError, 'skin validation.*diagnostic'):
+                    validate_model(model)
 
     def test_singular_and_nonfinite_matrices(self):
         for values in ([0]*16,[float('inf')]*16):

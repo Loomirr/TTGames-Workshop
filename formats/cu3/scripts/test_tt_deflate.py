@@ -50,6 +50,23 @@ class Checks(unittest.TestCase):
         with self.assertRaises(FormatError):
             decompress(wrapper(b'\x05\x01\x00a',2))
 
+    def test_trailing_full_bytes_and_concatenated_frames_rejected(self):
+        stream = wrapper(b'\x05\x01\x00a', 1)
+        for suffix in (b'\0', b'extra', stream):
+            with self.subTest(suffix=suffix[:8]), self.assertRaisesRegex(FormatError, 'Trailing'):
+                decompress(stream + suffix)
+
+    def test_packed_size_and_empty_block_work_limits(self):
+        stream = wrapper(b'\x05\x01\x00a', 1)
+        with self.assertRaisesRegex(FormatError, 'packed input'):
+            decompress(stream, max_packed=len(stream) - 1)
+        # Each non-final block consumes input even with no output. Bound that
+        # work separately so a tiny decoded size cannot imply cheap decoding.
+        empty_blocks = b'\x04\0\0' * 4 + b'\x05\x01\x00a'
+        with self.assertRaisesRegex(FormatError, 'block count'):
+            decompress(wrapper(empty_blocks, 1), max_blocks=4)
+        self.assertEqual(decompress(wrapper(empty_blocks, 1), max_blocks=5), b'a')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -5,6 +5,23 @@ from .cu3 import Reader, FormatError
 from .material_flags import read_render_flags
 
 
+class _MaterialReader(Reader):
+    """Restrict prefix fields to their owning shader/name interval."""
+    def __init__(self, data, start, limit):
+        super().__init__(data)
+        self.start, self.limit = start, len(data) if limit is None else limit
+        if not 0 <= self.start <= self.limit <= len(data):
+            raise FormatError('Invalid native material span')
+
+    def span(self, start, size):
+        if size < 0 or start < self.start or start+size > self.limit:
+            raise FormatError(f'Native material field exceeds its record span at {start:#x}')
+
+    def get(self, fmt, at, endian='>'):
+        self.span(at, struct.calcsize(endian+fmt))
+        return super().get(fmt, at, endian)
+
+
 def costume_slot(entry):
     """Authored material-role ID, not its display-table index or a name guess."""
     name = entry['name'].split(':', 1)[0].upper()
@@ -59,11 +76,12 @@ def surface_normal_binding(entry, mesh_version):
     return dict(texture=texture, uv=uv, packed_x_alpha=True)
 
 
-def shader_prefix(data, start, version):
+def shader_prefix(data, start, version, *, limit=None):
+    r = _MaterialReader(data, start, limit)
     if version == 163:
         # Older static NXG accessories have a separate bounded prefix. Boolean
         # meanings remain opaque; do not reuse the later flag offsets.
-        r = Reader(data)
+        r.span(start, 397)
         fields = dict(version=r.get('I', start), shaderType=r.get('I', start+4),
                       lightingModel=r.get('I', start+8),
                       uvSets=[r.get('2I', start+120+i*8) for i in range(16)],
@@ -78,7 +96,7 @@ def shader_prefix(data, start, version):
     if version == 229:
         # Older Avengers shaders retain a longer flag block. Its individual
         # boolean semantics are not established; expose only verified fields.
-        r=Reader(data)
+        r.span(start, 0x1ae)
         fields=dict(version=r.get('I',start),shaderType=r.get('I',start+4),lightingModel=r.get('I',start+8),
                     numUVSets=r.get('I',start+0x88),numBones=r.get('B',start+0x99),
                     uvSets=[r.get('2I',start+0x9a+i*8) for i in range(16)],
@@ -93,7 +111,7 @@ def shader_prefix(data, start, version):
     def read(names, fmt='I'):
         nonlocal at
         for name in names.split():
-            fields[name] = struct.unpack_from('>' + fmt, data, at)[0]
+            fields[name] = r.get(fmt, at)
             at += struct.calcsize('>' + fmt)
     read('version')
     read('shaderType lightingModel', 'B' if version in (234,235) else 'I')
@@ -122,7 +140,7 @@ def shader_prefix(data, start, version):
     read('dummyNormal numUVSets lightmapUVSet motionBlurVertexType motionBlurPixelType')
     read('motionBlurSamples numBones','B')
     uv_count = (17 if version in (234,235) else 16) if modern else (14 if version >= 199 else 16) + (2 if version >= 178 else 0)
-    fields['uvSets'] = [struct.unpack_from('>2I', data, at+i*8) for i in range(uv_count)]
+    fields['uvSets'] = [r.get('2I', at+i*8) for i in range(uv_count)]
     at += uv_count * 8
     if modern:
         read('opaqueModernUV')
@@ -169,7 +187,6 @@ def shader_prefix(data, start, version):
         # consumed the first as an opaque prefix, shifting every texture.
         # UVs likewise start before the guessed later flag block. Keep that
         # flag block opaque until its individual meanings are established.
-        r = Reader(data)
         uv_at = 0x9a if version == 232 else 0x9c
         fields['numUVSets'] = r.get('I', start + uv_at - 18)
         fields['numBones'] = r.get('B', start + uv_at - 1)
@@ -214,15 +231,26 @@ def read_materials(path):
         start += 4
     if count == 0:
         return {'version':version, 'materials':[]}
-    limit = data.find(b'TDML', start)
-    if limit < 0:
+    # The final marker is accepted only with the observed 21-byte table tail.
+    # A TDML token inside a name, shader or opaque field is not a boundary.
+    limits = []
+    at = data.find(b'TDML', start)
+    while at >= 0:
+        if at-21 >= start and data[at-21:at-13] == b'ROTV\0\0\0\0':
+            limits.append(at)
+        at = data.find(b'TDML', at+4)
+    if not limits:
         raise FormatError('Native material boundary missing')
+    if len(limits) != 1:
+        raise FormatError('Ambiguous native material table boundaries')
+    limit = limits[0]
+    records_end = limit-21
     # Names have a version-specific position inside a fixed shader prefix.
     # Require a unique position and exactly the declared number of records.
     lengths = []
-    for offset in range(0x300, min(0x600, limit-start-2)):
+    for offset in range(0x300, min(0x600, records_end-start-2)):
         length = r.get('H', start+offset)
-        raw = data[start+offset+2:start+offset+2+length]
+        raw = data[start+offset+2:min(start+offset+2+length, records_end)]
         if 5 <= length < 256 and len(raw)==length and raw.endswith(b'\0') and all(32 <= c <= 126 for c in raw[:-1]):
             lengths.append(offset)
     if len(lengths) != 1:
@@ -230,19 +258,19 @@ def read_materials(path):
     name_offset = lengths[0]
     entries = []
     cursor = start
-    while cursor < limit:
-        candidate = data.find(b'\0\0\0\2', cursor, limit)
+    while cursor < records_end:
+        candidate = data.find(b'\0\0\0\2', cursor, records_end)
         if candidate < 0:
             break
         cursor = candidate+4
-        if candidate+name_offset+2 > limit:
+        if candidate+name_offset+2 > records_end:
             continue
         length = r.get('H', candidate+name_offset)
         end = candidate+name_offset+2+length
         raw = data[candidate+name_offset+2:end]
-        if not 1 <= length < 512 or end > limit or not raw.endswith(b'\0') or any(c<32 or c>126 for c in raw[:-1]):
+        if not 1 <= length < 512 or end > records_end or not raw.endswith(b'\0') or any(c<32 or c>126 for c in raw[:-1]):
             continue
-        fields, texture_at = shader_prefix(data, candidate, version)
+        fields, texture_at = shader_prefix(data, candidate, version, limit=candidate+name_offset)
         modern = version in (229, 232, 234, 235)
         slots = 17 if version == 229 else 18
         ids = list(r.get(f'{slots}i', texture_at))
@@ -251,18 +279,29 @@ def read_materials(path):
         if texture_at+slots*4 > candidate+name_offset:
             raise FormatError('Overlapping native material fields')
         formats = []
+        texture_end = texture_at+slots*4
         if modern:
             format_count = r.get('I', texture_at+slots*4)
             if format_count != 17:
                 raise FormatError('Native material texture-format count differs from slots')
             formats = list(r.get(f'{format_count}B', texture_at+slots*4+4))
+            texture_end += 4+format_count
+            if texture_end > candidate+name_offset:
+                raise FormatError('Overlapping native material texture-format/name fields')
             if fields['version'] != 2 or fields['shaderVersion'] != 4 or fields['numUVSets'] > 17:
                 raise FormatError('Unverified modern shader prefix values')
         entries.append({'index':len(entries), 'offset':candidate, 'table_version':version, 'name':raw[:-1].decode('ascii'),
-                        'texture_ids':ids, 'texture_formats':formats, 'fields':fields})
+                        'texture_ids':ids, 'texture_formats':formats, 'fields':fields,
+                        'prefix_end':texture_at, 'texture_end':texture_end,
+                        'name_offset':candidate+name_offset, 'name_end':end})
+        cursor = end
     if len(entries) != count or entries[0]['offset'] != start:
         raise FormatError('Native material record count disagrees with table')
-    flags = read_render_flags(data, entries, version)
+    flags = read_render_flags(data, entries, version, table_end=limit)
     for entry, footer in zip(entries, flags):
         entry['render_flags'] = footer['flags']
-    return {'version':version, 'materials':entries}
+        entry['footer_offset'] = footer['offset']
+        entry['end_offset'] = footer['end']
+    return {'version':version, 'materials':entries,
+            'table_offset':marker, 'table_end':limit+4,
+            'layout_validation':'Bounded prefix/name/texture/footer spans; name placement remains inferred from the table'}

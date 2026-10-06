@@ -8,7 +8,14 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.15** (experimental).
+Current source and packaged build: **0.1.16** (experimental).
+Version 0.1.16 adds explicit resource/profile and skeleton ownership metadata,
+bounded archive and DDS reads, raw skin-weight diagnostics and a visible
+normal-preservation capability report. Attachment animation matching no longer
+uses a matching label and joint count as sufficient ownership evidence.
+Existing game/layout gates remain in place. Original-game regression and visual
+checks for this build remain pending; see the
+[safety and identity checkpoint](../../docs/HANDOFF_P2_P5_CHECKPOINT.md).
 Version 0.1.15 retains consumed model hashes and rejects a source changed during
 decoding. It enables no new layout. The character addon's companion-export
 guards are documented in the [P1 checkpoint](../../docs/HANDOFF_P1_CHECKPOINT.md).
@@ -59,7 +66,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.15 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.15.zip)
+Download the [0.1.16 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.16.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

@@ -49,6 +49,7 @@ def validate_model(model):
         vertices = part['vertices']
         numeric_fields = ('position', 'normal', 'tangent', 'bitangent', 'uv', 'uv2', 'uv3')
         degenerate = weight_sums = zero_weights = 0
+        skin_diagnostics = []
         for vi, vertex in enumerate(vertices):
             if len(vertex.get('position', ())) < 3:
                 fail('mesh validation', f'part {index}, vertex {vi}: missing position')
@@ -65,6 +66,23 @@ def validate_model(model):
                 if field.startswith('uv') and (not values or len(values) % 2):
                     fail('mesh validation', f'part {index}, vertex {vi}: incomplete {field} pairs')
             weights = vertex.get('weights', ())
+            diagnostics = vertex.get('weight_diagnostics')
+            if diagnostics is not None:
+                if not isinstance(diagnostics, dict):
+                    fail('skin validation', f'part {index}, vertex {vi}: weight diagnostics must be a record')
+                for field in ('raw_total', 'retained_total', 'skipped_sentinel_weight'):
+                    value = diagnostics.get(field)
+                    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+                        fail('skin validation', f'part {index}, vertex {vi}: invalid {field} diagnostic')
+                slots = diagnostics.get('skipped_sentinel_slots')
+                if (not isinstance(slots, (list, tuple)) or len(slots) > 4 or
+                        any(type(slot) is not int or not 0 <= slot < 4 for slot in slots) or
+                        len(set(slots)) != len(slots)):
+                    fail('skin validation', f'part {index}, vertex {vi}: invalid skipped_sentinel_slots diagnostic')
+                merged = diagnostics.get('merged_duplicate_influences')
+                if type(merged) is not int or not 0 <= merged <= 3:
+                    fail('skin validation', f'part {index}, vertex {vi}: invalid merged_duplicate_influences diagnostic')
+                skin_diagnostics.append(diagnostics)
             for joint, weight in weights:
                 if not isinstance(joint, int) or joint < 0 or not math.isfinite(weight) or weight < 0:
                     fail('skin validation', f'part {index}, vertex {vi}: invalid joint/weight')
@@ -81,8 +99,30 @@ def validate_model(model):
                 warnings.append(dict(stage='mesh/skin validation', code=code, part=index, count=count))
         if not vertices or not part['triangles']:
             warnings.append(dict(stage='mesh validation', code='empty_part', part=index))
-        summaries.append(dict(part=index, vertices=len(vertices), triangles=len(part['triangles']),
-                              attributes=list(part['attribute_types']), morph_targets=len(part['morphs']['targets']) if part['morphs'] else 0))
+        summary = dict(part=index, vertices=len(vertices), triangles=len(part['triangles']),
+                       attributes=list(part['attribute_types']), morph_targets=len(part['morphs']['targets']) if part['morphs'] else 0)
+        if skin_diagnostics:
+            summary['source_weight_totals'] = dict(
+                vertices=len(skin_diagnostics),
+                raw_min=min(d['raw_total'] for d in skin_diagnostics),
+                raw_max=max(d['raw_total'] for d in skin_diagnostics),
+                retained_min=min(d['retained_total'] for d in skin_diagnostics),
+                retained_max=max(d['retained_total'] for d in skin_diagnostics),
+                skipped_sentinel_slots=sum(len(d['skipped_sentinel_slots']) for d in skin_diagnostics),
+                skipped_sentinel_weight=sum(d['skipped_sentinel_weight'] for d in skin_diagnostics),
+                scope='Authored totals before normalized viewing weights')
+            observations = (
+                ('non_unit_raw_weight_totals', lambda d: abs(d['raw_total']-1) > .01),
+                ('non_unit_retained_weight_totals', lambda d: abs(d['retained_total']-1) > .01),
+                ('nonzero_sentinel_weights', lambda d: d['skipped_sentinel_weight'] > 0),
+                ('duplicate_skin_influences', lambda d: d['merged_duplicate_influences'] > 0),
+                ('zero_retained_weight_totals', lambda d: d['retained_total'] == 0),
+            )
+            for code, predicate in observations:
+                count = sum(predicate(d) for d in skin_diagnostics)
+                if count:
+                    warnings.append(dict(stage='skin validation', code=code, part=index, count=count))
+        summaries.append(summary)
     return dict(schema='tt.model-validation.v1', mesh_version=model['mesh_version'],
                 display_version=model['display']['version'], skeleton_version=skeleton['version'] if skeleton else None,
                 material_versions=sorted({m['table_version'] for m in model['materials']}),

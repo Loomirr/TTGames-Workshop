@@ -7,7 +7,9 @@ import bpy
 from .cu3 import FormatError
 from .material_preview import attach_vertex_albedo, attach_vertex_opacity, attach_normal_map
 from .texture_store import read_texture_store
+from .dds import read_embedded_dds
 from .native_materials import costume_slot, costume_uv_index, surface_normal_binding
+from .profiles import active_renderer_reference
 
 def multiply_base_tint(material, tint, label, property_name):
     if len(tint)!=3 or not all(math.isfinite(v) and v>=0 for v in tint):
@@ -40,13 +42,14 @@ class CostumeMaterials:
 
     def dds_image(self, key, data, label):
         if key not in self.images:
-            at = data.find(b'DDS ')
-            if at < 0 or at+128 > len(data) or int.from_bytes(data[at+4:at+8],'little') != 124:
-                raise FormatError(f'Native texture has no supported DDS payload: {label}')
+            try:
+                span = read_embedded_dds(data)
+            except FormatError as error:
+                raise FormatError(f'Native texture {label}: {error}') from error
             # Blender reads DDS itself; pack before discarding the temporary file.
             payload = Path(tempfile.gettempdir())/('tt-texture-'+uuid.uuid4().hex+'.dds')
             try:
-                with payload.open('xb') as stream:stream.write(data[at:])
+                with payload.open('xb') as stream:stream.write(data[span['offset']:span['end']])
                 image = bpy.data.images.load(str(payload), check_existing=False)
                 image.pack()
             finally:
@@ -88,7 +91,8 @@ class CostumeMaterials:
         if entry.get('table_version') in (163, 174):
             self.report.append({'material':entry['name'], 'issue':'Older static shader flag meanings remain unresolved; texture/UV and render footer are decoded, shading is approximate'})
         matched = [o['fields'] for o in definition['objects'] if o['fields'].get('Material')==slot] if definition and slot is not None else []
-        texture = next((o for o in matched if o.get('Texture Slot')==0 and 'Texture File' in o), None)
+        texture = next((o for o in matched if o.get('Texture Slot')==0 and 'Texture File' in o
+                        and active_renderer_reference(o['Texture File'], self.suffix)), None)
         assigned = False
         textured = False
         if texture:
@@ -157,8 +161,7 @@ class CostumeMaterials:
         if normal:
             try:
                 path, texture, data = self.model_texture(model, normal['texture'])
-                at = data.find(b'DDS ')
-                if texture['kind'] != 1 or at < 0 or data[at+84:at+88] != b'DXT5':
+                if texture['kind'] != 1 or texture['dds']['format'] != 'DXT5':
                     raise FormatError('Native surface normal needs the verified embedded DXT5 layout')
                 image = self.dds_image((path,normal['texture'],'normal'), data, path.stem+f' / normal {normal["texture"]}')
                 attach_normal_map(material, image, packed_x_alpha=normal['packed_x_alpha'],

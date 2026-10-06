@@ -5,6 +5,7 @@ image would shift every later material reference. Other layouts are rejected.
 """
 from pathlib import Path
 from .cu3 import Reader, FormatError
+from .dds import read_dds, next_dds_header
 
 
 def read_texture_store(path):
@@ -56,16 +57,12 @@ def read_texture_store(path):
                 entry['opaque_refs'] = list(r.get(f'{platforms}H', cursor)) if platforms > 1 else [r.get('H', cursor)] if platforms else []
                 cursor += platforms*2
         entries.append(entry)
-    # These observed stores concatenate DDS payloads with native trailers.
-    # Validate each header and the complete inventory before exposing blocks.
-    starts = []
-    at = data.find(b'DDS ', cursor)
-    while at >= 0:
-        if at+128 <= len(data) and r.get('I', at+4, '<') == 124 and r.get('I', at+76, '<') == 32:
-            starts.append(at)
-        at = data.find(b'DDS ', at+4)
+    # DDS headers size the mip/face/array payloads. Never scan inside pixels
+    # for the next image: a perfectly valid header can occur in pixel data.
+    # Native inter-image trailers remain opaque and are kept out of DDS bytes.
     populated = [entry for entry in entries if entry['name']]
-    if starts and starts[0] != cursor and version == 14 and populated and populated[0]['format_id'] == 255:
+    first = next_dds_header(data, cursor)
+    if first is not None and first != cursor and version == 14 and populated and populated[0]['format_id'] == 255:
         # Observed named cube payload preamble; require the same inventory name.
         name_length = r.get('H', cursor)
         if not 0 < name_length <= 65535 or r.string(cursor+2, cursor+2+name_length) != populated[0]['name']:
@@ -74,11 +71,22 @@ def read_texture_store(path):
         if r.get('B', cursor) != 5:
             raise FormatError('Unsupported TXTS named payload kind')
         cursor += 1
-    if len(starts) != len(populated) or (starts and starts[0] != cursor):
+    if (populated and first != cursor) or (not populated and first is not None):
         raise FormatError('DDS boundaries disagree with texture inventory')
-    for entry, start, end in zip(populated, starts, starts[1:]+[len(data)]):
-        height, width = r.get('2I', start+12, '<')
-        if not 0 < width <= 65536 or not 0 < height <= 65536:
-            raise FormatError('Invalid DDS image dimensions')
-        entry.update(offset=start, end=end, width=width, height=height)
-    return dict(version=version, entries=entries, data=data)
+    at = first
+    for entry in populated:
+        if at is None:
+            raise FormatError('DDS boundaries disagree with texture inventory')
+        try:
+            dds = read_dds(data, at)
+        except FormatError as error:
+            raise FormatError(f'Texture {entry["index"]} ({entry["name"]}): {error}') from error
+        following = next_dds_header(data, dds['end'])
+        trailer_end = len(data) if following is None else following
+        entry.update(offset=at, end=dds['end'], width=dds['width'], height=dds['height'],
+                     dds=dds, trailer_offset=dds['end'], trailer_end=trailer_end)
+        at = following
+    if at is not None:
+        raise FormatError('DDS boundaries disagree with texture inventory: extra payload')
+    return dict(version=version, entries=entries, data=data,
+                payload_validation='DDS header-sized spans; enclosing native trailers remain opaque')

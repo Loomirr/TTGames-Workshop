@@ -1,95 +1,103 @@
-"""Read-only Batman 3 DAT index inventory; observed -6 layout from ttgames.bms."""
+"""Read-only Batman 3 DAT inventory and bounded companion extraction."""
 from pathlib import Path
-import struct, json, argparse, zlib
+import argparse
+import hashlib
+import json
+import os
+import struct
+import sys
+import types
+
+package = types.ModuleType('io_scene_lego_cu3')
+package.__path__ = [str(Path(__file__).resolve().parents[1] / 'Addon/io_scene_lego_cu3')]
+sys.modules.setdefault(package.__name__, package)
+from io_scene_lego_cu3.archive_assets import index_v6, MAX_ENTRY_BYTES, MAX_TOTAL_BYTES
+from io_scene_lego_cu3.archive_compression import decode_entry
+from io_scene_lego_cu3.archive_paths import preflight_destination, safe_path
+from io_scene_lego_cu3.bundle_output import publish_bundle
+from io_scene_lego_cu3.cu3 import FormatError
+
 
 def index(path):
-    path = Path(path)
-    with path.open('rb') as f:
-        off, size = struct.unpack('<II', f.read(8))
-        if off & 0x80000000:
-            off = ((off ^ 0xffffffff) << 8) + 0x100
-        f.seek(off)
-        data = f.read(size)
-    ver, count = struct.unpack_from('<iI', data)
-    if ver != -6:
-        raise ValueError(f'Unsupported DAT index {ver}')
-    names_at = 8 + count * 16
-    names_count, = struct.unpack_from('<I', data, names_at)
-    entries_at = names_at + 4
-    strings_at = entries_at + names_count * 12 + 4
-    crc_at = strings_at + struct.unpack_from('<I', data, strings_at - 4)[0]
-    hashes = dict((struct.unpack_from('<I', data, crc_at + i * 4)[0], i) for i in range(count))
-    result, paths = [], {}
-    current = ''
-    for n in range(names_count):
-        next_, prev, no, unk = struct.unpack_from('<hhiI', data, entries_at + n * 12)
-        name = '' if no < 0 else data[strings_at + no:data.index(0, strings_at + no)].decode('ascii')
-        current = paths.get(unk, '')
-        paths[n] = current
-        if next_ > 0:
-            # Stored prev references the containing path, before this name.
-            paths[n] = current + name + '\\'
-            continue
-        if not name:
-            continue
-        full = (current + name).lstrip('\\').upper()
-        h = 0x811c9dc5
-        for b in full.encode('ascii'):
-            h = ((h ^ b) * 0x199933) & 0xffffffff
-        if h not in hashes:
-            raise ValueError(f'Unmatched DAT path hash: {full}')
-        i = hashes[h]
-        lo, packed_size, raw_size, flagword = struct.unpack_from('<4I', data, 8 + i * 16)
-        result.append(dict(path=full.replace('\\','/'), offset=(lo << 8) + (flagword >> 24), size=raw_size, packed_size=packed_size, flags=flagword & 0xffffff))
-    return result
+    return index_v6(path)
+
+
+def _read_entry(path, entry):
+    if any(not isinstance(entry.get(key), int) or entry[key] < 0
+           for key in ('offset', 'packed_size', 'size', 'flags')):
+        raise FormatError('Invalid DAT entry bounds or mode')
+    if max(entry['packed_size'], entry['size']) > MAX_ENTRY_BYTES:
+        raise FormatError('Requested DAT entry exceeds the 256 MiB limit')
+    if entry['flags'] not in (0, 2):
+        raise FormatError('Unverified DAT storage mode; LOTR mode 3 is unsupported')
+    with Path(path).open('rb') as stream:
+        before = os.fstat(stream.fileno())
+        header = stream.read(8)
+        if len(header) != 8:
+            raise FormatError('Truncated DAT header')
+        index_offset, index_size = struct.unpack('<II', header)
+        if index_offset & 0x80000000:
+            index_offset = ((index_offset ^ 0xffffffff) << 8) + 256
+        start, end = entry['offset'], entry['offset'] + entry['packed_size']
+        if (start < 8 or end > before.st_size or
+                start < index_offset + index_size and end > index_offset):
+            raise FormatError('DAT entry exceeds its payload region')
+        stream.seek(start)
+        packed = stream.read(entry['packed_size'])
+        after = os.fstat(stream.fileno())
+    if len(packed) != entry['packed_size'] or (before.st_size, before.st_mtime_ns) != (after.st_size, after.st_mtime_ns):
+        raise FormatError('DAT source changed or payload is truncated')
+    return decode_entry(packed, entry['size'], storage_mode=entry['flags'])
+
 
 def extract(path, entry, dest):
-    with Path(path).open('rb') as f:
-        f.seek(entry['offset'])
-        data = f.read(entry['packed_size'])
-    out = bytearray()
-    if data[:4] in (b'DFLT', b'ZLIB'):
-        pos = 0
-        while pos < len(data):
-            magic, compressed, raw = struct.unpack_from('<4sII', data, pos)
-            chunk = data[pos + 12:pos + 12 + compressed]
-            if compressed == raw:
-                decoded = chunk
-            elif magic == b'DFLT':
-                decoded = zlib.decompress(chunk, -15)
-            elif magic == b'ZLIB':
-                decoded = zlib.decompress(chunk)
-            else:
-                raise ValueError(f'Unsupported chunk {magic}')
-            if len(decoded) != raw:
-                raise ValueError('DAT chunk size mismatch')
-            out.extend(decoded)
-            pos += 12 + compressed
-        data = bytes(out)
-    elif data[:4] in (b'LZ2K', b'LZMA', b'ZIPX', b'RFPK', b'RNC_'):
-        raise ValueError(f'Compression requires QuickBMS: {data[:4]!r}')
-    if len(data) != entry['size']:
-        raise ValueError('DAT extracted size mismatch')
-    target = Path(dest) / entry['path']
+    """Extract one validated entry exclusively, preserving existing files."""
+    name = safe_path(entry['path'])
+    _, targets = preflight_destination(Path(dest), [name])
+    if entry not in index(path):
+        raise FormatError('DAT entry does not match the validated source index')
+    data = _read_entry(path, entry)
+    target = targets[0]
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_bytes(data)
+    with target.open('xb') as stream:
+        if stream.write(data) != len(data):
+            raise OSError('Short DAT output write')
     return target
 
-if __name__ == '__main__':
-    ap = argparse.ArgumentParser()
-    ap.add_argument('archive', type=Path)
-    ap.add_argument('output', type=Path)
-    ap.add_argument('--extract-cutscenes', action='store_true')
-    args = ap.parse_args()
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('archive', type=Path)
+    parser.add_argument('output', type=Path, help='New inventory/extraction folder')
+    parser.add_argument('--extract-cutscenes', action='store_true')
+    args = parser.parse_args()
     entries = index(args.archive)
-    args.output.mkdir(parents=True, exist_ok=True)
-    (args.output / (args.archive.stem + '-index.json')).write_text(json.dumps(entries, indent=2))
-    cuts = [e for e in entries if e['path'].endswith('.CU3')]
-    print(args.archive.name, 'entries', len(entries), 'CU3', len(cuts), flush=True)
-    if args.extract_cutscenes:
-        for e in cuts:
-            extract(args.archive, e, args.output / 'Extracted')
-        for e in entries:
-            if e['path'].startswith('CUT/') and e['path'].endswith(('.TXT','.SUB','.LED')):
-                extract(args.archive, e, args.output / 'Extracted')
-        print('Extracted CU3 and CUT text companions', flush=True)
+    selected = [entry for entry in entries if args.extract_cutscenes and (
+        entry['path'].upper().endswith('.CU3') or
+        entry['path'].upper().startswith('CUT/') and entry['path'].upper().endswith(('.TXT', '.SUB', '.LED')))]
+    if (sum(entry['packed_size'] for entry in selected) > MAX_TOTAL_BYTES or
+            sum(entry['size'] for entry in selected) > MAX_TOTAL_BYTES):
+        parser.error('Cumulative extraction exceeds the 1 GiB limit; extract smaller selections')
+    if any(max(entry['packed_size'], entry['size']) > MAX_ENTRY_BYTES or entry['flags'] not in (0, 2)
+           for entry in selected):
+        parser.error('Selection includes an oversized or unsupported storage-mode entry')
+    index_name = args.archive.stem + '-index.json'
+    names = [index_name] + ['Extracted/' + entry['path'] for entry in selected]
+    preflight_destination(args.output, names + ['archive-manifest.json'], require_absent=True)
+    report = dict(schema='tt-dat-extraction-v1', source=str(args.archive.resolve()),
+                  indexed_files=len(entries), extracted_files=len(selected), entries=[])
+
+    def payloads():
+        yield index_name, json.dumps(entries, indent=2).encode('utf-8')
+        for entry in selected:
+            decoded = _read_entry(args.archive, entry)
+            report['entries'].append(dict(path=entry['path'], bytes=len(decoded),
+                                          sha256=hashlib.sha256(decoded).hexdigest()))
+            yield 'Extracted/' + entry['path'], decoded
+
+    publish_bundle(args.output, payloads(), report, expected_paths=names, manifest_name='archive-manifest.json')
+    print(args.archive.name, 'entries', len(entries), 'extracted', len(selected), flush=True)
+
+
+if __name__ == '__main__':
+    main()

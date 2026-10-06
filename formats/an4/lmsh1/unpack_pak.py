@@ -1,75 +1,106 @@
-"""Read TT 0x1234567a PAKs; unpack Deflate_v1.0 members without changing input.
+"""Preflight and extract observed TT 0x1234567A PAKs into new folders.
 
-Container layout reference: Luigi Auriemma's ttgames.bms, EXTRACT_1234567a.
-This tool deliberately supports only the format observed in the local PC copy.
+Uses Workshop's existing bounded TT Deflate_v1.0 reader. QuickBMS is no longer
+invoked. This does not enable LOTR DAT mode 3 or any unverified compression.
 """
 import argparse
 import hashlib
-import json
-from pathlib import Path, PurePosixPath
-import struct
-import subprocess
+from pathlib import Path
+import sys
+import types
+
+package = types.ModuleType('io_scene_lego_cu3')
+package.__path__ = [str(Path(__file__).resolve().parents[2] / 'cu3/Addon/io_scene_lego_cu3')]
+sys.modules.setdefault(package.__name__, package)
+from io_scene_lego_cu3.archive_paths import preflight_destination, validate_paths
+from io_scene_lego_cu3.bundle_output import publish_bundle
+from io_scene_lego_cu3.cu3 import FormatError
+from io_scene_lego_cu3.pak_reader import read_pak, parse_pak, MAX_PACKED, MAX_DECODED, MAX_TOTAL
+from io_scene_lego_cu3.tt_deflate import decompress
 
 
-def unpack(source: Path, destination: Path, quickbms: Path, bms: Path):
-    data = source.read_bytes()
-    magic, count, total, archive_crc, zero1, zero2 = struct.unpack_from('<6I', data)
-    if magic != 0x1234567A or total != len(data) or 24 + count * 28 > total:
-        raise ValueError(f'Invalid or unsupported PAK: {source}')
-    destination.mkdir(parents=True, exist_ok=True)
-    # TT's DFLT codec is not interchangeable with Python's raw DEFLATE.
-    # Keep its proven decoder external until its bitstream is independently understood.
-    if count:
-        subprocess.run([str(quickbms.resolve()), '-k', str(bms.resolve()),
-                        str(source.resolve()), str(destination.resolve())],
-                       check=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+def unpack(source, destination, quickbms=None, bms=None, *, max_packed=MAX_PACKED,
+           max_decoded=MAX_DECODED, max_total=MAX_TOTAL):
+    """Return a verified manifest after non-replacing bundle publication.
+
+    Legacy quickbms/bms arguments remain accepted for old Python callers;
+    they are deliberately unused. All decoding now uses the native reader.
+    """
+    source, destination = Path(source), Path(destination)
+    data = read_pak(source, max_packed=max_packed)
+    entries = parse_pak(data, max_packed=max_packed, max_decoded=max_decoded,
+                        max_total=max_total)
+    names = [entry['name'] for entry in entries]
+    destination, _ = preflight_destination(destination, names + ['pak-manifest.json'], require_absent=True)
     records = []
-    for i in range(count):
-        name_off, offset, size, kind, reserved1, crc, reserved2 = struct.unpack_from('<7I', data, 24 + i * 28)
-        if name_off >= total or offset + size > total:
-            raise ValueError(f'Entry {i} is out of bounds')
-        name = data[name_off:data.index(b'\0', name_off)].decode('ascii')
-        relative = PurePosixPath(name.replace('\\', '/'))
-        if relative.is_absolute() or '..' in relative.parts or ':' in name:
-            raise ValueError(f'Unsafe entry name: {name}')
-        payload = data[offset:offset + size]
-        compression = None
-        if payload[:32].rstrip(b'\0') == b'Deflate_v1.0':
-            expected, = struct.unpack_from('<I', payload, 32)
-            payload = destination.joinpath(*relative.parts).read_bytes()
-            if len(payload) != expected:
-                raise ValueError(f'Decompressed size mismatch: {name}')
-            compression = 'TT DFLT (QuickBMS)'
-        target = destination.joinpath(*relative.parts)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if not target.exists():
-            target.write_bytes(payload)
-        if target.read_bytes() != payload:
-            raise ValueError(f'Existing output differs: {target}')
-        records.append(dict(name=name, offset=offset, stored_bytes=size,
-                            extracted_bytes=len(payload), compression=compression,
-                            kind=kind, crc=f'{crc:08x}',
-                            sha256=hashlib.sha256(payload).hexdigest()))
-    return dict(source=str(source.resolve()), source_sha256=hashlib.sha256(data).hexdigest(),
-                destination=str(destination.resolve()), count=count, entries=records)
+    report = dict(schema='tt-pak-extraction-v1', source=str(source.resolve()),
+                  source_sha256=hashlib.sha256(data).hexdigest(),
+                  destination=str(destination), count=len(entries), entries=records,
+                  limits=dict(packed_bytes=max_packed, decoded_member_bytes=max_decoded,
+                              cumulative_bytes=max_total),
+                  decoder='Workshop TT Deflate_v1.0 (no external backend)')
+
+    def payloads():
+        decoded_total = 0
+        for entry in entries:
+            payload = data[entry['offset']:entry['offset'] + entry['size']]
+            if entry['compressed']:
+                payload = decompress(payload, max_output=min(entry['decoded_size'], max_total - decoded_total),
+                                     max_packed=max_packed)
+                if payload.startswith(b'Deflate_v1.0'):
+                    raise FormatError('Nested TT deflate member framing is not verified')
+            if len(payload) != entry['decoded_size']:
+                raise FormatError('PAK member decoded size mismatch: ' + entry['name'])
+            decoded_total += len(payload)
+            if decoded_total > max_total:
+                raise FormatError('PAK cumulative decoded size exceeds configured limit')
+            records.append(dict(name=entry['name'], offset=entry['offset'], stored_bytes=entry['size'],
+                                extracted_bytes=len(payload),
+                                compression='TT Deflate_v1.0' if entry['compressed'] else None,
+                                kind=entry['kind'], crc=f"{entry['crc']:08x}",
+                                sha256=hashlib.sha256(payload).hexdigest()))
+            yield entry['name'], payload
+
+    return publish_bundle(destination, payloads(), report, manifest_name='pak-manifest.json',
+                          expected_paths=names)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('source', type=Path, help='PAK file or tree of extracted files')
+    parser.add_argument('destination', type=Path, help='New extraction parent folder')
+    parser.add_argument('--quickbms', type=Path, help='Deprecated compatibility argument; no external tool is invoked')
+    parser.add_argument('--bms', type=Path, help='Deprecated compatibility argument; no external script is invoked')
+    args = parser.parse_args()
+    if not args.source.is_file() and not args.source.is_dir():
+        parser.error('Source must be a PAK file or existing directory')
+    sources = [args.source] if args.source.is_file() else sorted(
+        path for path in args.source.rglob('*') if path.is_file() and path.suffix.casefold() == '.pak')
+    relative = [Path(path.stem) if args.source.is_file() else path.relative_to(args.source).with_suffix('')
+                for path in sources]
+    # Check the complete batch's names and metadata before the first output.
+    # Per-PAK publication is transactional; the batch is not one transaction.
+    validate_paths([path.as_posix() for path in relative])
+    preflight_destination(args.destination, [], require_absent=True)
+    packed_total = decoded_total = 0
+    output_names = []
+    for source, folder in zip(sources, relative):
+        raw = read_pak(source)
+        entries = parse_pak(raw)
+        packed_total += len(raw)
+        decoded_total += sum(entry['decoded_size'] for entry in entries)
+        if packed_total > MAX_TOTAL or decoded_total > MAX_TOTAL:
+            parser.error('Batch cumulative packed/decoded size exceeds the 1 GiB limit; extract smaller batches')
+        output_names.extend(folder.as_posix() + '/' + entry['name'] for entry in entries)
+        output_names.append(folder.as_posix() + '/pak-manifest.json')
+    preflight_destination(args.destination, output_names, require_absent=True)
+    count = 0
+    for source, folder in zip(sources, relative):
+        manifest = unpack(source, args.destination / folder, args.quickbms, args.bms)
+        count += manifest['count']
+        print(f"{source.name}: {manifest['count']} members")
+    print(f'Total: {count} members in {len(sources)} PAKs; each folder contains pak-manifest.json')
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('source', type=Path, help='PAK file or tree of extracted files')
-    parser.add_argument('destination', type=Path)
-    refs = Path(__file__).resolve().parent.parent / 'references'
-    parser.add_argument('--quickbms', type=Path, default=refs / 'quickbms.exe')
-    parser.add_argument('--bms', type=Path, default=refs / 'ttgames.bms')
-    args = parser.parse_args()
-    sources = [args.source] if args.source.is_file() else sorted(args.source.rglob('*.PAK'))
-    manifests = []
-    for source in sources:
-        relative = Path(source.stem) if args.source.is_file() else source.relative_to(args.source).with_suffix('')
-        manifest = unpack(source, args.destination / relative, args.quickbms, args.bms)
-        manifests.append(manifest)
-        if manifest['count']:
-            print(f"{source.name}: {manifest['count']} members")
-    args.destination.mkdir(parents=True, exist_ok=True)
-    (args.destination / 'pak-manifest.json').write_text(json.dumps(manifests, indent=2), encoding='utf-8')
-    print(f"Total: {sum(m['count'] for m in manifests)} members in {len(manifests)} PAKs")
+    main()

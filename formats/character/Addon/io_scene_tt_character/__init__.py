@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 5, 6), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 5, 7), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -13,6 +13,7 @@ from bpy_extras.io_utils import ImportHelper, ExportHelper
 from .importer import import_character, import_animations, find_rig, find_character, refresh_catalog, import_catalog_entry
 from ._core.cu3 import FormatError
 from ._core.asset_index import open_assets
+from ._core.geometry_normals import normal_preservation_status
 
 GAMES = [('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
          ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models'),
@@ -446,7 +447,11 @@ class TTCHAR_PT_settings(bpy.types.Panel):
             box.prop(scene, 'tt_import_attachments')
             box.label(text='Change detail/costume, then reimport.')
         box = layout.box(); box.label(text='Viewing scene')
-        if scene.tt_character_game != 'FORTNITE':box.prop(scene, 'tt_face_detail')
+        if scene.tt_character_game != 'FORTNITE':
+            box.prop(scene, 'tt_face_detail')
+            if not normal_preservation_status()['supported']:
+                box.label(text='Facial preview normals are approximate.', icon='ERROR')
+                box.label(text='This Blender lacks normal preservation.')
         box.prop(scene, 'tt_preview_normals')
         strength = box.row(); strength.enabled = scene.tt_preview_normals
         strength.prop(scene, 'tt_preview_normal_strength')

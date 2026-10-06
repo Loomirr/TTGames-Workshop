@@ -40,9 +40,9 @@ These should be treated as the current supported baseline rather than re-added a
 - [x] LEGO The Hobbit
 - [x] LEGO Marvel's Avengers
 
-Last pushed versions: **Character 0.5.5 / CU3 0.1.14**, commit `8487e64`.
+Repository base for this merge packet: **Character 0.5.6 / CU3 0.1.15**, commit `3c3da56fa18a797b056d475a99d46b35a9df7e03`.
 
-Latest locally validated, packaged and installed versions: **Character 0.5.6 / CU3 0.1.15**. These newer changes are included in this source update.
+Current experimental candidates: **Character 0.5.7 / CU3 0.1.16**. The earlier P1 workstation validation/install belongs to 0.5.6 / 0.1.15. The current packet adds safeguards and portable/synthetic checks; it has not installed these candidates or run original-game checks on the workstation.
 
 ### Completed implementation handoff work
 
@@ -51,7 +51,12 @@ Latest locally validated, packaged and installed versions: **Character 0.5.6 / C
 - [x] ~~Reject changed or missing native-export companions before creating output.~~ CD/TEX/AS/PAK/loaded AN4 checks passed on copied fixtures.
 - [x] ~~Validate and install the updated addons.~~ Four representative character imports, preview/no-op exports, two CU3 imports and repository checks passed. Existing Blender preferences were preserved.
 
-See [the P1 checkpoint](docs/HANDOFF_P1_CHECKPOINT.md) for evidence and limits, and [the remaining handoff](TTGames_Workshop_Remaining_Handoff.md) for the next chat. These checks do not establish whole-roster fidelity, new game support or edited-file in-game validation. Handoff packet P1 is separate from the priority labels later in this roadmap.
+- [x] P2 implementation: group shared-source proposals and publish verified staged bundles with exclusive destination creation.
+- [x] P3 safeguards: preflight PAKs and bound archive decoding; unsupported LOTR mode 3 remains rejected.
+- [x] P4/P5 foundations: explicit profiles/resource ownership, strict path/skeleton ambiguity, DDS payload spans, raw-weight diagnostics and normal-helper capability reporting.
+- [ ] Original-file regression for this stricter implementation, remaining native framing/ownership proof and broader visual fidelity.
+
+See [the current P2–P5 checkpoint](docs/HANDOFF_P2_P5_CHECKPOINT.md) and [the P1 checkpoint](docs/HANDOFF_P1_CHECKPOINT.md) for evidence and limits, and [the remaining handoff](TTGames_Workshop_Remaining_Handoff.md) for the next chat. These checks do not establish whole-roster fidelity, new game support or edited-file in-game validation. Handoff packet P1 is separate from the priority labels later in this roadmap.
 
 Existing work includes varying amounts of:
 
@@ -1093,7 +1098,7 @@ This work may begin earlier when it directly validates a newly completed game pr
 
 1. [x] ~~Establish baseline regressions for LMSH1/LB3/Hobbit/Avengers.~~ Character 0.5.6 representative import/preview/no-op export checks passed; this is not a complete roster audit.
    
-Next implementation packet: **P2 — shared-source edit conflicts and staged output publication**, followed by **P3 — archive preflight and bounded framing**. See the remaining handoff before expanding format coverage. Both are still unfinished.
+The P2 shared-source/publication implementation and P3 archive safeguards are now in the current merge packet. Next, run the original-file regression gate and continue the unresolved P3/P4/P5 evidence in [the remaining handoff](TTGames_Workshop_Remaining_Handoff.md) before expanding format coverage. The separate [BactaTank study](docs/BACTATANK_INTEROP.md) proposes an independent exporter without enabling one yet.
 
 2. [ ] Create the central GameProfile/capability registry.
 3. [ ] Convert current per-game/version branches into reusable version-gated readers where possible.

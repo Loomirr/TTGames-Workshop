@@ -33,10 +33,16 @@ def fixture(name='TWO.TEX'):
 
 
 class DatV5(unittest.TestCase):
+    def test_lotr_mode_three_stays_rejected_with_tagged_names(self):
+        raw = fixture()
+        struct.pack_into('<I', raw, 20, 3)
+        with self.assertRaisesRegex(ValueError, 'mode 3'):
+            _parse_index(raw, 1024, name_tags=True)
+
     def test_tagged_name_variant_keeps_full_path_hash_validation(self):
         raw=fixture();struct.pack_into('<I',raw,44+8,0x12345678)
         with self.assertRaises(ValueError):_parse_index(raw,1024)
-        self.assertEqual(_parse_index(raw,1024,name_tags=True)[0]['path'],'CHARS/ONE.CD')
+        self.assertEqual(_parse_index(raw,1024,name_tags=True)[0]['path'],'chars/one.cd')
         raw[-16]^=1
         with self.assertRaisesRegex(ValueError,'hash'):_parse_index(raw,1024,name_tags=True)
 
@@ -55,8 +61,8 @@ class DatV5(unittest.TestCase):
 
     def test_tree_hash_and_ranges(self):
         rows=_parse_index(fixture(),1024)
-        self.assertEqual(rows,[{'path':'CHARS/ONE.CD','offset':512,'packed_size':4,'size':4,'flags':0},
-                               {'path':'CUT/TWO.TEX','offset':768,'packed_size':8,'size':12,'flags':2}])
+        self.assertEqual(rows,[{'path':'chars/one.cd','offset':512,'packed_size':4,'size':4,'flags':0},
+                               {'path':'cut/TWO.TEX','offset':768,'packed_size':8,'size':12,'flags':2}])
 
     def test_unsafe_names_rejected_even_with_matching_hash(self):
         for name in ('..','.','../ESCAPE.TEX','A\\B.TEX','C:ESCAPE','/ABSOLUTE','CON.TEX','TRAIL.','TRAIL '):

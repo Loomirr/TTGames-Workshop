@@ -59,6 +59,29 @@ class ArchiveTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'verified file reference'):
             parse_index(data)
 
+    def test_windows_reserved_names_rejected_with_matching_hash(self):
+        for name in ('NUL.CU3', 'COM1.CU3', 'name.', 'name ', 'CONIN$', 'bad\x7fname'):
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                parse_index(fixture(filename=name))
+
+    def test_source_path_spelling_is_retained(self):
+        rows = parse_index(fixture(filename='Scene.cu3'))
+        self.assertEqual(rows[0]['path'], 'CUT/Scene.cu3')
+
+    def test_unresolved_file_parent_is_not_assumed_root(self):
+        data = bytearray(fixture())
+        string_size = struct.unpack_from('>I', data, 28)[0]
+        second_name = 32 + string_size + 4 + 12
+        struct.pack_into('>H', data, second_name + 4, 123)
+        with self.assertRaisesRegex(ValueError, 'parent'):
+            parse_index(data)
+
+    def test_trailing_index_bytes_are_not_silently_ignored(self):
+        data = bytearray(fixture()) + b'unknown'
+        struct.pack_into('>I', data, 0, len(data) - 4)
+        with self.assertRaisesRegex(ValueError, 'after CC8'):
+            parse_index(data)
+
 
 if __name__ == '__main__':
     unittest.main()

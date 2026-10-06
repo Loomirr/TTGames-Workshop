@@ -24,7 +24,9 @@ part=dict(index=0,vertices=[dict(position=list(p),normal=normal) for p in positi
 identity=[1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1]
 model=dict(source=str(source),mesh_version=175,skeleton=None,parts=[part],
            display={'specials':[dict(index=0,name='Fixture',matrix=identity,parts=[{'part':0,'material':0}])]},
-           materials=[dict(name='Vertex inspection',render_flags={'colourWriteMask':15})])
+           materials=[dict(name='Vertex inspection',table_version=175,
+                           fields={'alphaTest':False,'zBias':0},
+                           render_flags={'colourWriteMask':15,'castShadows':True})])
 rig,objects=create_model(model,'Normal regression',bpy.context.scene.collection)
 obj=objects[0];expected=(C.to_3x3()@Vector([v/127.5-1 for v in normal[:3]])).normalized()
 errors=[(n.vector-expected).length for n in obj.data.corner_normals]

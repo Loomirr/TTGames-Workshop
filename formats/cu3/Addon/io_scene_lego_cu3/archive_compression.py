@@ -2,10 +2,17 @@
 
 LZ2K uses MSB-first canonical Huffman blocks and overlapping LZ references.
 No native executable or third-party decompressor is loaded.
+
+The supported chunk layout is explicitly little-endian raw length followed
+by packed length. LOTR mode 3 has a different, unverified frame and codec;
+recognizing a DFLT tag alone must never enable that mode.
 """
 import struct
 import zlib
 from .cu3 import FormatError
+
+MAX_SIZE = 256 * 1024 * 1024
+MAX_CHUNKS = 65536
 
 
 class _Bits:
@@ -95,7 +102,9 @@ def _literal_codes(bits, lengths):
 
 
 def decode_lz2k_chunk(payload, expected_size):
-    if not 0 < expected_size <= 32768:
+    if len(payload) > MAX_SIZE:
+        raise FormatError('LZ2K packed chunk exceeds size limit')
+    if not isinstance(expected_size, int) or not 0 < expected_size <= 32768:
         raise FormatError('Unverified LZ2K chunk output size')
     bits, output = _Bits(payload), bytearray()
     while len(output) < expected_size:
@@ -108,6 +117,8 @@ def decode_lz2k_chunk(payload, expected_size):
         for _ in range(count):
             value = literals.symbol(bits)
             if value < 256:
+                if len(output) >= expected_size:
+                    raise FormatError('LZ2K literal exceeds decoded data')
                 output.append(value)
                 continue
             length = value - 253
@@ -121,19 +132,36 @@ def decode_lz2k_chunk(payload, expected_size):
                 output.append(output[-distance])
     if len(output) != expected_size:
         raise FormatError('LZ2K output size mismatch')
+    if (bits.position + 7) // 8 != len(payload):
+        raise FormatError('Trailing bytes after LZ2K chunk')
     return bytes(output)
 
 
-def decode_entry(data, expected_size, max_size=256 * 1024 * 1024):
-    if not 0 <= expected_size <= max_size:
+def decode_entry(data, expected_size, max_size=MAX_SIZE, *,
+                 max_packed=MAX_SIZE, max_chunks=MAX_CHUNKS, storage_mode=None):
+    if (not isinstance(max_size, int) or not 0 <= max_size <= MAX_SIZE or
+            not isinstance(max_packed, int) or not 0 <= max_packed <= MAX_SIZE or
+            not isinstance(max_chunks, int) or not 0 < max_chunks <= MAX_CHUNKS):
+        raise FormatError('Invalid archive decoding limits')
+    if not isinstance(expected_size, int) or not 0 <= expected_size <= max_size:
         raise FormatError('Archive asset exceeds configured size limit')
+    if len(data) > max_packed:
+        raise FormatError('Archive packed input exceeds configured size limit')
+    if storage_mode not in (None, 0, 2):
+        raise FormatError(f'Unverified archive storage mode {storage_mode}; codec must be established from original evidence')
+    if storage_mode == 0:
+        if len(data) != expected_size:
+            raise FormatError('Uncompressed archive asset size mismatch')
+        return data
     if data[:4] not in (b'LZ2K', b'DFLT', b'ZLIB'):
         if data[:4] in (b'LZMA', b'ZIPX', b'RFPK', b'RNC_'):
             raise FormatError('Unsupported archive compression: ' + repr(data[:4]))
         if len(data) != expected_size:
             raise FormatError('Uncompressed archive asset size mismatch')
         return data
-    offset, output = 0, bytearray()
+    # Preflight every header and both cumulative lengths before invoking any
+    # decompressor; even a late invalid frame cannot trigger prior decoding.
+    offset, total, chunks = 0, 0, []
     while offset < len(data):
         if offset + 12 > len(data):
             raise FormatError('Truncated archive compression header')
@@ -141,10 +169,18 @@ def decode_entry(data, expected_size, max_size=256 * 1024 * 1024):
         offset += 12
         if magic not in (b'LZ2K', b'DFLT', b'ZLIB') or not raw_size or not packed_size:
             raise FormatError('Invalid archive compression chunk')
-        if offset + packed_size > len(data) or len(output) + raw_size > expected_size:
+        if offset + packed_size > len(data) or total + raw_size > expected_size:
             raise FormatError('Archive chunk exceeds declared bounds')
-        payload = data[offset:offset + packed_size]
+        chunks.append((magic, raw_size, offset, packed_size))
+        if len(chunks) > max_chunks:
+            raise FormatError('Archive compression chunk count exceeds limit')
+        total += raw_size
         offset += packed_size
+    if total != expected_size:
+        raise FormatError('Archive asset output size mismatch')
+    output = bytearray()
+    for magic, raw_size, offset, packed_size in chunks:
+        payload = data[offset:offset + packed_size]
         if packed_size == raw_size:
             decoded = payload
         elif magic == b'LZ2K':

@@ -40,7 +40,7 @@ def footer(data,end,version):
     assert at==end
     return start,out
 
-def read_render_flags(data, entries, version):
+def read_render_flags(data, entries, version, *, table_end=None):
     """Use extraction metadata to bound every record; reject invalid layouts."""
     rows=[]
     if not entries:raise ValueError('Material extraction metadata is empty')
@@ -50,14 +50,17 @@ def read_render_flags(data, entries, version):
     for i,entry in enumerate(entries):
         if i+1<len(entries):end=entries[i+1]['offset']
         else:
-            limit=data.find(b'TDML',entry['offset']);end=limit-21
-            if limit<0 or data[end:end+8]!=b'ROTV\0\0\0\0':
+            limit=data.find(b'TDML',entry['offset']) if table_end is None else table_end
+            end=limit-21
+            if limit<0 or data[limit:limit+4]!=b'TDML' or data[end:end+8]!=b'ROTV\0\0\0\0':
                 raise ValueError('Unrecognized final UMTL boundary')
         start,flags=footer(data,end,version)
         if start<=entry['offset'] or flags['cull']>7 or flags['colourWriteMask']>15:
             raise ValueError('Invalid native material footer')
+        if any(entry.get(field,entry['offset']) > start for field in ('prefix_end','texture_end','name_end')):
+            raise ValueError('Native material prefix, texture or name overlaps its footer')
         for key in ('firstVariantIdx','nextVariantIdx'):
             if flags[key]!=0xffffffff and not 0<=flags[key]<len(entries):
                 raise ValueError('Material variant pointer outside the table')
-        rows.append(dict(index=i,name=entry['name'],offset=start,flags=flags))
+        rows.append(dict(index=i,name=entry['name'],offset=start,end=end,flags=flags))
     return rows

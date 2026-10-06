@@ -11,20 +11,28 @@ import secrets
 import struct
 from .cu3 import FormatError
 from .archive_compression import decode_entry
+from .archive_paths import safe_path, validate_paths
+
+MAX_ENTRY_BYTES = 256 * 1024 * 1024
+MAX_TOTAL_BYTES = 1024 * 1024 * 1024
+
+
+def _archive_stamp(info):
+    return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def _path_archive_stamp(path):
+    # Windows directory metadata can lag handle metadata after a rewrite.
+    # Compare handle-derived stamps consistently; retain every identity field.
+    with path.open('rb') as stream:
+        return _archive_stamp(os.fstat(stream.fileno()))
 
 
 def _safe_path(name):
-    name = name.replace('\\', '/')
-    parts = PurePosixPath(name).parts
-    if len(name)>4096 or not parts or name.startswith('/') or ':' in name or any(p in ('', '.', '..') for p in name.split('/')):
-        raise FormatError('Unsafe archive asset path')
-    for part in parts:
-        stem = part.split('.',1)[0].upper()
-        if (len(part)>255 or part[-1] in '. ' or any(ord(c)<32 or c in '<>"|?*' for c in part) or
-                stem in ('CON','PRN','AUX','NUL') or
-                len(stem)==4 and stem[:3] in ('COM','LPT') and stem[3] in '123456789'):
-            raise FormatError('Unsafe or reserved archive asset filename')
-    return '/'.join(parts)
+    try:
+        return safe_path(name)
+    except ValueError as error:
+        raise FormatError(str(error)) from error
 
 
 def _path_hash(name):
@@ -50,6 +58,8 @@ def index_v6(path, *, version_expected=-6):
             raise FormatError('DAT index exceeds archive bounds')
         stream.seek(offset)
         data = stream.read(size)
+        if len(data) != size:
+            raise FormatError('DAT index could not be read completely')
     def get(fmt, at):
         n = struct.calcsize('<' + fmt)
         if at < 0 or at + n > len(data):
@@ -78,6 +88,12 @@ def index_v6(path, *, version_expected=-6):
     folders, mapped = {}, {}
     for i in range(names_count):
         child, previous, name_offset, parent = get('hhiI', names_at + i * 12)
+        # Original LB3 (-6) and Hobbit (-5) archives carry a nameless root
+        # sentinel in record zero with the native 16-bit no-parent value.
+        # It is metadata, not a forward reference or an output path.
+        if i == 0 and name_offset < 0 and parent == 0xffff:
+            folders[i] = ''
+            continue
         name = ''
         if name_offset >= 0:
             start = strings_at + name_offset
@@ -87,16 +103,18 @@ def index_v6(path, *, version_expected=-6):
             if end < 0:
                 raise FormatError('Unterminated DAT path name')
             name = data[start:end].decode('ascii')
+        if parent not in folders and parent not in (0, 0xffffffff):
+            raise FormatError('DAT name parent is unresolved')
         prefix = folders.get(parent, '')
         if len(name)>255 or len(prefix)+len(name)>4096:
             raise FormatError('DAT path exceeds supported name/depth limits')
         folders[i] = prefix
         if child > 0:
-            folders[i] = prefix + name + '\\'
+            folders[i] = (_safe_path(prefix + name) + '\\') if prefix or name else ''
             continue
         if not name:
             continue
-        full = _safe_path((prefix + name).lstrip('\\').upper())
+        full = _safe_path(prefix + name)
         number = by_hash.get(_path_hash(full))
         if number is None or number in mapped:
             raise FormatError('DAT path has no unique matching file hash')
@@ -105,15 +123,27 @@ def index_v6(path, *, version_expected=-6):
         if (file_offset < 8 or file_offset + packed > archive_size or
                 file_offset < offset + size and file_offset + packed > offset):
             raise FormatError('DAT file extent overlaps header/index or exceeds payload region')
+        mode = flags & 0xffffff
+        if bool(packed) != bool(raw) or (mode == 0 and packed != raw):
+            raise FormatError('Invalid DAT packed/decoded sizes')
         mapped[number] = {'path':full,'offset':file_offset,'packed_size':packed,'size':raw,'flags':flags & 0xffffff}
     if len(mapped) != count:
         raise FormatError('DAT index contains unresolved file paths')
+    try:
+        validate_paths(entry['path'] for entry in mapped.values())
+    except ValueError as error:
+        raise FormatError(str(error)) from error
     return [mapped[i] for i in range(count)]
 
 
 class ArchiveAssetIndex:
     """AssetIndex-compatible provider for explicitly profiled PC DAT layouts."""
-    def __init__(self, root, profile, cache_root=None):
+    def __init__(self, root, profile, cache_root=None, *, max_total_bytes=MAX_TOTAL_BYTES):
+        if not isinstance(max_total_bytes, int) or not 0 <= max_total_bytes <= MAX_TOTAL_BYTES:
+            raise FormatError('Invalid cumulative archive extraction limit')
+        self.max_total_bytes = max_total_bytes
+        self._packed_total = self._decoded_total = 0
+        self._archive_stats = {}
         self.game_root = Path(root).resolve()
         if profile not in ('LB3', 'LMSH1', 'AVENGERS', 'TFA', 'DCSV', 'LMSH2', 'HOBBIT', 'LOTR'):
             raise FormatError('Unsupported installed archive profile')
@@ -130,8 +160,9 @@ class ArchiveAssetIndex:
         fingerprint = hashlib.sha256()
         fingerprint.update(str(self.game_root).encode('utf-8'))
         for archive in archives:
-            stat = archive.stat()
-            fingerprint.update(f'{archive.name}:{stat.st_size}:{stat.st_mtime_ns}'.encode('utf-8'))
+            stamp = _path_archive_stamp(archive)
+            self._archive_stats[archive] = stamp
+            fingerprint.update(f'{archive.name}:{stamp}'.encode('utf-8'))
         self.root = cache_root / (profile.lower() + '-' + fingerprint.hexdigest()[:20])
         self.cache_base = cache_root
         self._validate_cache_root()
@@ -162,14 +193,28 @@ class ArchiveAssetIndex:
         return resolved
 
     def _read(self, archive, entry):
-        if entry['packed_size'] > 256 * 1024 * 1024 or entry['size'] > 256 * 1024 * 1024:
+        if (not isinstance(entry['packed_size'], int) or not 0 <= entry['packed_size'] <= MAX_ENTRY_BYTES or
+                not isinstance(entry['size'], int) or not 0 <= entry['size'] <= MAX_ENTRY_BYTES):
             raise FormatError('Requested archive companion exceeds the 256 MiB limit')
+        if entry['flags'] not in (0, 2):
+            raise FormatError(f"Unverified archive storage mode {entry['flags']}; LOTR mode 3 DFLT remains unsupported")
+        if (self._packed_total + entry['packed_size'] > self.max_total_bytes or
+                self._decoded_total + entry['size'] > self.max_total_bytes):
+            raise FormatError('Cumulative archive extraction exceeds configured limit; open a new provider for a separate operation')
         with archive.open('rb') as stream:
+            before = os.fstat(stream.fileno())
+            if _archive_stamp(before) != self._archive_stats[archive]:
+                raise FormatError('Archive changed since its index was loaded')
             stream.seek(entry['offset'])
             packed = stream.read(entry['packed_size'])
+            after = os.fstat(stream.fileno())
+        if _archive_stamp(before) != _archive_stamp(after):
+            raise FormatError('Archive changed while its companion was read')
         if len(packed) != entry['packed_size']:
             raise FormatError('Archive changed or companion payload is truncated')
-        return decode_entry(packed, entry['size'])
+        self._packed_total += entry['packed_size']
+        self._decoded_total += entry['size']
+        return decode_entry(packed, entry['size'], storage_mode=entry['flags'])
 
     @staticmethod
     def _atomic_write(target, data):
@@ -195,21 +240,26 @@ class ArchiveAssetIndex:
                 stem += suffix
             basename = stem + extension
         candidates = self.files.get(basename.casefold(), [])
-        if exact:
+        if exact or len(parts) > 1:
             ending = '/'.join((*parts[:-1],basename)).casefold()
             candidates = [(a,e) for a,e in candidates if e['path'].casefold()==ending]
-        elif len(candidates) > 1 and len(parts) > 1:
-            ending = '/'.join((*parts[:-1],basename)).casefold()
-            matches = [(a,e) for a,e in candidates if e['path'].casefold()==ending or e['path'].casefold().endswith('/'+ending)]
-            if matches:
-                candidates = matches
         if not candidates:
             if required:
                 raise FormatError('Missing archive companion: ' + basename)
             return None
+        logical_paths = {e['path'].casefold() for _, e in candidates}
+        spellings = {e['path'] for _, e in candidates}
+        if len(logical_paths) > 1:
+            raise FormatError('Ambiguous archive asset basename; use an exact logical path: ' + str(reference))
+        if len(spellings) > 1:
+            raise FormatError('Case-colliding archive asset paths: ' + ', '.join(sorted(spellings)))
         archive, entry = candidates[0]
-        if entry['packed_size'] > 256 * 1024 * 1024 or entry['size'] > 256 * 1024 * 1024:
+        if any(e['packed_size'] > MAX_ENTRY_BYTES or e['size'] > MAX_ENTRY_BYTES for _, e in candidates):
             raise FormatError('Requested archive companion exceeds the 256 MiB limit')
+        if any(e['flags'] not in (0, 2) for _, e in candidates):
+            raise FormatError('Unverified archive storage mode; LOTR mode 3 DFLT remains unsupported')
+        if any(_path_archive_stamp(source) != self._archive_stats[source] for source, _ in candidates):
+            raise FormatError('Archive changed since its index was loaded')
         cache_boundary = self._validate_cache_root()
         target = self.root / _safe_path(entry['path'])
         digest_file = target.with_name(target.name + '.sha256')
@@ -223,6 +273,9 @@ class ArchiveAssetIndex:
                     hashlib.sha256(target.read_bytes()).hexdigest()!=digest):
                 raise FormatError('Cached companion was modified or damaged; choose a fresh cache folder')
             return target
+        if (self._packed_total + sum(e['packed_size'] for _, e in candidates) > self.max_total_bytes or
+                self._decoded_total + sum(e['size'] for _, e in candidates) > self.max_total_bytes):
+            raise FormatError('Cumulative archive extraction exceeds configured limit')
         data = self._read(archive, entry)
         if any(self._read(a,e)!=data for a,e in candidates[1:]):
             raise FormatError('Ambiguous archive asset reference: ' + str(reference))
@@ -239,4 +292,6 @@ class ArchiveAssetIndex:
     def get_info(self):
         return {'kind':'installed_archives','profile':self.profile,'archive_count':self.archive_count,
                 'cache':str(self.root),'extracted_files':len(self.events),
+                'packed_bytes_read':self._packed_total, 'decoded_bytes_requested':self._decoded_total,
+                'cumulative_byte_limit':self.max_total_bytes,
                 'scope':'Requested model, definition, texture, configuration and declared stage companions. Installed archives are read only; extraction does not establish rendering fidelity.'}

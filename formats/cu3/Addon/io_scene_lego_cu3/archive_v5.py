@@ -7,6 +7,7 @@ This module only inventories bounded archive ranges; it never extracts files.
 """
 from pathlib import Path
 import struct
+from .archive_paths import safe_path, validate_paths
 
 
 MAX_INDEX_BYTES = 64 * 1024 * 1024
@@ -15,24 +16,23 @@ MAX_NAMES = 32768  # Child/sibling fields are signed 16-bit indices.
 
 def _path_hash(path):
     value = 0x811c9dc5
-    for byte in path.encode('ascii'):
+    for byte in path.upper().replace('/', '\\').encode('ascii'):
         value = ((value ^ byte) * 0x199933) & 0xffffffff
     return value
 
 
 def _safe_segment(name):
-    if (not name or name in ('.', '..') or name[-1] in '. ' or
-            any(ord(c) < 32 or c in '<>:"/\\|?*' for c in name)):
+    if '/' in name or '\\' in name:
         raise ValueError('Unsafe DAT name segment')
-    stem = name.split('.', 1)[0].upper()
-    if stem in {'CON', 'PRN', 'AUX', 'NUL'} or (len(stem) == 4 and stem[:3] in {'COM', 'LPT'} and stem[3] in '123456789'):
-        raise ValueError('Reserved device name in DAT path')
+    safe_path(name)
 
 
 def _parse_index(data, payload_limit, *, name_tags=False):
     """Decode a complete -5 index; payload_limit is its archive file offset."""
     if not isinstance(payload_limit, int) or payload_limit < 8:
         raise ValueError('Invalid DAT payload extent')
+    if len(data) > MAX_INDEX_BYTES:
+        raise ValueError('DAT index exceeds configured size limit')
     def get(fmt, at):
         size = struct.calcsize('<' + fmt)
         if at < 0 or at + size > len(data):
@@ -74,7 +74,7 @@ def _parse_index(data, payload_limit, *, name_tags=False):
             _safe_segment(name)
         elif name or previous or child <= 0:
             raise ValueError('Invalid DAT root name record')
-        nodes.append((child, previous, name.upper()))
+        nodes.append((child, previous, name))
     hashes = [get('I', hashes_at + i*4)[0] for i in range(count)]
     if len(set(hashes)) != count:
         raise ValueError('Ambiguous duplicate DAT path hashes')
@@ -108,6 +108,7 @@ def _parse_index(data, payload_limit, *, name_tags=False):
             paths[ordinal] = path.replace('\\', '/')
     if len(seen) != names_count or any(path is None for path in paths) or len(set(paths)) != count:
         raise ValueError('Incomplete or ambiguous DAT name tree')
+    validate_paths(paths)
     result = []
     for index, path in enumerate(paths):
         high_offset, packed, size, flags = get('4I', 8 + index * 16)
@@ -118,7 +119,7 @@ def _parse_index(data, payload_limit, *, name_tags=False):
             # Paths still have to match the separate complete file hash table.
             flags &= 0xff
         if flags not in (0, 2):
-            raise ValueError('Unverified DAT storage flags')
+            raise ValueError(f'Unverified DAT storage flags/mode {flags}; LOTR mode 3 DFLT remains unsupported')
         if offset < 8 or offset > payload_limit or packed > payload_limit-offset:
             raise ValueError('DAT entry is outside its payload extent')
         if not packed or not size or (flags == 0 and packed != size):

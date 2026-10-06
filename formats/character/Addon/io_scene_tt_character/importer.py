@@ -16,6 +16,10 @@ from ._core.animation_bank import AnimationBank
 from ._core.animation_catalog import catalog
 from ._core.morph import animate_shape_keys
 from ._core.source_provenance import SourceProvenance
+from ._core.profiles import profile_identity, validate_profile_model
+from ._core.resource_identity import model_resource_identity, logical_path
+from ._core.animation_ownership import attachment_tracks
+from ._core.skeleton import attachment_locator
 
 STORES = ('objects', 'collections', 'meshes', 'armatures', 'materials', 'images', 'actions', 'shape_keys', 'node_groups', 'texts')
 
@@ -102,12 +106,13 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
     definition = character_definition(path) if path.suffix.lower() == '.cd' else character_definition(definition_path) if definition_path else None
     if path.suffix.lower() == '.cd':
         reference = definition['character'].get('Override Model File') or definition['character']['Skeleton Name']
-        model_path = assets.find(reference, resolver.suffix, '.GHG', required=False) or assets.find(reference, resolver.suffix, '.GSC')
+        model_path = resolver.resolve_model(reference)
     else:
         model_path = path
     report = dict(source=str(path), game=game, layer_mode=layer_mode, mesh_detail='highest' if highest_detail else 'authored', models=[], materials=[], issues=[],
+                  profile_identity=profile_identity(game,structure_versions={'definition':definition.get('version')} if definition else {}),
                   limitations=['Native shaders and depth-mask faces remain approximate.',
-                               'Attachment tracks require a unique matching native skeleton and clip; other attachments follow their locators.',
+                               'Attachment tracks require unique native resource/root identity under a matched parent; AN4 does not encode bind matrices, and unresolved ownership follows native locators.',
                                'A raw GHG without its CD imports display variants for inspection, not a configured costume.'])
     if not definition:
         report['issues'].append('No CD selected: costume slots and layer variants cannot be resolved as a complete character.')
@@ -129,11 +134,7 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
             provenance.record(source,'model',digest=model['source_sha256'])
             if definition:
                 provenance.record(definition['source'],'character-definition',digest=definition['source_sha256'])
-            expected = (175,) if game in ('LB3', 'AVENGERS') else (169, 170) if game == 'HOBBIT' else (169,)
-            if game == 'LMSH1' and source.suffix.lower() == '.gsc':
-                expected = (161, 169)
-            if model['mesh_version'] not in expected:
-                raise FormatError('Model version does not match the selected game')
+            validate_profile_model(game,source,model['mesh_version'])
             factory = lambda m, e, d: materials(m, e, d, attachment_tint=parent[2].get('Tint Colour') if parent else None)
             rig, parts = create_model(model, name, collection, definition, factory, layer_mode=layer_mode, highest_detail=highest_detail)
             rig['tt_native_source'] = str(source)
@@ -142,17 +143,21 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
             if definition:
                 rig['tt_native_definition'] = definition['source']
             skeleton = model['skeleton']
+            identity = model_resource_identity(source, skeleton, assets=assets, definition=definition, game=game,
+                                                reference=parent[2]['Resource File'] if parent else logical_path(assets,path) or path.name)
+            rig['tt_native_resource_identity'] = json.dumps(identity)
+            rig['tt_native_profile_identity'] = json.dumps(profile_identity(game,structure_versions={
+                'MESH':model['mesh_version'],'DISP':model['display']['version'],
+                'HGOL':skeleton['version'] if skeleton else None,'definition':definition.get('version') if definition else None}))
             if skeleton:
                 rig['tt_character_skeleton'] = json.dumps(skeleton)
                 rig['tt_character_game'] = game
                 rig['cu3_geometry_status'] = 'Native source meshes and skeleton; material reconstruction experimental.'
             if parent:
                 parent_rig, parent_skeleton, attachment = parent
-                logical = attachment['Locator']
-                remap = parent_skeleton['post_poi_bytes']
-                if not 0 <= logical < len(remap) or remap[logical] >= len(parent_skeleton['points_of_interest']):
-                    raise FormatError('Attachment locator outside native table')
-                point = parent_skeleton['points_of_interest'][remap[logical]]
+                rig['tt_attachment_owner'] = json.dumps({'parent_object':parent_rig.name,
+                    'resource_reference':attachment['Resource File'],'layer':attachment.get('Layer'),'locator':attachment.get('Locator')})
+                point = attachment_locator(parent_skeleton,attachment['Locator'])
                 anchor = bpy.data.objects.new(name + ' / locator', None)
                 collection.objects.link(anchor)
                 anchor.parent = parent_rig
@@ -162,10 +167,11 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
                 rig.matrix_parent_inverse = Matrix.Identity(4)
                 rig.matrix_basis = C @ row_matrix(point['matrix']) @ row_matrix(list(attachment['Object Offset'])) @ CI
             report['models'].append(dict(source=str(source), meshes=len(parts), joints=len(skeleton['joints']) if skeleton else 0,
+                                        resource_identity=identity,
                                         validation=model['validation'], selected_parts=[o['source_part'] for o in parts],
                                         selected_triangles=sum(len(o.data.polygons) for o in parts)))
             if attachments and skeleton and definition:
-                for attachment in active_attachments(definition, layer_mode=layer_mode):
+                for attachment in active_attachments(definition, layer_mode=layer_mode, renderer_suffix=resolver.suffix):
                     saved = snapshot()
                     count = len(report['models'])
                     material_count = len(report['materials'])
@@ -270,17 +276,24 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                         provenance=SourceProvenance.loads(rig.get('tt_native_source_provenance'),provenance_assets)
                         provenance.record(path,'animation',digest=source.sha256)
                     attachment_actions, face_tracks = [], []
-                    for child in rig.children_recursive:
-                        if child.type != 'ARMATURE' or not child.get('tt_character_skeleton'):
-                            continue
+                    children = [child for child in rig.children_recursive if child.type=='ARMATURE' and child.get('tt_character_skeleton')]
+                    child_names = {child.name for child in children}
+                    instances = []
+                    for child in children:
+                        parent = child.parent
+                        while parent is not None and parent != rig and parent.name not in child_names:
+                            parent = parent.parent
+                        instances.append({'id':child.name,'parent_id':parent.name if parent is not None and parent != rig else None,
+                                          'skeleton':json.loads(child['tt_character_skeleton']),
+                                          'identity':json.loads(child.get('tt_native_resource_identity','null'))})
+                    matches, ownership_issues = attachment_tracks(source.actors,actor,instances,record['name'],frames=source.frames)
+                    report.setdefault('attachment_ownership',[]).extend(ownership_issues)
+                    report['issues'].extend(f'{record["name"]} / {issue["attachment"]}: {issue["issue"]}' for issue in ownership_issues)
+                    for child in children:
+                        selected = matches.get(child.name)
+                        if selected is None:continue
                         child_skeleton = json.loads(child['tt_character_skeleton'])
-                        candidates = [(a, i, r) for a in source.actors if a['parent'] is not None
-                            for i, r in enumerate(a['records']) if r['name'].casefold() == record['name'].casefold()
-                            and r['animation'].nodes == len(child_skeleton['joints'])]
-                        if len(candidates) != 1:
-                            report['issues'].append(f'{record["name"]}: no unique matching attachment track for {child.name}')
-                            continue
-                        a, i, r = candidates[0]
+                        a, i, r = selected['actor'],selected['record_index'],selected['record']
                         attachment_before = snapshot()
                         previous = child.animation_data.action if child.animation_data else None
                         previous_slot = child.animation_data.action_slot if child.animation_data else None
@@ -289,8 +302,10 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                             source.frames = r['animation'].frames
                             child_action, _ = apply_pose(source, a, i, child, child_skeleton)
                             child_action.name = action.name + ' / ' + child.name
+                            child_action['tt_animation_ownership'] = json.dumps(dict(selected['evidence'],
+                                actor_index=a['index'],actor_offset=a.get('offset'),skeleton_identity=child_skeleton.get('identity')))
                             attachment_actions.append(dict(object=child.name, action=child_action.name,
-                                slot=child.animation_data.action_slot.identifier))
+                                slot=child.animation_data.action_slot.identifier,ownership=selected['evidence']))
                             from .animation_export import action_fingerprint
                             attachment_actions[-1]['fingerprint'] = action_fingerprint(child_action)
                             # Facial scalars are a separate BSA block, not bone
@@ -312,14 +327,16 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                     action['tt_facial_actions'] = json.dumps(face_tracks)
                     from .animation_export import action_fingerprint
                     action['tt_native_pose_fingerprint'] = action_fingerprint(action)
-                    action['tt_character_status'] = 'Native skeleton AN4 pose; original root translation retained. Compatible attachment tracks are linked; FPS is a preview assumption and events remain separate.'
+                    action['tt_character_status'] = 'Native skeleton AN4 pose; original root translation retained. Attachment ownership uses source hierarchy and retained resource/root identity; AN4 bind matrices are not encoded. FPS is a preview assumption and events remain separate.'
+                    action['tt_native_profile_identity'] = json.dumps(profile_identity(rig['tt_character_game'],structure_versions={'standalone_AN4':source.version}))
                     item = rig.tt_clips.add()
                     item.name, item.action = action.name, action
                     item.slot = rig.animation_data.action_slot.identifier
                     item.frames, item.fps = source.frames, fps
                     if data is None:rig['tt_native_source_provenance'] = provenance.dumps()
                     report['imported'] += 1
-                    report['clips'].append(dict(source=str(path), actor=actor['name'], action=action.name, frames=source.frames))
+                    report['clips'].append(dict(source=str(path), actor=actor['name'], action=action.name, frames=source.frames,
+                                               an4_version=source.version,byte_order='big'))
                 except (ValueError, OSError, KeyError, RuntimeError) as error:
                     rollback(before)
                     if rig.animation_data:
@@ -340,6 +357,8 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
 
 
 def import_catalog_entry(context, rig, entry):
+    if entry.get('game') and entry['game'] != rig['tt_character_game']:
+        raise FormatError('Animation catalog entry belongs to a different game profile')
     if not entry['source']:
         raise FormatError('This action has no resolved AN4 source; see the catalog report')
     bank = AnimationBank(entry['source']) if entry['member'] else None

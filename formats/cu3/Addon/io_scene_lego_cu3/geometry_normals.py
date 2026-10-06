@@ -2,8 +2,17 @@
 import bpy
 
 
+def normal_preservation_status():
+    """Expose a fidelity capability separately from successful addon loading."""
+    supported = hasattr(bpy.types, 'GeometryNodeSetMeshNormal')
+    return dict(supported=supported, required_node='GeometryNodeSetMeshNormal',
+                blender_version=list(bpy.app.version),
+                limitation=None if supported else
+                'This Blender version cannot preserve authored corner normals through facial preview geometry changes.')
+
+
 def capture_normals(nodes, links, geometry):
-    if not hasattr(bpy.types, 'GeometryNodeSetMeshNormal'):
+    if not normal_preservation_status()['supported']:
         return geometry, None
     capture = nodes.new('GeometryNodeCaptureAttribute'); capture.domain = 'CORNER'
     capture.capture_items.clear(); capture.capture_items.new('VECTOR', 'Native shading normal')
