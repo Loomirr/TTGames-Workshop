@@ -15,6 +15,7 @@ from ._core.blender_import import C, CI, row_matrix, apply_pose, prepare_pose
 from ._core.animation_bank import AnimationBank
 from ._core.animation_catalog import catalog
 from ._core.morph import animate_shape_keys
+from ._core.source_provenance import SourceProvenance
 
 STORES = ('objects', 'collections', 'meshes', 'armatures', 'materials', 'images', 'actions', 'shape_keys', 'node_groups', 'texts')
 
@@ -97,6 +98,7 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
         raise FormatError('Select LB3, LMSH1, The Hobbit or Avengers')
     assets = assets or open_assets(assets_root, game, cache_root=cache)
     resolver = ResourceResolver(assets, game)
+    provenance = SourceProvenance(assets)
     definition = character_definition(path) if path.suffix.lower() == '.cd' else character_definition(definition_path) if definition_path else None
     if path.suffix.lower() == '.cd':
         reference = definition['character'].get('Override Model File') or definition['character']['Skeleton Name']
@@ -112,7 +114,7 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
     before = snapshot()
     original_active = context.view_layer.objects.active
     original_selected = list(context.selected_objects)
-    materials = CostumeMaterials(assets, resolver.suffix, report['materials'])
+    materials = CostumeMaterials(assets, resolver.suffix, report['materials'], provenance=provenance)
     try:
         collection = bpy.data.collections.new(path.stem + ' / TT Character')
         context.scene.collection.children.link(collection)
@@ -124,6 +126,9 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
             if key in chain or len(chain) > 8:
                 raise FormatError('Cyclic or excessively nested character attachments')
             model = load_model(source)
+            provenance.record(source,'model',digest=model['source_sha256'])
+            if definition:
+                provenance.record(definition['source'],'character-definition',digest=definition['source_sha256'])
             expected = (175,) if game in ('LB3', 'AVENGERS') else (169, 170) if game == 'HOBBIT' else (169,)
             if game == 'LMSH1' and source.suffix.lower() == '.gsc':
                 expected = (161, 169)
@@ -133,7 +138,7 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
             rig, parts = create_model(model, name, collection, definition, factory, layer_mode=layer_mode, highest_detail=highest_detail)
             rig['tt_native_source'] = str(source)
             rig['tt_native_mesh_detail'] = 'highest' if highest_detail else 'authored'
-            rig['tt_native_source_sha256'] = hashlib.sha256(source.read_bytes()).hexdigest()
+            rig['tt_native_source_sha256'] = model['source_sha256']
             if definition:
                 rig['tt_native_definition'] = definition['source']
             skeleton = model['skeleton']
@@ -163,14 +168,20 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
                 for attachment in active_attachments(definition, layer_mode=layer_mode):
                     saved = snapshot()
                     count = len(report['models'])
+                    material_count = len(report['materials'])
+                    saved_images, saved_stores = dict(materials.images), dict(materials.stores)
+                    saved_provenance = provenance.snapshot()
                     try:
                         resolved = resolver.resolve(attachment['Resource File'])
                         build(resolved['model'], resolved['definition'], name + ' / ' + attachment['Resource File'],
                               (rig, skeleton, attachment), chain + (key,))
                     except (ValueError, OSError, KeyError, RuntimeError) as error:
                         rollback(saved)
-                        materials.images.clear()
+                        materials.images.clear(); materials.images.update(saved_images)
+                        materials.stores.clear(); materials.stores.update(saved_stores)
+                        provenance.restore(saved_provenance)
                         del report['models'][count:]
+                        del report['materials'][material_count:]
                         report['issues'].append(f'Attachment {attachment.get("Resource File", "unknown")}: {error}')
             return rig
 
@@ -180,9 +191,10 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
         rig['tt_character_cache'] = str(Path(cache).resolve()) if cache else ''
         rig['tt_character_definition'] = str(path if path.suffix.lower() == '.cd' else definition_path or '')
         rig['tt_native_texture_sources'] = json.dumps(sorted({str(key[0] if isinstance(key, tuple) else key) for key in materials.images}))
+        rig['tt_native_source_provenance'] = provenance.dumps()
         if definition:
             try:
-                animation_report = refresh_catalog(rig, assets, definition)
+                animation_report = refresh_catalog(rig, assets, definition, provenance=provenance)
                 report['animation_catalog'] = dict(sets=animation_report['sets'], entries=len(animation_report['entries']), issues=animation_report['issues'])
             except (ValueError, OSError, KeyError) as error:
                 report['issues'].append('Animation catalog: ' + str(error))
@@ -191,6 +203,7 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
         rig.select_set(True)
         context.view_layer.objects.active = rig
         rig['tt_character_report'] = write_report('TT Character report / ' + path.stem, report)
+        rig['tt_native_source_provenance'] = provenance.dumps()
         context.view_layer.update()
         return rig, report
     except Exception:
@@ -201,11 +214,13 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
         raise
 
 
-def refresh_catalog(rig, assets=None, definition=None):
+def refresh_catalog(rig, assets=None, definition=None, provenance=None):
     assets = assets or open_assets(rig['tt_character_assets_root'], rig['tt_character_game'],
                                  cache_root=rig.get('tt_character_cache') or None)
     definition = definition or character_definition(rig['tt_character_definition'])
-    report = catalog(assets, definition)
+    provenance = provenance or SourceProvenance.loads(rig.get('tt_native_source_provenance'),assets)
+    provenance.record(definition['source'],'character-definition',digest=definition['source_sha256'])
+    report = catalog(assets, definition, provenance=provenance)
     rig.tt_animation_assets.clear()
     for entry in report['entries']:
         item = rig.tt_animation_assets.add()
@@ -215,6 +230,7 @@ def refresh_catalog(rig, assets=None, definition=None):
         item.available = bool(entry['source'])
     rig['tt_animation_catalog_report'] = write_report('TT Animation catalog / ' + rig.name, report)
     rig['tt_animation_set_sources'] = json.dumps(report['sources'])
+    rig['tt_native_source_provenance'] = provenance.dumps()
     return report
 
 
@@ -249,6 +265,10 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                     action.name = path.stem + ' / ' + record['name']
                     if data is None:
                         action['tt_native_animation_source'] = str(path.resolve())
+                        provenance_assets=open_assets(rig['tt_character_assets_root'],rig['tt_character_game'],
+                                                     rig.get('tt_character_cache') or None)
+                        provenance=SourceProvenance.loads(rig.get('tt_native_source_provenance'),provenance_assets)
+                        provenance.record(path,'animation',digest=source.sha256)
                     attachment_actions, face_tracks = [], []
                     for child in rig.children_recursive:
                         if child.type != 'ARMATURE' or not child.get('tt_character_skeleton'):
@@ -297,6 +317,7 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                     item.name, item.action = action.name, action
                     item.slot = rig.animation_data.action_slot.identifier
                     item.frames, item.fps = source.frames, fps
+                    if data is None:rig['tt_native_source_provenance'] = provenance.dumps()
                     report['imported'] += 1
                     report['clips'].append(dict(source=str(path), actor=actor['name'], action=action.name, frames=source.frames))
                 except (ValueError, OSError, KeyError, RuntimeError) as error:
@@ -321,9 +342,16 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
 def import_catalog_entry(context, rig, entry):
     if not entry['source']:
         raise FormatError('This action has no resolved AN4 source; see the catalog report')
-    payload = AnimationBank(entry['source']).read(entry['member']) if entry['member'] else None
+    bank = AnimationBank(entry['source']) if entry['member'] else None
+    payload = bank.read(entry['member']) if bank else None
+    provenance=SourceProvenance.loads(rig.get('tt_native_source_provenance'))
+    if bank:
+        member=bank.entries[entry['member'].casefold()]
+        provenance.record(entry['source'],'animation-bank',data=bank.data,
+                          member=dict(member,decoded_sha256=hashlib.sha256(payload).hexdigest()))
     path = Path(entry['member']) if entry['member'] else Path(entry['source'])
     report = import_animations(context, rig, [path], entry['actor'], 30, data=payload, clip_name=entry['clip'])
     if report['imported']:
         rig.tt_clips[rig.tt_clip_index].action['tt_authored_action'] = json.dumps(entry)
+        if bank:rig['tt_native_source_provenance'] = provenance.dumps()
     return report

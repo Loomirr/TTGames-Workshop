@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import struct
 import math
+import hashlib
 from .cu3 import Reader, FormatError
 from .tt_deflate import decompress
 
@@ -16,6 +17,7 @@ FORMATS = {0:'B', 1:'h', 2:'i', 3:'q', 4:'f', 6:'3f', 8:'3f',
 
 def read_definition(path):
     data = Path(path).read_bytes()
+    source_sha256 = hashlib.sha256(data).hexdigest()
     if data.startswith(b'Deflate_v1.0'):
         data = decompress(data)
     r = Reader(data)
@@ -139,7 +141,8 @@ def read_definition(path):
             values[field['name']] = value
         objects.append({'class':classes[cls], 'offset':start, 'size':end-start,
                         'fields':values, 'decoded_end':pos, 'complete':pos==end})
-    return {'source':str(Path(path).resolve()), 'version':version, 'objects':objects}
+    return {'source':str(Path(path).resolve()), 'source_sha256':source_sha256,
+            'version':version, 'objects':objects}
 
 
 def character_definition(path):

@@ -59,7 +59,7 @@ Expand **TT Character > Import and preview settings**.
   now uses the preview scene's lights and world instead of Blender's studio HDRI.
 
 Create a character preview, adjust settings in that scene, then press
-**Update preview settings**. The source scene and its material graphs remain
+**Apply preview settings**. The source scene and its material graphs remain
 intact. These controls do not write native material changes on export. Raw
 imports still need a preview helper for native depth-mask faces.
 

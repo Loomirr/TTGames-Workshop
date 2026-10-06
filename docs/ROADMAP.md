@@ -1,5 +1,10 @@
 # Next steps
 
+The [implementation handoff checkpoint](HANDOFF_P1_CHECKPOINT.md) records the
+reproduced attachment rollback problem and the P1 dependency-revision fixes.
+Next, address shared-source edit conflicts and staged native bundle publication
+before widening native writing or enabling new format families.
+
 See the [workflow audit and milestones](WORKFLOW.md) for the current public
 readers, remaining mesh-extraction dependencies and native editing limits.
 The [5 October tool review](TOOL_REVIEW_2026-10-05.md) records the latest checks

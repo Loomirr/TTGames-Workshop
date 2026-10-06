@@ -8,7 +8,10 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.14** (experimental).
+Current source and packaged build: **0.1.15** (experimental).
+Version 0.1.15 retains consumed model hashes and rejects a source changed during
+decoding. It enables no new layout. The character addon's companion-export
+guards are documented in the [P1 checkpoint](../../docs/HANDOFF_P1_CHECKPOINT.md).
 Import now defaults to assembling supported actors, attachments, materials,
 source cameras and experimental static stage geometry. Supply the selected
 CU3 and its installed LB3/LMSH1 game folder or an extracted asset tree. The
@@ -56,7 +59,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.14 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.14.zip)
+Download the [0.1.15 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.15.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

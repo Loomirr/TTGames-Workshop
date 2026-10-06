@@ -1,13 +1,13 @@
 # TT Character and Animation Importer
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.5**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.6**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.5.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.6.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -33,12 +33,18 @@ to apply the changes and create a fresh preview scene. See the
 
 ## Import a character
 
+Version 0.5.6 preserves attachment texture dependencies when an optional import
+fails and records consumed companion revisions for native export. Changed
+CD/TEX/AS/loaded AN4/PAK files now stop export before output is created. Older
+imports need reimporting to establish these baselines. See the
+[P1 checks and remaining export limits](../../docs/HANDOFF_P1_CHECKPOINT.md).
+
 Version 0.5.5 preserves authored normals through facial preview helpers and
 corrects the verified LMSH1 base-head printing layout. Expand **TT Character >
 Import and preview settings** for mesh/costume options and viewing-copy controls.
 **Highest detail** is the default for verified native LODs. Create a preview,
 adjust normal strength, clipping quality or display options there, then press
-**Update preview settings**. Reimport for mesh/costume changes. See
+**Apply preview settings**. Reimport for mesh/costume changes. See
 [shading, quality settings and limits](../../docs/SHADING_AND_QUALITY.md).
 
 Version 0.5.4 adds shared structural validation and detected-layout information

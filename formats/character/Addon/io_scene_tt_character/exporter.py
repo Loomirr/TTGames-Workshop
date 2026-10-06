@@ -11,6 +11,7 @@ from ._core.mesh_edit_blender import vertex_edits
 from ._core.native_mesh import read_mesh_bytes
 from ._core.blender_import import check_rig
 from ._core.material_edit_guard import check_materials
+from ._core.source_provenance import SourceProvenance
 
 
 def export_sources(rig, destination, face_edits=True, mesh_edits=True):
@@ -22,7 +23,13 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
     roots.append(assets.root.resolve())
     if any(destination == root or destination.is_relative_to(root) for root in roots):
         raise FormatError('Choose a new export folder outside game files and the source/cache tree')
-    sources, patches, vertex_patches = {}, {}, {}
+    provenance=SourceProvenance.loads(rig.get('tt_native_source_provenance'))
+    verified=provenance.verify()
+    def consumed(path):
+        if path not in verified:
+            raise FormatError('Native dependency has no consumed revision; reimport: '+str(path))
+        return verified[path]
+    sources, patches, vertex_patches = dict(verified), {}, {}
     # Avoid returning a successful native bundle that silently discards a
     # modified clip. Active ANI-D editing has its own constrained writer.
     from .animation_export import action_fingerprint, check_linked_actions
@@ -34,12 +41,14 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
         if not obj.get('tt_native_source'):
             continue
         path = Path(obj['tt_native_source']).resolve()
-        raw = path.read_bytes()
+        raw = consumed(path)
         if hashlib.sha256(raw).hexdigest() != obj['tt_native_source_sha256']:
             raise FormatError('Native source changed since import: ' + path.name)
         manifest = None
         original = raw
         model = load_model(path) if mesh_edits or (face_edits and path.suffix.casefold()=='.ghg') else None
+        if model and model['source_sha256']!=obj['tt_native_source_sha256']:
+            raise FormatError('Native model changed during export preflight: '+str(path))
         for mesh in obj.children:
             if mesh.type=='MESH' and mesh.get('tt_vertex_transform'):
                 check_materials(mesh)
@@ -70,25 +79,25 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
             patches[str(path)] = manifest
         if obj.get('tt_native_definition'):
             cd = Path(obj['tt_native_definition']).resolve()
-            sources[cd] = cd.read_bytes()
+            sources[cd] = consumed(cd)
     for name in json.loads(rig.get('tt_native_texture_sources', '[]')):
         path = Path(name).resolve()
-        sources[path] = path.read_bytes()
+        sources[path] = consumed(path)
     for name in json.loads(rig.get('tt_animation_set_sources', '[]')):
         path = Path(name).resolve()
-        sources[path] = path.read_bytes()
+        sources[path] = consumed(path)
     for clip in rig.tt_clips:
         if clip.action and clip.action.get('tt_authored_action'):
             entry = json.loads(clip.action['tt_authored_action'])
             path = Path(entry['source']).resolve()
-            sources[path] = path.read_bytes()
+            sources[path] = consumed(path)
         elif clip.action and clip.action.get('tt_native_animation_source'):
             path = Path(clip.action['tt_native_animation_source']).resolve()
-            sources[path] = path.read_bytes()
+            sources[path] = consumed(path)
     planned, targets = [], set()
     for path, data in sources.items():
         root = next((r for r in roots if path.is_relative_to(r)), None)
-        relative = path.relative_to(root) if root else Path(path.name)
+        relative = Path(provenance.records[str(path)]['logical_path'])
         target = destination / relative
         if not target.resolve().is_relative_to(destination) or target.suffix.casefold() == '.dat':
             raise FormatError('Unsafe native export path')
@@ -102,6 +111,7 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
     if manifest_path.exists():
         raise FormatError('Choose a fresh export folder')
     report = dict(schema='tt.loose-source-export.v1', game=rig['tt_character_game'], files=[], face_patches=patches, vertex_patches=vertex_patches,
+        consumed_dependencies=json.loads(provenance.dumps()),
         limitations=['Supported existing positions, UVs, vertex colors, normals, palette-limited skin weights and facial targets are encoded when enabled.',
                      'Topology, new palettes, native bounds, material/image encoding, skeleton edits and animation-bank edits are not encoded.',
                      'Position edits must remain inside original part bounds; facial Basis positions are immutable. Object transforms and modifiers are preview-only.',

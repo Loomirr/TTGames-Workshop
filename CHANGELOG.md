@@ -1,5 +1,18 @@
 # Changelog
 
+## Attachment dependency integrity — 6 October 2026
+
+- Character 0.5.6 preserves earlier/shared texture provenance and image/store
+  caches after an optional attachment fails; failed new resources are removed.
+- Track consumed model, definition, texture, animation-set and loaded animation
+  revisions separately from image caching. Verify companions before native
+  bundle output; older imports must be reimported for these new baselines.
+- Shared model readers retain consumed hashes and reject changes during decoding;
+  CU3 0.1.15 includes this guard. No new binary layout is enabled.
+- Add original-file attachment rollback/export regressions and synthetic revision
+  checks. Instance conflicts and transactional publication remain next steps;
+  see the [handoff checkpoint](docs/HANDOFF_P1_CHECKPOINT.md).
+
 ## Facial shading and preview controls — 5 October 2026
 
 - Character 0.5.5 / CU3 0.1.14 retain evaluated custom normals through facial

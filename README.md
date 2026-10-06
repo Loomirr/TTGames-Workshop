@@ -15,9 +15,9 @@ game does not mean support for every TT game that uses the same extension.
 
 | Area | What is here | Current status |
 | --- | --- | --- |
-| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.5.5 experimental; LMSH1/LB3/Hobbit/Avengers plus static LEGO Fortnite exports; constrained TT native editing |
+| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.5.6 experimental; LMSH1/LB3/Hobbit/Avengers plus static LEGO Fortnite exports; constrained TT native editing |
 | [LEGO Fortnite](formats/fortnite/README.md) | Static exported models, recipe materials and optional installed-game extraction bridge | Early JSON/PNG/GLB import; Unreal readers and runtimes supplied separately, shaders incomplete |
-| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, installed-game actor and static stage loading, name editor, source animation and face tools | 0.1.14 experimental; shared accessory-reader fixes, partial LMSH1/LB3 assembly, TFA/DCSV reference inspection |
+| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, installed-game actor and static stage loading, name editor, source animation and face tools | 0.1.15 experimental; shared accessory-reader fixes, partial LMSH1/LB3 assembly, TFA/DCSV reference inspection |
 | [LSW1 HGP models](formats/hgp/lsw1/README.md) | Character meshes, native skeletons, corrected palette colors, textures, face alpha and normal maps | 0.1.3; original 2005 PC game only |
 | [LIJ1 Xbox 360 prototype textures](formats/nu20/lij1-xbox360/README.md) | Drag-and-drop Windows DDS extractor and format notes | 0.1.2; BC1/2/3/5, float, cubemaps, TEX and font textures |
 | [LMSH1 AN4 animation](formats/an4/lmsh1/README.md) | Scalar decoder, corrected rotation sampler and experimental BVH export | Observed ANI-D layouts and original Marvel rig |

@@ -29,6 +29,8 @@ def load_model(path):
     model['skeleton'] = stage('skeleton decoding', lambda: read_skeleton(path)) if path.suffix.lower()=='.ghg' else None
     model['materials'] = stage('material decoding', lambda: read_materials(path)['materials'])
     model['validation'] = stage('decoded model validation', lambda: validate_model(model))
+    if hashlib.sha256(Path(path).read_bytes()).hexdigest()!=model['source_sha256']:
+        raise FormatError('Native model changed during decoding: '+str(path))
     return model
 
 

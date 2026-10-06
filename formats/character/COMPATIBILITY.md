@@ -1,6 +1,6 @@
 # PC character compatibility, 5 October 2026
 
-Version 0.5.5 retains the PC NXG/DX11 readers and the separate static LEGO
+Version 0.5.6 retains the PC NXG/DX11 readers and the separate static LEGO
 Fortnite exported-asset profile. Handheld character support is
 separate work and is postponed. Shared file extensions do not imply shared
 binary layouts. The Blender game selector offers LMSH1, LB3, The Hobbit and Avengers;
@@ -11,7 +11,12 @@ import coverage. See [Fortnite coverage](../fortnite/README.md).
 
 ## Current face and material checks
 
-Version 0.5.5 preserves evaluated authored normals in supported Blender
+Character 0.5.6 adds optional-attachment rollback and consumed dependency guards.
+This changes native export integrity, not supported game layouts or visual
+coverage. Older imports require reimporting before guarded source-bundle export.
+See the [P1 checkpoint](../../docs/HANDOFF_P1_CHECKPOINT.md).
+
+Version 0.5.6 preserves evaluated authored normals in supported Blender
 facial helpers, corrects verified LMSH1 head-print coordinates and exposes
 preview/mesh settings in the sidebar. Highest-detail selection follows known
 native LOD tables; it does not infer support for unknown layouts. See

@@ -3,6 +3,10 @@
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
+Character 0.5.6 adds attachment rollback and consumed companion revision guards;
+CU3 0.1.15 adds the shared model revision check. No new profile or shader layout
+is enabled. See [the focused P1 checkpoint](HANDOFF_P1_CHECKPOINT.md).
+
 Character 0.5.5 / CU3 0.1.14 preserve evaluated normals in supported Blender
 facial preview helpers and correct layout-gated LMSH1 head-print UVs. Character
 sidebar settings expose highest verified LOD selection and independent preview
@@ -26,7 +30,7 @@ shader fidelity. See [shading and quality checks](SHADING_AND_QUALITY.md).
   rejected. See [the import audit](FORTNITE_IMPORT_AUDIT.md) for exact scope.
   See [setup and limits](../formats/fortnite/README.md).
 
-- Character addon 0.5.5: independent LMSH1/LB3/Hobbit/Avengers character and declared
+- Character addon 0.5.6: independent LMSH1/LB3/Hobbit/Avengers character and declared
   animation browsers, supported ANI-D playback, native TT inner decompression,
   matching attachment tracks, separate live/composed face previews and loose native-source
   export. Explicit default/cutscene costume layers and native material role IDs

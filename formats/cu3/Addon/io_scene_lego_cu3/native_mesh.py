@@ -247,6 +247,9 @@ def read_mesh_bytes(data):
 
 
 def read_mesh(path):
-    result = read_mesh_bytes(Path(path).read_bytes())
+    import hashlib
+    raw=Path(path).read_bytes()
+    result = read_mesh_bytes(raw)
     result['source'] = str(Path(path).resolve())
+    result['source_sha256'] = hashlib.sha256(raw).hexdigest()
     return result

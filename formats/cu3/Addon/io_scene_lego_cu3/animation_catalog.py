@@ -9,7 +9,7 @@ from .definitions import read_definition
 from .animation_bank import AnimationBank
 
 
-def catalog(assets, definition):
+def catalog(assets, definition, provenance=None):
     roots = [o['fields'].get('CharAnimSet Name', '') for o in definition['objects']
              if o['class'] == 'Character Anim Set Reference']
     pending, visited, entries, issues, sources = list(roots), set(), [], [], []
@@ -22,11 +22,13 @@ def catalog(assets, definition):
         visited.add(name.casefold())
         try:
             source = assets.find(name, extension='.AS')
-            sources.append(str(source))
             data = read_definition(source)
+            if provenance:provenance.record(source,'animation-set',digest=data['source_sha256'])
+            sources.append(str(source))
             suffix = 'NXG' if getattr(assets, 'profile', 'LMSH1') in ('LMSH1', 'LB3', 'HOBBIT') else 'DX11'
             bank_path = assets.find(name + '_AN4_' + suffix, extension='.PAK', required=False)
             bank = AnimationBank(bank_path) if bank_path else None
+            if bank and provenance:provenance.record(bank_path,'animation-bank-index',data=bank.data,export=False)
             for obj in data['objects']:
                 fields = obj['fields']
                 if obj['class'] == 'Character Anim Set Reference':

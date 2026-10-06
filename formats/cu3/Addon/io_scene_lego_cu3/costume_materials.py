@@ -25,13 +25,18 @@ def multiply_base_tint(material, tint, label, property_name):
 
 
 class CostumeMaterials:
-    def __init__(self, assets, suffix, report):
+    def __init__(self, assets, suffix, report, provenance=None):
         self.assets, self.suffix, self.report = assets, suffix, report
         self.images = {}
         self.stores = {}
+        self.provenance = provenance
 
     def image(self, path):
-        return self.dds_image(path, path.read_bytes(), path.stem)
+        # Cached images must retain the revision actually consumed earlier.
+        if path in self.images:return self.images[path]
+        data=path.read_bytes()
+        if self.provenance:self.provenance.record(path,'texture',data=data)
+        return self.dds_image(path, data, path.stem)
 
     def dds_image(self, key, data, label):
         if key not in self.images:
@@ -59,6 +64,7 @@ class CostumeMaterials:
         if path not in self.stores:
             self.stores[path] = read_texture_store(path)
         store = self.stores[path]
+        if self.provenance:self.provenance.record(path,'texture-store',data=store['data'])
         if not 0 <= index < len(store['entries']):
             raise FormatError(f'Texture {index} is outside {path.name}')
         entry = store['entries'][index]
