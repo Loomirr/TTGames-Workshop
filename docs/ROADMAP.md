@@ -1,12 +1,12 @@
 # Next steps
 
-The [implementation handoff checkpoint](HANDOFF_P1_CHECKPOINT.md) records the
+The [support notes](SUPPORT.md) records the
 reproduced attachment rollback problem and the P1 dependency-revision fixes.
-The [P2–P5 checkpoint](HANDOFF_P2_P5_CHECKPOINT.md) adds shared-source conflict
+The [validation review](MERGE_PACKET_REVIEW_2026-10-06.md) adds shared-source conflict
 rejection, staged publication, bounded archives, explicit resource/skeleton
 identity and stronger DDS/weight diagnostics. The next gate is original-file
 regression of these stricter paths, then the remaining framing, ownership and
-visual work in [the handoff](../TTGames_Workshop_Remaining_Handoff.md).
+visual work in [next steps](ROADMAP.md).
 
 See the [workflow audit and milestones](WORKFLOW.md) for the current public
 readers, remaining mesh-extraction dependencies and native editing limits.

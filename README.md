@@ -32,7 +32,7 @@ research candidates, not replacements for a working installation. See the
 See the [game index](games/README.md), [format index](formats/README.md),
 [support notes](docs/SUPPORT.md), [project layout](docs/LAYOUT.md) and
 [next steps](docs/ROADMAP.md).
-The [safety and identity checkpoint](docs/HANDOFF_P2_P5_CHECKPOINT.md) records
+The [validation review](docs/MERGE_PACKET_REVIEW_2026-10-06.md) records
 this implementation pass and its validation limits. The
 [BactaTank interoperability study](docs/BACTATANK_INTEROP.md) describes a possible
 independent `.bmesh` export path; no BactaTank exporter is enabled yet.

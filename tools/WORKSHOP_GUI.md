@@ -71,7 +71,7 @@ drag and drop. Download its Windows ZIP separately from the repository's
 This toolbox uses file pickers; shell drag and drop is not implemented here.
 
 Version 0.1.3 packages the bounded archive and resource-identity readers used by
-the relevant backends. See [the current checkpoint](../docs/HANDOFF_P2_P5_CHECKPOINT.md)
+the relevant backends. See [validation review](../docs/MERGE_PACKET_REVIEW_2026-10-06.md)
 for safety changes and the distinction between backend and interactive GUI checks.
 
 Developer checks, Blender-only scripts, raw FUSE access and the native Python

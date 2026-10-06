@@ -51,7 +51,7 @@ Character 0.5.7 and CU3 0.1.16 are the current experimental candidates. They add
 export publication safeguards, bounded readers, identity checks and clearer
 fidelity diagnostics. The checkpoint separates portable tests, synthetic Blender
 checks and original-file validation still needed on the workstation. See
-[the current evidence and limits](../docs/HANDOFF_P2_P5_CHECKPOINT.md).
+[validation review](../docs/MERGE_PACKET_REVIEW_2026-10-06.md).
 
 These builds retain the shared older-accessory reader fixes.
 They also correct nearest-detail accessory LOD selection and LMSH1 arm print

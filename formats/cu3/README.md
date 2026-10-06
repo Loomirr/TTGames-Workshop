@@ -15,10 +15,10 @@ normal-preservation capability report. Attachment animation matching no longer
 uses a matching label and joint count as sufficient ownership evidence.
 Existing game/layout gates remain in place. Original-game regression and visual
 checks for this build remain pending; see the
-[safety and identity checkpoint](../../docs/HANDOFF_P2_P5_CHECKPOINT.md).
+[validation review](../../docs/MERGE_PACKET_REVIEW_2026-10-06.md).
 Version 0.1.15 retains consumed model hashes and rejects a source changed during
 decoding. It enables no new layout. The character addon's companion-export
-guards are documented in the [P1 checkpoint](../../docs/HANDOFF_P1_CHECKPOINT.md).
+guards are documented in the [support notes](../../docs/SUPPORT.md).
 Import now defaults to assembling supported actors, attachments, materials,
 source cameras and experimental static stage geometry. Supply the selected
 CU3 and its installed LB3/LMSH1 game folder or an extracted asset tree. The

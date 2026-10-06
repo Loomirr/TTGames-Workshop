@@ -38,14 +38,14 @@ strict resource identity, bounded archive/DDS reads and raw skin-weight
 diagnostics. Normal-helper availability is visible in preview diagnostics.
 These are safety and validation improvements within the existing format gates;
 new original-file and in-game verification remain local follow-up work. See
-[the checkpoint](../../docs/HANDOFF_P2_P5_CHECKPOINT.md) and
-[remaining handoff](../../TTGames_Workshop_Remaining_Handoff.md).
+[validation review](../../docs/MERGE_PACKET_REVIEW_2026-10-06.md) and
+[next steps](../../docs/ROADMAP.md).
 
 Version 0.5.6 preserves attachment texture dependencies when an optional import
 fails and records consumed companion revisions for native export. Changed
 CD/TEX/AS/loaded AN4/PAK files now stop export before output is created. Older
 imports need reimporting to establish these baselines. See the
-[P1 checks and remaining export limits](../../docs/HANDOFF_P1_CHECKPOINT.md).
+[support notes](../../docs/SUPPORT.md).
 
 Version 0.5.5 preserves authored normals through facial preview helpers and
 corrects the verified LMSH1 base-head printing layout. Expand **TT Character >

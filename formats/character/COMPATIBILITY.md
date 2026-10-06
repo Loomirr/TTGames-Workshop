@@ -14,7 +14,7 @@ import coverage. See [Fortnite coverage](../fortnite/README.md).
 Character 0.5.6 adds optional-attachment rollback and consumed dependency guards.
 This changes native export integrity, not supported game layouts or visual
 coverage. Older imports require reimporting before guarded source-bundle export.
-See the [P1 checkpoint](../../docs/HANDOFF_P1_CHECKPOINT.md).
+See the [support notes](../../docs/SUPPORT.md).
 
 Version 0.5.6 preserves evaluated authored normals in supported Blender
 facial helpers, corrects verified LMSH1 head-print coordinates and exposes
