@@ -1,5 +1,28 @@
 # Changelog
 
+## Facial shading and preview controls — 5 October 2026
+
+- Character 0.5.5 / CU3 0.1.14 retain evaluated custom normals through facial
+  clipping and depth bias on Blender versions with Set Mesh Normal support.
+- Correct layout-gated LMSH1 CD head-print UVs, reproduced on Axel Alonso and
+  Blade. Source geometry and normal-map UV bindings remain intact.
+- Add character sidebar import/preview settings, with highest verified native
+  LOD as the default and independent controls for normal strength, facial
+  clipping, albedo, color display and render samples.
+- Preview copies keep source material graphs intact and use their scene lights
+  and world. Native shader and facial masking fidelity remain approximate.
+  See [checks, usage and limits](docs/SHADING_AND_QUALITY.md).
+
+## Shared structural validation — 5 October 2026
+
+- Character 0.5.4 / CU3 0.1.13 validate decoded geometry, UVs, skin influences,
+  bind matrices and selected associations before Blender object creation.
+- Reject negative draw/material/bone references and singular transforms with
+  stage-labelled errors; quality warnings preserve the original data.
+- Include detected native versions and part/warning summaries in import reports.
+  No new game layout or character-specific patch is enabled. See the
+  [structural compatibility notes](docs/STRUCTURAL_COMPATIBILITY.md).
+
 ## TT face and material corrections — 5 October 2026
 
 - Character 0.5.3 / CU3 0.1.12 correct Avengers material texture indexing and

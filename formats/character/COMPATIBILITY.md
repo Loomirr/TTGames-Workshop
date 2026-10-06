@@ -1,6 +1,6 @@
 # PC character compatibility, 5 October 2026
 
-Version 0.5.3 retains the PC NXG/DX11 readers and adds a separate static LEGO
+Version 0.5.5 retains the PC NXG/DX11 readers and the separate static LEGO
 Fortnite exported-asset profile. Handheld character support is
 separate work and is postponed. Shared file extensions do not imply shared
 binary layouts. The Blender game selector offers LMSH1, LB3, The Hobbit and Avengers;
@@ -10,6 +10,16 @@ exports, not the TT archive readers. Its discovered roster is not verified
 import coverage. See [Fortnite coverage](../fortnite/README.md).
 
 ## Current face and material checks
+
+Version 0.5.5 preserves evaluated authored normals in supported Blender
+facial helpers, corrects verified LMSH1 head-print coordinates and exposes
+preview/mesh settings in the sidebar. Highest-detail selection follows known
+native LOD tables; it does not infer support for unknown layouts. See
+[shading checks and limits](../../docs/SHADING_AND_QUALITY.md).
+
+Version 0.5.4 adds shared decoded-model validation and layout summaries. It
+enables no new game profile and makes no new facial shading claims. See the
+[structural compatibility notes](../../docs/STRUCTURAL_COMPATIBILITY.md).
 
 The 0.5.3 pass covers selected characters from all four supported TT character
 profiles. It fixes Avengers texture indexing, cutout alpha, facial preview

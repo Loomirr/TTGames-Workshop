@@ -16,49 +16,48 @@ from .material_preview import attach_vertex_albedo, attach_vertex_opacity
 from .face_edit_blender import bind_source
 from .mesh_edit_blender import bind_vertices
 from .material_edit_guard import bind_materials
+from .model_validation import validate_model, validate_draw, matrix
 
 
 def load_model(path):
-    model = read_mesh(path)
-    model['display'] = read_display(path, len(model['parts']))
-    model['skeleton'] = read_skeleton(path) if path.suffix.lower()=='.ghg' else None
-    model['materials'] = read_materials(path)['materials']
+    def stage(label, reader):
+        try:return reader()
+        except (FormatError, ValueError) as error:
+            raise FormatError(f'{Path(path).name} [{label}]: {error}') from error
+    model = stage('mesh decoding', lambda: read_mesh(path))
+    model['display'] = stage('display decoding', lambda: read_display(path, len(model['parts'])))
+    model['skeleton'] = stage('skeleton decoding', lambda: read_skeleton(path)) if path.suffix.lower()=='.ghg' else None
+    model['materials'] = stage('material decoding', lambda: read_materials(path)['materials'])
+    model['validation'] = stage('decoded model validation', lambda: validate_model(model))
     return model
 
 
-def selected_draws(model, definition=None, *, layer_mode='authored'):
+def selected_draws(model, definition=None, *, layer_mode='authored', highest_detail=True):
     skeleton = model['skeleton']
     if skeleton is None:
         return [(special, binding, None) for special in model['display']['specials']
-                for binding in model_bindings(model['display'], special)]
+                for binding in model_bindings(model['display'], special, highest_detail=highest_detail)]
     draws = []
     for metadata in selected_layer_metadata(skeleton, model['display'], definition, layer_mode=layer_mode):
         special = model['display']['specials'][metadata['special']]
         if special['unsupported_commands']:
             raise FormatError('Layer uses unsupported display commands')
-        for binding in model_bindings(model['display'], special):
+        for binding in model_bindings(model['display'], special, highest_detail=highest_detail):
             draws.append((special, binding, metadata))
     return draws
 
 
-def create_model(model, name, collection, definition=None, material_factory=None, *, layer_mode='authored'):
+def create_model(model, name, collection, definition=None, material_factory=None, *, layer_mode='authored', highest_detail=True):
     skeleton = model['skeleton']
-    draws = selected_draws(model, definition, layer_mode=layer_mode)
+    draws = selected_draws(model, definition, layer_mode=layer_mode, highest_detail=highest_detail)
     prepared = []
     for special, binding, metadata in draws:
-        if not 0 <= binding['part'] < len(model['parts']):
-            raise FormatError('Native model LOD references an absent mesh part')
-        part = model['parts'][binding['part']]
         joint = metadata['joint'] if metadata and not metadata['kind'] else None
-        if skeleton and joint is not None and joint >= len(skeleton['joints']):
-            raise FormatError('Native rigid part joint outside skeleton')
-        if skeleton and joint is None:
-            if any(not v.get('weights') or any(j>=len(skeleton['joints']) for j,w in v['weights']) for v in part['vertices']):
-                raise FormatError(f'Unresolved skin palette in native part {part["index"]}; cannot faithfully bind this model')
-        if binding['material'] >= len(model['materials']):
-            raise FormatError('Display binding references an absent material')
+        validate_draw(model, binding, joint)
+        part = model['parts'][binding['part']]
         transform = C @ row_matrix(skeleton['joints'][joint]['inverse_world_bind_row_major']).inverted() if joint is not None else C
         if skeleton is None:
+            matrix(special['matrix'], 'coordinate conversion', f'special {special["index"]}')
             transform = C @ row_matrix(special['matrix'])
         prepared.append((special, binding, part, joint, transform))
     rig = create_rig(skeleton, name, collection) if skeleton else bpy.data.objects.new(name, None)

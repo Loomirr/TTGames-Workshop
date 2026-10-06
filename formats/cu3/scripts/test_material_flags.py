@@ -126,15 +126,16 @@ class MaterialFlagTests(unittest.TestCase):
         self.assertEqual(costume_slot({'name':'Hulk_MAT','table_version':235,'render_flags':{'special_id':3}}),3)
         self.assertEqual(costume_slot({'name':'CAPE_GAME_DX11','render_flags':{'special_id':11}}),11)
 
-    def test_lmsh1_arm_uv_exception_is_layout_and_role_gated(self):
+    def test_lmsh1_print_uv_exception_is_layout_and_role_gated(self):
         def entry(name,role,version=176):
             return dict(name=name,table_version=version,render_flags={'special_id':role},fields={'uvSets':[(1,0)]})
-        for name,role in (('LEFTARM_GAME',24),('RIGHTARM_GAME:VARIANT',5)):
+        for name,role in (('LEFTARM_GAME',24),('RIGHTARM_GAME:VARIANT',5),
+                          ('HEAD_FRONT_GAME',1),('HEAD_BACK_GAME:VARIANT',2)):
             self.assertEqual(costume_uv_index(entry(name,role),169),0)
             self.assertEqual(costume_uv_index(entry(name,role),175),1)
             self.assertEqual(costume_uv_index(entry(name,role,202),169),1)
         self.assertEqual(costume_uv_index(entry('LEFTARM_GAME',7),169),1)
-        self.assertEqual(costume_uv_index(entry('HEAD_FRONT_GAME',1),169),1)
+        self.assertEqual(costume_uv_index(entry('HEAD_FRONT_GAME',7),169),1)
         self.assertEqual(costume_uv_index(entry('BODY_FRONT_GAME',3),169),1)
         self.assertEqual(costume_uv_index(entry('RIGHTARM_GAME_DX11',5,202),175),1)
         accessory=entry('Hat',0);accessory['fields']['uvSets']=[(1,2)]

@@ -34,6 +34,7 @@ def main():
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_fortnite_catalog.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_fortnite_backend.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_mesh_edit.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_model_validation.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_an4_edit.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_face_decoder_cli.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'tools/check_docs.py')],check=True,cwd=ROOT)

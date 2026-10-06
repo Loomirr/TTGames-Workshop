@@ -5,6 +5,7 @@ details behind them are removed after skinning, allowing the head to show
 through in a single viewport pass. This is an approximation, not a TT shader.
 """
 import bpy
+from .geometry_normals import capture_normals, restore_normals
 
 
 def copy_layer_flags(source, destination):
@@ -75,7 +76,11 @@ def clip_details(obj, masks, scene, level=3):
             position = switch.outputs['Output']
         camera_position = position
     subdivide = nodes.new('GeometryNodeSubdivideMesh'); subdivide.inputs['Level'].default_value = level
-    links.new(src.outputs['Geometry'], subdivide.inputs['Mesh'])
+    # Subdivide/Delete Geometry discard Blender's custom corner normals. Capture
+    # the evaluated (post-skin) normals before changing topology, then restore
+    # their interpolated values on the remaining corners. Never edit source data.
+    geometry, normal = capture_normals(nodes, links, src.outputs['Geometry'])
+    links.new(geometry, subdivide.inputs['Mesh'])
     direction = nodes.new('ShaderNodeVectorMath'); direction.operation = 'SUBTRACT'
     links.new(vertex.outputs[0], direction.inputs[0]); links.new(camera_position, direction.inputs[1])
     length = nodes.new('ShaderNodeVectorMath'); length.operation = 'LENGTH'
@@ -91,9 +96,10 @@ def clip_details(obj, masks, scene, level=3):
     delete = nodes.new('GeometryNodeDeleteGeometry'); delete.domain = 'FACE'
     links.new(subdivide.outputs['Mesh'], delete.inputs['Geometry'])
     links.new(ray.outputs['Is Hit'], delete.inputs['Selection'])
-    links.new(delete.outputs['Geometry'], out.inputs['Geometry'])
+    links.new(restore_normals(nodes, links, delete.outputs['Geometry'], normal), out.inputs['Geometry'])
     modifier = obj.modifiers.new('TT live facial clipping', 'NODES'); modifier.node_group = tree
     obj['tt_live_face_preview'] = 'Camera-dependent subdivided mask clipping; original mesh and keys unchanged'
+    obj['tt_live_normals_preserved'] = normal is not None
     return modifier
 
 
@@ -163,5 +169,6 @@ def prepare_live(scene, detail_level=3):
     scene['tt_live_preview'] = 'Source camera mask approximation. Orbiting is for mesh inspection; use camera view for facial clipping.'
     scene['tt_preview_kind'] = 'LIVE'
     return {'detail_parts': len(planned), 'hidden_depth_parts': len(masks), 'subdivision_level': detail_level,
+            'corner_normals_preserved': hasattr(bpy.types, 'GeometryNodeSetMeshNormal'),
             'biased_depth_masks': len(biased_masks),
             'depth_bias_note':'Post-skin offsets follow available native draw order; cutout printing stays outside mask clipping. Preview approximation, not native shader equivalence.'}

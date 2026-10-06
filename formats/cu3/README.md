@@ -8,7 +8,7 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.12** (experimental).
+Current source and packaged build: **0.1.14** (experimental).
 Import now defaults to assembling supported actors, attachments, materials,
 source cameras and experimental static stage geometry. Supply the selected
 CU3 and its installed LB3/LMSH1 game folder or an extracted asset tree. The
@@ -18,6 +18,16 @@ scene assembly:** stage visibility and render controls are approximate;
 nested scenes, rigid props, original lighting, audio and effects are not
 automatically reconstructed. Faces and native shaders also need more work.
 Game assets and example Blender scenes are not included here.
+
+Version 0.1.13 adds stage-labelled model validation and layout summaries to
+actor and static-stage reports. See the
+[structural compatibility notes](../../docs/STRUCTURAL_COMPATIBILITY.md).
+
+Version 0.1.14 preserves evaluated authored normals through facial clipping
+and depth bias when Blender provides the Set Mesh Normal node. The shared
+material reader also corrects the verified LMSH1 CD head-print UV layout.
+Create a fresh import/preview for existing projects. Scene reconstruction
+limits remain unchanged; see [shading checks](../../docs/SHADING_AND_QUALITY.md).
 
 Version 0.1.12 corrects facial preview layering, cutout alpha and Avengers texture
 references in the shared model reader. Verified packed surface-normal maps now
@@ -46,7 +56,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.12 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.12.zip)
+Download the [0.1.14 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.14.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

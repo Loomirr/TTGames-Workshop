@@ -4,6 +4,7 @@ This is a Blender approximation of colourWriteMask=0, not a translation of
 the complete TT shader. Original target coordinates remain unmodified.
 """
 import bpy
+from .geometry_normals import capture_normals, restore_normals
 
 def face_objects(scene):
     return [obj for obj in scene.objects if obj.type=='MESH' and
@@ -99,10 +100,13 @@ def depth_bias_modifier(obj, distance=.001, *, camera_only=True):
     n=tree.nodes;links=tree.links;src=n.new('NodeGroupInput');out=n.new('NodeGroupOutput')
     position=n.new('GeometryNodeSetPosition');normal=n.new('GeometryNodeInputNormal')
     scale=n.new('ShaderNodeVectorMath');scale.operation='SCALE';scale.inputs[3].default_value=distance
-    links.new(src.outputs['Geometry'],position.inputs['Geometry']);links.new(normal.outputs[0],scale.inputs[0])
-    links.new(scale.outputs[0],position.inputs['Offset']);links.new(position.outputs[0],out.inputs[0])
+    geometry, shading_normal = capture_normals(n, links, src.outputs['Geometry'])
+    links.new(geometry,position.inputs['Geometry']);links.new(normal.outputs[0],scale.inputs[0])
+    links.new(scale.outputs[0],position.inputs['Offset'])
+    links.new(restore_normals(n, links, position.outputs[0], shading_normal),out.inputs[0])
     modifier=obj.modifiers.new('TT facial depth bias','NODES');modifier.node_group=tree
     obj['tt_preview_depth_bias']=distance
+    obj['tt_depth_normals_preserved'] = shading_normal is not None
     # Source masks have castShadow=0; holdout must only affect the camera ray.
     if camera_only:
         for prop in ('visible_shadow','visible_diffuse','visible_glossy','visible_transmission','visible_volume_scatter'):

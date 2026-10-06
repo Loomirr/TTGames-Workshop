@@ -90,7 +90,7 @@ def facial_actions(source, actor, child, frames):
         raise
 
 
-def import_character(context, path, assets_root, game, *, definition_path=None, cache=None, attachments=True, assets=None, layer_mode='default'):
+def import_character(context, path, assets_root, game, *, definition_path=None, cache=None, attachments=True, assets=None, layer_mode='default', highest_detail=True):
     if context.mode != 'OBJECT':
         raise FormatError('Switch to Object Mode before importing')
     if game not in ('LB3', 'LMSH1', 'HOBBIT', 'AVENGERS'):
@@ -103,7 +103,7 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
         model_path = assets.find(reference, resolver.suffix, '.GHG', required=False) or assets.find(reference, resolver.suffix, '.GSC')
     else:
         model_path = path
-    report = dict(source=str(path), game=game, layer_mode=layer_mode, models=[], materials=[], issues=[],
+    report = dict(source=str(path), game=game, layer_mode=layer_mode, mesh_detail='highest' if highest_detail else 'authored', models=[], materials=[], issues=[],
                   limitations=['Native shaders and depth-mask faces remain approximate.',
                                'Attachment tracks require a unique matching native skeleton and clip; other attachments follow their locators.',
                                'A raw GHG without its CD imports display variants for inspection, not a configured costume.'])
@@ -130,8 +130,9 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
             if model['mesh_version'] not in expected:
                 raise FormatError('Model version does not match the selected game')
             factory = lambda m, e, d: materials(m, e, d, attachment_tint=parent[2].get('Tint Colour') if parent else None)
-            rig, parts = create_model(model, name, collection, definition, factory, layer_mode=layer_mode)
+            rig, parts = create_model(model, name, collection, definition, factory, layer_mode=layer_mode, highest_detail=highest_detail)
             rig['tt_native_source'] = str(source)
+            rig['tt_native_mesh_detail'] = 'highest' if highest_detail else 'authored'
             rig['tt_native_source_sha256'] = hashlib.sha256(source.read_bytes()).hexdigest()
             if definition:
                 rig['tt_native_definition'] = definition['source']
@@ -155,7 +156,9 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
                 rig.parent = anchor
                 rig.matrix_parent_inverse = Matrix.Identity(4)
                 rig.matrix_basis = C @ row_matrix(point['matrix']) @ row_matrix(list(attachment['Object Offset'])) @ CI
-            report['models'].append(dict(source=str(source), meshes=len(parts), joints=len(skeleton['joints']) if skeleton else 0))
+            report['models'].append(dict(source=str(source), meshes=len(parts), joints=len(skeleton['joints']) if skeleton else 0,
+                                        validation=model['validation'], selected_parts=[o['source_part'] for o in parts],
+                                        selected_triangles=sum(len(o.data.polygons) for o in parts)))
             if attachments and skeleton and definition:
                 for attachment in active_attachments(definition, layer_mode=layer_mode):
                     saved = snapshot()

@@ -104,3 +104,13 @@ and verified Hobbit/LB3 packed normal maps. The sampled body LOD tables already
 select their highest-detail parts; no speculative LOD or topology change was made.
 See the [evidence and limits](FACE_ACCURACY_0.5.3.md). These local checks do not
 close the remaining fidelity or mirroring reports, and are not in-game validation.
+
+## Follow-up: head printing and normal strength
+
+The next update reports broken Axel Alonso and Blade base-head textures and
+suggests normal strengths of 0.3 or 0.4. Character 0.5.5 / CU3 0.1.14 correct
+the verified LMSH1 head-print UV layout, confirmed by side and rear comparisons.
+They also preserve custom normals lost by facial preview helpers. The character
+sidebar offers a viewing-copy normal-strength multiplier; the suggested values
+are comparisons, not established native shader values. See
+[shading evidence and remaining limits](SHADING_AND_QUALITY.md).

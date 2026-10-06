@@ -3,6 +3,7 @@ import bpy
 from mathutils import Vector
 from ._core.face_live import prepare_live
 from ._core.face_preview import prepare_render
+from .preview_settings import copy_settings, isolate_materials, apply_settings
 
 
 def create_preview(context, rig, *, composed_faces=False):
@@ -19,6 +20,8 @@ def create_preview(context, rig, *, composed_faces=False):
 
 def build_preview(context, rig, *, composed_faces=False):
     scene = bpy.data.scenes.new(rig.name + (' / Composed face preview' if composed_faces else ' / Animation preview'))
+    copy_settings(context.scene, scene)
+    scene['tt_character_preview'] = True
     scene.tt_character_game = context.scene.tt_character_game
     scene.render.fps = 30
     copies = {}
@@ -93,7 +96,7 @@ def build_preview(context, rig, *, composed_faces=False):
         prepare_render(scene)
         scene['tt_character_preview_notes'] = 'F12 renders the composed facial depth-mask passes. Native shaders and expression timing remain approximate; source scene is preserved.'
     else:
-        prepare_live(scene, detail_level=3)
+        prepare_live(scene, detail_level=scene.tt_face_detail)
         scene['tt_character_preview_notes'] = ('Static LEGO Fortnite model, source colors/printing/normals; facial atlases and special shaders remain incomplete. Source scene is preserved.'
             if rig.get('tt_fortnite_static') else
             'Use camera view and Material Preview for live depth-mask clipping. Geometry-node clipping approximates native depth tests; source scene is preserved.')
@@ -102,6 +105,8 @@ def build_preview(context, rig, *, composed_faces=False):
     preview_rig.select_set(True)
     if preview_rig.tt_clips:
         preview_rig.tt_clip_index = rig.tt_clip_index
+    isolate_materials(scene)
+    apply_settings(context, scene)
     for area in context.screen.areas:
         if area.type == 'VIEW_3D':
             area.spaces.active.region_3d.view_perspective = 'CAMERA'

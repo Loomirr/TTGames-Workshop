@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 5, 3), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 5, 5), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -134,7 +134,9 @@ class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
                 return {'FINISHED'}
             path = _catalog_assets.find_exact(self.resource)
             rig, report = import_character(context, path, Path(bpy.path.abspath(getattr(prefs, game.lower()))), game,
-                cache=Path(bpy.path.abspath(prefs.cache)) if prefs.cache else None, assets=_catalog_assets)
+                cache=Path(bpy.path.abspath(prefs.cache)) if prefs.cache else None, assets=_catalog_assets,
+                attachments=context.scene.tt_import_attachments, layer_mode=context.scene.tt_costume_layers,
+                highest_detail=context.scene.tt_mesh_detail == 'HIGHEST')
         except (ValueError, OSError, KeyError, RuntimeError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
@@ -152,6 +154,8 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
     assets: StringProperty(name='Game / extracted folder', subtype='DIR_PATH', description='Optional if saved in addon preferences; otherwise defaults to the input folder')
     definition: StringProperty(name='Optional matching CD', subtype='FILE_PATH', description='Use with a raw GHG to select its costume and native layers')
     attachments: BoolProperty(name='Import declared attachments', default=True)
+    mesh_detail: EnumProperty(name='Mesh detail', items=[('HIGHEST', 'Highest detail', 'Select the nearest verified native LOD'),
+        ('AUTHORED', 'Authored binding', 'Inspect the original display binding without LOD override')], default='HIGHEST')
     layers: EnumProperty(name='Costume layers', items=[('default', 'Default costume', 'Use native default character layers'),
         ('cutscene', 'Cutscene costume', 'Use native cutscene layers'), ('authored', 'Authored selection flags', 'Original reader selection flags')], default='default')
 
@@ -159,6 +163,9 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
         # Blender remembers file-browser operator settings separately from the
         # sidebar. Always start this interactive import with the visible game.
         self.game = context.scene.tt_character_game
+        self.mesh_detail = context.scene.tt_mesh_detail
+        self.layers = context.scene.tt_costume_layers
+        self.attachments = context.scene.tt_import_attachments
         return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
@@ -173,7 +180,8 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
             rig, report = import_character(context, Path(self.filepath), Path(bpy.path.abspath(root)), self.game,
                 definition_path=Path(bpy.path.abspath(self.definition)) if self.definition else None,
                 cache=Path(bpy.path.abspath(prefs.cache)) if prefs and prefs.cache else None,
-                attachments=self.attachments, layer_mode=self.layers)
+                attachments=self.attachments, layer_mode=self.layers,
+                highest_detail=self.mesh_detail == 'HIGHEST')
         except (OSError, ValueError, KeyError, RuntimeError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
@@ -404,6 +412,51 @@ class TTCHAR_OT_export_action(bpy.types.Operator, ExportHelper):
         return {'FINISHED'}
 
 
+class TTCHAR_OT_apply_preview(bpy.types.Operator):
+    bl_idname = 'tt_character.apply_preview_settings'
+    bl_label = 'Apply preview settings'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):return bool(context.scene.get('tt_character_preview'))
+
+    def execute(self, context):
+        from .preview_settings import apply_settings
+        try:apply_settings(context, context.scene)
+        except (ValueError, RuntimeError, KeyError) as error:
+            self.report({'ERROR'}, str(error));return {'CANCELLED'}
+        self.report({'INFO'}, 'Updated the viewing scene; imported source materials are preserved')
+        return {'FINISHED'}
+
+
+class TTCHAR_PT_settings(bpy.types.Panel):
+    bl_label = 'Import and preview settings'
+    bl_idname = 'TTCHAR_PT_settings'
+    bl_parent_id = 'TTCHAR_PT_tools'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'TT Character'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw(self, context):
+        layout = self.layout; scene = context.scene
+        if scene.tt_character_game != 'FORTNITE':
+            box = layout.box(); box.label(text='Next character import')
+            box.prop(scene, 'tt_mesh_detail'); box.prop(scene, 'tt_costume_layers')
+            box.prop(scene, 'tt_import_attachments')
+            box.label(text='Change detail/costume, then reimport.')
+        box = layout.box(); box.label(text='Viewing scene')
+        if scene.tt_character_game != 'FORTNITE':box.prop(scene, 'tt_face_detail')
+        box.prop(scene, 'tt_preview_normals')
+        strength = box.row(); strength.enabled = scene.tt_preview_normals
+        strength.prop(scene, 'tt_preview_normal_strength')
+        box.prop(scene, 'tt_preview_shading')
+        box.prop(scene, 'tt_preview_display'); box.prop(scene, 'tt_preview_exposure')
+        box.prop(scene, 'tt_preview_samples')
+        box.operator('tt_character.apply_preview_settings', icon='SHADING_RENDERED')
+        box.label(text='Create a preview, then apply changes.')
+
+
 class TTCHAR_PT_tools(bpy.types.Panel):
     bl_label = 'TT Character'
     bl_idname = 'TTCHAR_PT_tools'
@@ -535,7 +588,7 @@ class TTCHAR_OT_fortnite_extract(bpy.types.Operator):
         return {'FINISHED'}
 
 
-CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools, TTCHAR_OT_fortnite_extract)
+CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools, TTCHAR_PT_settings, TTCHAR_OT_apply_preview, TTCHAR_OT_fortnite_extract)
 
 
 def register():
@@ -547,6 +600,22 @@ def register():
     bpy.types.Object.tt_animation_asset_index = IntProperty(default=0)
     bpy.types.Object.tt_animation_search = StringProperty(name='Search animations')
     bpy.types.Scene.tt_character_game = EnumProperty(name='Game', items=GAMES, default='LB3')
+    bpy.types.Scene.tt_mesh_detail = EnumProperty(name='Mesh detail', items=[('HIGHEST','Highest detail','Use the nearest verified native LOD for all imported character parts'),
+        ('AUTHORED','Authored binding','Inspect the original display binding')], default='HIGHEST')
+    bpy.types.Scene.tt_costume_layers = EnumProperty(name='Costume', items=[('default','Gameplay','Native default character layers'),
+        ('cutscene','Cutscene','Native cutscene layers'),('authored','Authored flags','Original definition selection flags')], default='default')
+    bpy.types.Scene.tt_import_attachments = BoolProperty(name='Import attachments', default=True)
+    bpy.types.Scene.tt_face_detail = IntProperty(name='Face clipping quality', default=4, min=0, max=4,
+        description='Higher values reduce clipping steps but cost more during playback; affects viewing copy only')
+    bpy.types.Scene.tt_preview_normals = BoolProperty(name='Use normal maps', default=True)
+    bpy.types.Scene.tt_preview_normal_strength = FloatProperty(name='Normal strength', default=1.0, min=0, max=2,
+        description='Viewing-copy multiplier for normal maps; 1 preserves imported strength. This is not a verified game shader value')
+    bpy.types.Scene.tt_preview_shading = EnumProperty(name='Shading', items=[('LIT','Lit materials','Source material reconstruction under scene lighting'),
+        ('ALBEDO','Base color','Unlit base color and alpha for checking texture/color reconstruction')], default='LIT')
+    bpy.types.Scene.tt_preview_display = EnumProperty(name='Color display', items=[('Standard','Standard','sRGB display without filmic tone mapping'),
+        ('AgX','AgX','Filmic tone mapping for strong lighting')], default='Standard')
+    bpy.types.Scene.tt_preview_exposure = FloatProperty(name='Exposure', default=0, min=-5, max=5)
+    bpy.types.Scene.tt_preview_samples = IntProperty(name='Render samples', default=64, min=1, max=1024)
     bpy.types.TOPBAR_MT_file_import.append(menu_import)
 
 
@@ -558,5 +627,8 @@ def unregister():
     del bpy.types.Object.tt_animation_asset_index
     del bpy.types.Object.tt_animation_search
     del bpy.types.Scene.tt_character_game
+    for name in ('tt_mesh_detail','tt_costume_layers','tt_import_attachments','tt_face_detail',
+                 'tt_preview_normals','tt_preview_normal_strength','tt_preview_shading','tt_preview_display','tt_preview_exposure','tt_preview_samples'):
+        delattr(bpy.types.Scene, name)
     for cls in reversed(CLASSES):
         bpy.utils.unregister_class(cls)

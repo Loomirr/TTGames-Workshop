@@ -19,8 +19,10 @@ def costume_slot(entry):
 def costume_uv_index(entry, mesh_version):
     """Observed CD print coordinates, distinct from the shared base atlas.
 
-    LMSH1's UMTL 176 minifig arm prints use the first pair. Its other shared
-    print roles use the second pair, as do the later shared DX11 GAME roles.
+    LMSH1's UMTL 176 minifig arm and base-head prints use the first pair.
+    The second pair on the observed heads is cropped base-atlas mapping,
+    which distorts CD head textures. Other shared print roles use the second
+    pair, as do the later shared DX11 GAME roles.
     This exception is layout/role gated; it does not rewrite source UVs.
     """
     name = entry['name'].split(':', 1)[0].upper()
@@ -28,7 +30,8 @@ def costume_uv_index(entry, mesh_version):
         name = name[:-5]
     role = costume_slot(entry)
     if (mesh_version == 169 and entry.get('table_version') == 176
-            and (name, role) in (('LEFTARM_GAME', 24), ('RIGHTARM_GAME', 5))):
+            and (name, role) in (('LEFTARM_GAME', 24), ('RIGHTARM_GAME', 5),
+                                ('HEAD_FRONT_GAME', 1), ('HEAD_BACK_GAME', 2))):
         return 0
     if name.endswith('_GAME'):
         return 1

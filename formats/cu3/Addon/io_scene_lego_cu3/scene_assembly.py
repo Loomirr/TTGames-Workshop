@@ -198,6 +198,7 @@ def assemble(cut, asset_root, profile, context, *, assets=None, static_environme
                 try:
                     path = assets.find_exact(reference)
                     model = load_model(path)
+                    stage_report['model_validation'] = model['validation']
                     inventory = read_stage_geometry(path, len(model['parts']), len(model['materials']))
                     stage_collection = bpy.data.collections.new('Recovered static stage / '+path.stem)
                     scene.collection.children.link(stage_collection)
@@ -224,6 +225,7 @@ def assemble(cut, asset_root, profile, context, *, assets=None, static_environme
         scene['cu3_source'] = str(cut.path)
         scene['tt_import_complete'] = False
         report['complete'] = False
+        report['model_validation'] = [dict(source=str(path), **model['validation']) for path, model in models.items()]
         report['asset_source'] = assets.get_info() if hasattr(assets,'get_info') else {'kind':'extracted-assets','root':str(assets.root)}
         text = bpy.data.texts.new(cut.name+' / import report')
         text.write(json.dumps(report,indent=2))
