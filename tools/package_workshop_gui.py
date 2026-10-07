@@ -28,9 +28,11 @@ def main():
     from workshop_gui import VERSION, TOOLS
     files = {ROOT / name for name in (
         'Launch Workshop GUI.pyw', 'tools/workshop_gui.py', 'tools/WORKSHOP_GUI.md',
-        'docs/LICENSING.md', 'README.md', 'formats/cu3/scripts/cu3_name_editor.py',
+        'docs/LICENSING.md', 'docs/DIAGNOSTIC_TOOLS.md', 'docs/CHARACTER_ACCURACY_0.5.9.md', 'README.md', 'formats/cu3/scripts/cu3_name_editor.py',
         'formats/cu3/scripts/cu3_name_editor_gui.py', 'formats/btga/3ds/pica_texture.py',
-        'formats/btga/3ds/FORMAT.md')}
+        'formats/btga/3ds/FORMAT.md', 'formats/cu3/scripts/inspect_archive_cc.py',
+        'formats/cu3/scripts/inspect_skeleton_candidates.py',
+        'formats/cu3/scripts/inspect_material_declarations.py')}
     files.update(ROOT / data[0] for data in TOOLS.values())
     # Headless CU3 helpers import sibling parser modules, bypassing Blender's entry point.
     files.update((ROOT / 'formats/cu3/Addon/io_scene_lego_cu3').glob('*.py'))

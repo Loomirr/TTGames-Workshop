@@ -7,8 +7,16 @@ import bpy
 from .geometry_normals import capture_normals, restore_normals
 
 def face_objects(scene):
-    return [obj for obj in scene.objects if obj.type=='MESH' and
-            (obj.get('source_model','').startswith('FACE_') or obj.get('source_model')=='SpiderFace')]
+    # Asset lookup is case-insensitive, but imported provenance retains the
+    # actual filename spelling. Lowercase extraction/cache names need the
+    # same helper as their uppercase equivalents; preserve the stored value.
+    result = []
+    for obj in scene.objects:
+        source = obj.get('source_model')
+        if obj.type != 'MESH' or not isinstance(source, str):continue
+        source = source.casefold()
+        if source.startswith('face_') or source == 'spiderface':result.append(obj)
+    return result
 
 
 def masked_detail(obj):

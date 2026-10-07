@@ -10,11 +10,11 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.1.3'
+VERSION = '0.1.5'
 DEFAULT_TOOL_VERSION = '0.1.1'
 TOOL_VERSIONS = {'3DS BTGA to DDS / PNG': '0.1.2', 'Face targets: decode': '0.1.3',
-                 'Face targets: write edited copy': '0.1.3', 'DCSV archive index': '0.1.3',
-                 'TFA archive index': '0.1.2', 'CU3 dependency report': '0.1.2'}
+                 'Face targets: write edited copy': '0.1.3', 'DCSV archive index': '0.1.5',
+                 'TFA archive index': '0.1.4', 'CU3 dependency report': '0.1.4'}
 # Fields: label, kind, command-line flag (None means positional), default.
 TOOLS = {
     '3DS BTGA to DDS / PNG': (

@@ -1,14 +1,34 @@
 # Support and validation
 
+Character 0.5.10 / CU3 0.1.19 restore character-relative texture/model lookup and the observed face, cape, Hobbit and Avengers variant associations. [Recovery checks and limits](RECOVERY_2026-10-07.md).
+
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
-The current experimental candidates, Character 0.5.7 and CU3 0.1.16, add
-shared-source/export safeguards, bounded archive/DDS readers, explicit identity
-and raw-weight/fidelity diagnostics. The current pass preserves the existing
-format gates; original-game regression and workstation installation are pending.
-See [validation review](MERGE_PACKET_REVIEW_2026-10-06.md). Historical
-original-file results below remain attached to their stated versions.
+The current experimental candidates are Character 0.5.10 and CU3 0.1.19.
+The latest shared corrections preserve valid authored normals when another
+vertex lacks a usable direction, recognize facial filenames case-insensitively,
+and fix scoped animation/texture companion lookups. The new bounded native
+variant path resolves both supplied shared bodies; the CC8 v1 ROTV extension
+validates all 17 supplied Avengers indexes with their existing entries preserved.
+Other unknown variants, storage modes and index suffixes remain rejected. See
+[the accuracy review and test scope](CHARACTER_ACCURACY_0.5.9.md).
+
+The preceding 0.5.8/0.1.17
+issue follow-up repairs missing preview settings and `SpiderFace` live
+grouping, rejects singular skeleton candidates before ownership arbitration,
+and adds read-only archive/skeleton/material diagnostics. Material-remap and
+native shader reconstruction remain incomplete. No ownership, DDS or archive
+format gate has been relaxed. See [issue status](ISSUE_1_MINIFIGS.md) and
+[diagnostic tools](DIAGNOSTIC_TOOLS.md).
+
+The preceding 0.5.7/0.1.16 candidates added shared-source/export safeguards,
+bounded readers, explicit identity and raw-weight/fidelity diagnostics. The
+[workstation review](MERGE_PACKET_REVIEW_2026-10-06.md) found original shared-body
+ownership and Avengers index blockers. The specific supplied body/index records
+now validate; the subsequent complete-character recovery checks are recorded in
+[the recovery report](RECOVERY_2026-10-07.md).
+Historical original-file results below remain attached to their stated versions.
 
 Character 0.5.6 adds attachment rollback and consumed companion revision guards;
 CU3 0.1.15 adds the shared model revision check. No new profile or shader layout
@@ -72,12 +92,14 @@ shader fidelity. See [shading and quality checks](SHADING_AND_QUALITY.md).
   Avengers adds 821/882 parser-ready definitions, sample Blender assembly/playback,
   modern texture/material readers and unpacked-folder round trips. TFA/DCSV/LMSH2/LOTR archive inspection is available, with explicit
   model and animation version limits. See [compatibility](../formats/character/COMPATIBILITY.md).
-- Desktop GUIs 0.1.1: nine separate Python/Tk downloads, each checked by launching
+- Earlier desktop GUI validation (0.1.1): nine separate Python/Tk downloads, each checked by launching
   an extracted copy and importing its own backends. No full checkout or common
   toolbox installation is required. Python is required; only BTGA needs Pillow.
-  Face decoder 0.1.2 now reads supported GHGs directly; the old plain-text extraction
+  Face decoder 0.1.2 introduced direct supported-GHG reading; the old plain-text extraction
   log is optional on the CLI and no longer needed in the GUI.
-  Face writer 0.1.2 adds constrained MESH 170 target edits, with native-part validation.
+  Face writer 0.1.2 added constrained MESH 170 target edits, with native-part validation.
+  See the [current build table](../builds/README.md#separate-gui-downloads)
+  for the independently versioned downloads and present validation limits.
 
 - CU3 0.1.14: partial LMSH1/LB3 actor, attachment, material and camera assembly
   from an installed game folder or extracted assets. The addon defaults to
@@ -123,7 +145,7 @@ shader fidelity. See [shading and quality checks](SHADING_AND_QUALITY.md).
   BTGA GUI 0.1.2 rejects short/trailing raw PICA payloads before allocating
   pixels. Six asset-free texture tests cover known raw/ETC pixels, tile/flip
   order, stored mips and DDS bytes; five FUSE command/bounds tests are separate.
-  The optional toolbox 0.1.1 is now packaged from the current sources.
+  The current optional toolbox is 0.1.5 and includes the updated shared readers.
 
 Character projects, LOTDK mapping and Fortnite tools are intentionally excluded
 from the public source. They remain in the private migrated archive.

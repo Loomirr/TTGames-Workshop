@@ -11,7 +11,7 @@ from unittest.mock import patch
 source=Path(__file__).resolve().parents[1]/'Addon/io_scene_lego_cu3'
 package=types.ModuleType('dependency_fixture');package.__path__=[str(source)];sys.modules[package.__name__]=package
 from dependency_fixture.asset_index import AssetIndex
-from dependency_fixture.dependencies import ResourceResolver, dependency_report, MissingResource, active_attachments
+from dependency_fixture.dependencies import ResourceResolver, dependency_report, MissingResource, active_attachments, find_character_asset
 from dependency_fixture.cu3 import FormatError
 
 
@@ -43,6 +43,27 @@ class DependencyTests(unittest.TestCase):
         path=self.root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_bytes(data)
 
     def resolver(self):return ResourceResolver(AssetIndex(self.root),'LB3')
+
+    def test_character_namespace_model_paths(self):
+        self.file('chars/Super_Character/Face/FACE_HERO_DX11.GHG')
+        self.file('unrelated/FACE_HERO_DX11.GHG',b'wrong')
+        model=self.resolver().resolve_model('Super_Character/Face/FACE_HERO')
+        self.assertEqual(model.relative_to(self.root).as_posix(),
+                         'chars/Super_Character/Face/FACE_HERO_DX11.GHG')
+        self.assertIsNone(self.resolver().resolve_model('Other/Face/FACE_HERO',required=False))
+
+    def test_exact_model_path_precedes_character_namespace(self):
+        self.file('Super_Character/Face/FACE_HERO_DX11.GHG',b'exact')
+        self.file('chars/Super_Character/Face/FACE_HERO_DX11.GHG',b'namespace')
+        self.assertEqual(self.resolver().resolve_model('Super_Character/Face/FACE_HERO').read_bytes(),b'exact')
+
+    def test_costume_texture_uses_character_namespace_without_basename_fallback(self):
+        self.file('chars/Minifigs/Body/PRINT_DX11.TEX',b'correct')
+        self.file('other/PRINT_DX11.TEX',b'wrong')
+        assets=AssetIndex(self.root)
+        self.assertEqual(find_character_asset(assets,'Minifigs/Body/PRINT','_DX11','.TEX').read_bytes(),b'correct')
+        with self.assertRaises(MissingResource):
+            find_character_asset(assets,'Minifigs/Other/PRINT','_DX11','.TEX')
 
     def test_exact_configuration_lookup_does_not_fall_back_to_basename(self):
         self.file('CUT/Story/Scene.txt',b'declaration')

@@ -14,6 +14,7 @@ package.__path__ = [str(Path(__file__).resolve().parents[1] / 'Addon/io_scene_le
 sys.modules[package.__name__] = package
 from identity_fixture.cu3 import FormatError
 from identity_fixture.asset_index import AssetIndex
+from identity_fixture.archive_assets import ArchiveAssetIndex
 from identity_fixture.dependencies import ResourceResolver, dependency_report
 from identity_fixture.profiles import character_profile, profile_identity
 from identity_fixture.resource_identity import model_resource_identity
@@ -283,6 +284,50 @@ class CatalogOwnershipTests(AssetTreeFixture):
         cd={'objects':[{'class':'Character Anim Set Reference','fields':{'CharAnimSet Name':name}} for name in roots]}
         with patch('identity_fixture.animation_catalog.read_definition',side_effect=lambda path:sets[path.relative_to(self.root).as_posix()]):
             return catalog(assets,cd)
+
+    def read_archive_catalog(self, members):
+        """Exercise provider identity/cache lookup without inventing AS/DAT grammar."""
+        game = self.root / 'game'
+        game.mkdir()
+        rows = {}
+        for index, name in enumerate(['Anims/Main.AS', *members]):
+            source = game / f'GAME{index}.DAT'
+            source.write_bytes(bytes(8) + b'fixture')
+            rows[source] = [dict(path=name, offset=8, packed_size=7, size=7, flags=0)]
+        with patch('identity_fixture.archive_assets.index_v6', side_effect=lambda path:rows[path]):
+            assets = ArchiveAssetIndex(game, 'LB3', self.root / 'cache')
+        data = {'objects':[{'class':'Character Anim Entry','fields':{
+            'Action':'Idle','ANI4 Animation File 1':'Idle'}}],
+            'source_sha256':hashlib.sha256(b'fixture').hexdigest()}
+        definition = {'objects':[{'class':'Character Anim Set Reference',
+                                 'fields':{'CharAnimSet Name':'Anims/Main'}}]}
+        with patch('identity_fixture.animation_catalog.read_definition', return_value=data):
+            return catalog(assets, definition)
+
+    def test_archive_loose_sibling_directory_matching_is_case_insensitive(self):
+        report = self.read_archive_catalog(['ANIMS/Idle_DEF_NXG.AN4',
+                                            'Unrelated/Idle_DEF_NXG.AN4'])
+        self.assertEqual(report['entries'][0]['status'], 'Loose AN4')
+        self.assertEqual(report['entries'][0]['source_logical_path'], 'ANIMS/Idle_DEF_NXG.AN4')
+        self.assertEqual(report['issues'], [])
+
+    def test_case_aliased_logical_siblings_still_reach_provider_identity_gate(self):
+        report = self.read_archive_catalog(['ANIMS/Idle_DEF_NXG.AN4',
+                                            'anims/IDLE_DEF_NXG.AN4'])
+        self.assertEqual(report['entries'][0]['source'], '')
+        self.assertIn('Case-colliding archive asset paths', report['entries'][0]['status'])
+
+    def test_different_scoped_loose_paths_remain_ambiguous(self):
+        report = self.read_archive_catalog(['ANIMS/Idle_DEF_NXG.AN4',
+                                            'Other/Main_AS/Idle_DEF_NXG.AN4'])
+        self.assertEqual(report['entries'][0]['source'], '')
+        self.assertIn('Ambiguous animation set member', report['entries'][0]['status'])
+
+    def test_duplicate_archive_copies_of_same_sibling_keep_provider_verification(self):
+        report = self.read_archive_catalog(['ANIMS/Idle_DEF_NXG.AN4',
+                                            'ANIMS/Idle_DEF_NXG.AN4'])
+        self.assertEqual(report['entries'][0]['status'], 'Loose AN4')
+        self.assertEqual(report['issues'], [])
 
     def test_qualified_clip_path_and_authored_spelling_are_retained(self):
         sets={'Sets/Main.AS':self.animation_set('Sets/Main.AS',files=['Clips/A/Idle'])}

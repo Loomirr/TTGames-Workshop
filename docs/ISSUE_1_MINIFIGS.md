@@ -1,10 +1,62 @@
 # Minifigure issue #1: patch scope
 
 The [Broken Minifigs report](https://github.com/Loomirr/TTGames-Workshop/issues/1)
-contains several separate problems. Character **0.4.3** and CU3 **0.1.10**
-address the reproduced LOD selection and LMSH1 arm print UV problems.
-Reinstall the new ZIP and reimport the character; existing blends are not
-automatically rebuilt. Preserve edited scenes before reimporting.
+contains several separate problems and remains open. The latest source
+follow-up is Character **0.5.9** and CU3 **0.1.18**. Historical original-file
+results below belong to their stated versions; they do not certify the current
+candidates. The supplied LMSH1/LB3 body variant arrays and Avengers index
+extension now validate; fresh complete-character visual checks remain necessary.
+See the [accuracy review](CHARACTER_ACCURACY_0.5.9.md).
+
+## Shared import follow-up: 0.5.9 / 0.1.18
+
+Four reproducible shared-code defects are corrected: filename-case-sensitive
+facial grouping, whole-part loss of authored normals caused by one missing
+direction, case-sensitive loose-animation sibling lookup, and a texture lookup
+exception for explicitly selected models outside the asset root. See the
+[implementation evidence and limitations](CHARACTER_ACCURACY_0.5.9.md).
+
+These checks do not establish a fix for Vulture's eyes, Alfred's seam,
+Hulkbuster's shoulder/hatch, or Tony/Mark 6 material remaps. The new native
+variant reader resolves the supplied shared bodies using their complete counted
+arrays and explicit remaps. Historical 0.5.6 selected its first compatible
+skeleton; 0.5.7/0.5.8 rejected the different records. Version 0.5.9 identifies the
+full-detail base through native routing, preserving each variant's own binds.
+The additional Avengers index records are also now parsed within their verified
+layout. Original character definitions, textures and animations were not included
+in these samples, so complete import/render comparisons remain local follow-up.
+
+## Earlier follow-up: preview crash and unresolved materials
+
+The newer comments were reviewed individually, including their screenshots:
+
+| Report | Current result |
+| --- | --- |
+| [Missing `Scene.tt_face_detail` during preview creation](https://github.com/Loomirr/TTGames-Workshop/issues/1#issuecomment-6007411466) | The same missing-property condition was reproduced with a synthetic model. Preview creation/application now restores missing definitions; the settings panel has a recovery button. Actual Blender 5.1.2 and 5.2.2 checks retain existing values, use defaults for new scenes, preserve source meshes/materials and verify failure cleanup. The reporter's original scene was not available, so the cause of its incomplete registration remains unconfirmed. |
+| [Tony's arc reactor and Iron Man Mark 6 material remaps](https://github.com/Loomirr/TTGames-Workshop/issues/1#issuecomment-6007499311) | Open. The current shader consumes selected CD texture/tint fields; full material-remap semantics, metallic and emission reconstruction are not implemented. Reports now identify exactly which decoded declarations were used or left unapplied. |
+| [Hulkbuster shoulder, white hatch and normal-map concerns](https://github.com/Loomirr/TTGames-Workshop/issues/1#issuecomment-6010525370) | Open. The screenshots establish the symptoms, not the required native shader or texture encoding. Reports retain surface-map selectors and distinguish a missing verified binding from a binding that failed to load/apply. |
+| [Vulture eyes and facial layers](https://github.com/Loomirr/TTGames-Workshop/issues/1#issuecomment-6013025977) | Open. The image shows overlapping/displaced detail, but does not establish preview-helper state or expression timing. The comment's suggested General Ross case is not a verified reproduction. |
+| [LB3 Alfred face and head-print discontinuity](https://github.com/Loomirr/TTGames-Workshop/issues/1#issuecomment-6015086753) | Open. Previewed facial layers and the stepped head-print seam need their exact original UV/material/animation evidence. The earlier LMSH1 head-print rule has not been applied to LB3 by analogy. |
+
+A separate source inconsistency is fixed: `SpiderFace` was included among
+facial meshes but omitted from the live helper's mask/depth grouping. The live
+and composed paths now use the same predicate. Synthetic Blender checks compare
+equivalent `SpiderFace` and `FACE_*` objects before and after a shape-target
+change, including evaluated vertices, polygons, corner normals, copied helper
+references and unchanged source data. This does not establish that the fix
+resolves Vulture or Alfred.
+
+The material diagnostic is an inventory of renderer omissions. It does not
+guess native enum meanings, enable another normal encoding, lower the default
+normal strength, weld vertices or change preview depth bias. Use the
+[read-only material inspector](DIAGNOSTIC_TOOLS.md) to inspect matching model/CD
+declarations without importing a skeleton.
+
+## Historical LOD and arm-print correction
+
+Character **0.4.3** and CU3 **0.1.10** addressed the reproduced LOD selection and
+LMSH1 arm print UV problems. Reimporting rebuilds these parts; existing blends
+are not automatically rebuilt. Preserve edited scenes before reimporting.
 
 ## Corrected
 
@@ -61,7 +113,7 @@ already unsupported UMTL 172 hair is reported separately and remains missing;
 the arm comparison covers her imported body. Storm, Wolverine and Batman
 composed renders were inspected. These are selected samples, not a roster audit.
 
-The manual repository suite passes 188 tests. Hidden GUI/package checks and
+At that checkpoint, the manual repository suite passed 188 tests. Hidden GUI/package checks and
 Blender regressions for normals, static stages and facial clip state also pass.
 CU3 0.1.10 was checked through the normal import operator on LB3's
 `2BATCAVEFIGHT_HUB_INTROC2_NXG.CU3` and LMSH1's `STARKTOWER_INTRO_NXG.CU3`.
@@ -92,8 +144,9 @@ The black points and lines over the reporter's body are Blender rig overlays.
 Disable viewport overlays to inspect the surfaces, or create the separate
 character preview. This does not repair the underlying facial shader limits.
 
-The issue remains open for these unresolved items. The confirmed fixes can be
-tested independently in the latest character and cutscene downloads.
+The issue remains open for these unresolved items. The current candidate's
+ownership/archive restrictions must also be considered when retesting these
+historical rendering corrections.
 
 ## Follow-up: four-game face and skinned-detail reports
 

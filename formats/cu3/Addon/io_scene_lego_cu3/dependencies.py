@@ -17,6 +17,18 @@ def actor_resource(name):
     return re.sub(r'^instance[^_]*_', '', name, flags=re.I)
 
 
+def find_character_asset(assets, reference, suffix='', extension='', *, required=True):
+    """Resolve native CD references at the asset root or CHARS namespace."""
+    reference=logical_reference(reference)
+    result=assets.find(reference,suffix,extension,required=False)
+    parts=PurePosixPath(reference).parts
+    if result is None and len(parts)>1 and parts[0].casefold()!='chars':
+        result=assets.find('chars/'+reference,suffix,extension,required=False)
+    if result is None and required:
+        raise MissingResource(reference,[reference,'chars/'+reference])
+    return result
+
+
 def active_attachments(definition, *, layer_mode='authored', renderer_suffix=None):
     if definition is None:return []
     character=definition['character']
@@ -105,7 +117,10 @@ class ResourceResolver:
         extension=PurePosixPath(reference).suffix.upper()
         extensions=(extension,) if extension in ('.GHG','.GSC') else ('.GHG','.GSC')
         for extension in extensions:
-            model=self.assets.find(reference,self.suffix,extension,required=False)
+            model=find_character_asset(self.assets,reference,self.suffix,extension,required=False)
+            # Native CD model paths are also relative to the game's CHARS
+            # namespace (for example Minifigs/Super_Characters/Faces/...).
+            # Preserve the declared directory; never fall back to its basename.
             if model is not None:return model
         if required:
             relative=PurePosixPath(reference)
@@ -149,7 +164,7 @@ def dependency_report(cut, resolver):
                         continue
                     texture={'reference':name}
                     try:
-                        path=resolver.assets.find(name,resolver.suffix,'.TEX',required=False)
+                        path=find_character_asset(resolver.assets,name,resolver.suffix,'.TEX',required=False)
                         texture.update(status='resolved' if path else 'missing',path=str(path) if path else None,
                                        logical_path=logical_path(resolver.assets,path) if path else None)
                     except (ValueError,OSError) as error:texture.update(status='unresolved',issue=str(error))

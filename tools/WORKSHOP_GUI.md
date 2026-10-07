@@ -1,6 +1,6 @@
 # Standalone tool GUI
 
-Version 0.1.3. A small native Tkinter window with browse buttons, forms and a
+Version 0.1.5. A small native Tkinter window with browse buttons, forms and a
 live log. No browser, server or extra GUI framework.
 
 **Separate downloads are now available for each tool** in
@@ -70,10 +70,16 @@ drag and drop. Download its Windows ZIP separately from the repository's
 `builds/windows` folder and run `LIJ1_360_Texture_Extractor.exe`.
 This toolbox uses file pickers; shell drag and drop is not implemented here.
 
-Version 0.1.3 packages the bounded archive and resource-identity readers used by
-the relevant backends. See [validation review](../docs/MERGE_PACKET_REVIEW_2026-10-06.md)
+Version 0.1.5 packages the current shared readers, including the verified
+Avengers CC extension and native shared-body variant diagnostics. Unknown
+suffixes and unexplained ownership conflicts remain unsupported; the separate
+[diagnostic commands](../docs/DIAGNOSTIC_TOOLS.md) collect bounded evidence.
+Version 0.1.3 introduced the bounded archive and resource-identity readers. See [validation review](../docs/MERGE_PACKET_REVIEW_2026-10-06.md)
 for safety changes and the distinction between backend and interactive GUI checks.
 
+The three read-only diagnostic commands and their guide are also bundled with
+the toolbox; they remain command-line tools rather than new toolbox panels.
+The independent dependency/TFA/DCSV downloads include the archive inspector.
 Developer checks, Blender-only scripts, raw FUSE access and the native Python
 PAK helper are not wrapped in this GUI.
 No external extraction programs, Python runtime or game assets are bundled.

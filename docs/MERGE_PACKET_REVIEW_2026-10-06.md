@@ -1,5 +1,10 @@
 # Merge packet workstation review — 6 October 2026
 
+This is the preserved earlier workstation checkpoint. Its blockers and build
+recommendations describe that review, before the later original-file fixes.
+For the current Character 0.5.9 / CU3 0.1.18 candidate, read the
+[accuracy evidence and remaining validation](CHARACTER_ACCURACY_0.5.9.md).
+
 ## Integration status
 
 The reviewed Astra packet and local corrections were transferred into the main

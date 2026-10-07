@@ -1,4 +1,15 @@
-# PC character compatibility, 5 October 2026
+# PC character compatibility, 6 October 2026
+
+Character 0.5.10 / CU3 0.1.19 restore character-relative texture/model lookup and the observed face, cape, Hobbit and Avengers variant associations. [Recovery checks and limits](../../docs/RECOVERY_2026-10-07.md).
+
+Current source candidate: **0.5.10**. The supplied LMSH1/LB3 shared-body variant
+arrays and the additional Avengers index section now validate. Those original
+records, four shared-code corrections and their tests are documented in the
+[accuracy review](../../docs/CHARACTER_ACCURACY_0.5.9.md). Historical counts and
+original-file successes below do not certify the current candidate or a whole
+roster. The enabled game profiles have not expanded.
+
+## Historical 0.5.6 coverage
 
 Version 0.5.6 retains the PC NXG/DX11 readers and the separate static LEGO
 Fortnite exported-asset profile. Handheld character support is

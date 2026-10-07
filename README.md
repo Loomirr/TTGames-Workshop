@@ -13,17 +13,13 @@ game does not mean support for every TT game that uses the same extension.
 
 ## Start here
 
-**Current candidate limitation:** Character 0.5.7 and CU3 0.1.16 pass portable
-and synthetic Blender checks, but original shared-body skeleton ownership and
-Avengers archive-index data currently block representative imports. They are
-research candidates, not replacements for a working installation. See the
-[workstation review and known regressions](docs/MERGE_PACKET_REVIEW_2026-10-06.md).
+**Current candidates:** Character 0.5.10 and CU3 0.1.19 repair native character paths, missing costume textures, face/cape LOD ownership and observed Hobbit/Avengers skeleton variants. See the [recovery checks and remaining limits](docs/RECOVERY_2026-10-07.md).
 
 | Area | What is here | Current status |
 | --- | --- | --- |
-| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.5.7 experimental; LMSH1/LB3/Hobbit/Avengers plus static LEGO Fortnite exports; constrained TT native editing |
+| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.5.10 experimental; LMSH1/LB3/Hobbit/Avengers plus static LEGO Fortnite exports; constrained TT native editing |
 | [LEGO Fortnite](formats/fortnite/README.md) | Static exported models, recipe materials and optional installed-game extraction bridge | Early JSON/PNG/GLB import; Unreal readers and runtimes supplied separately, shaders incomplete |
-| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, installed-game actor and static stage loading, name editor, source animation and face tools | 0.1.16 experimental; shared accessory-reader fixes, partial LMSH1/LB3 assembly, TFA/DCSV reference inspection |
+| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, installed-game actor and static stage loading, name editor, source animation and face tools | 0.1.19 experimental; shared accessory-reader fixes, partial LMSH1/LB3 assembly, TFA/DCSV reference inspection |
 | [LSW1 HGP models](formats/hgp/lsw1/README.md) | Character meshes, native skeletons, corrected palette colors, textures, face alpha and normal maps | 0.1.3; original 2005 PC game only |
 | [LIJ1 Xbox 360 prototype textures](formats/nu20/lij1-xbox360/README.md) | Drag-and-drop Windows DDS extractor and format notes | 0.1.2; BC1/2/3/5, float, cubemaps, TEX and font textures |
 | [LMSH1 AN4 animation](formats/an4/lmsh1/README.md) | Scalar decoder, corrected rotation sampler and experimental BVH export | Observed ANI-D layouts and original Marvel rig |

@@ -107,8 +107,9 @@ def build_preview(context, rig, *, composed_faces=False):
         preview_rig.tt_clip_index = rig.tt_clip_index
     isolate_materials(scene)
     apply_settings(context, scene)
-    for area in context.screen.areas:
-        if area.type == 'VIEW_3D':
-            area.spaces.active.region_3d.view_perspective = 'CAMERA'
-            area.spaces.active.shading.type = 'MATERIAL'
+    if context.screen:
+        for area in context.screen.areas:
+            if area.type == 'VIEW_3D':
+                area.spaces.active.region_3d.view_perspective = 'CAMERA'
+                area.spaces.active.shading.type = 'MATERIAL'
     return scene

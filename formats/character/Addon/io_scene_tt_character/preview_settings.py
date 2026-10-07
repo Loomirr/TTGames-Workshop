@@ -1,12 +1,13 @@
 """Viewing-copy controls; never rewrite imported/source material graphs."""
 import json
 import bpy
+from .scene_settings import PREVIEW_FIELDS, ensure_scene_settings
 
-FIELDS = ('tt_face_detail', 'tt_preview_normals', 'tt_preview_normal_strength', 'tt_preview_shading',
-          'tt_preview_display', 'tt_preview_exposure', 'tt_preview_samples')
+FIELDS = PREVIEW_FIELDS
 
 
 def copy_settings(source, destination):
+    ensure_scene_settings()
     for field in FIELDS:
         setattr(destination, field, getattr(source, field))
 
@@ -71,6 +72,7 @@ def material_view(material, *, normals=True, normal_strength=1.0, albedo=False):
 def apply_settings(context, scene):
     if not scene.get('tt_character_preview'):
         raise ValueError('Create a character preview scene first')
+    ensure_scene_settings()
     materials = {m for o in scene.objects if o.type == 'MESH' for m in o.data.materials if m}
     for material in materials:
         material_view(material, normals=scene.tt_preview_normals,

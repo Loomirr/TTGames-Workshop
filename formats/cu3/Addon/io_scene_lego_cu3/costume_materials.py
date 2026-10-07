@@ -10,6 +10,8 @@ from .texture_store import read_texture_store
 from .dds import read_embedded_dds
 from .native_materials import costume_slot, costume_uv_index, surface_normal_binding
 from .profiles import active_renderer_reference
+from .material_capabilities import material_capability_report
+from .dependencies import find_character_asset
 
 def multiply_base_tint(material, tint, label, property_name):
     if len(tint)!=3 or not all(math.isfinite(v) and v>=0 for v in tint):
@@ -60,8 +62,16 @@ class CostumeMaterials:
 
     def model_texture(self, model, index):
         source = Path(model['source'])
-        relative = source.relative_to(self.assets.root).with_suffix('.NXG_TEXTURES')
-        path = self.assets.find_exact(relative.as_posix(), required=False)
+        path = None
+        try:
+            relative = source.relative_to(self.assets.root)
+        except ValueError:
+            # Explicit raw models may live outside the selected asset tree.
+            # Keep their companions inside that provider and let its existing
+            # unique-basename fallback reject any ambiguous candidates.
+            pass
+        else:
+            path = self.assets.find_exact(relative.with_suffix('.NXG_TEXTURES').as_posix(), required=False)
         if path is None:
             path = self.assets.find(source.stem+'.NXG_TEXTURES')
         if path not in self.stores:
@@ -90,14 +100,20 @@ class CostumeMaterials:
         slot = costume_slot(entry)
         if entry.get('table_version') in (163, 174):
             self.report.append({'material':entry['name'], 'issue':'Older static shader flag meanings remain unresolved; texture/UV and render footer are decoded, shading is approximate'})
-        matched = [o['fields'] for o in definition['objects'] if o['fields'].get('Material')==slot] if definition and slot is not None else []
+        matched_objects = [(i, o) for i, o in enumerate(definition['objects']) if o['fields'].get('Material')==slot] if definition and slot is not None else []
+        matched = [o['fields'] for _, o in matched_objects]
+        used_fields = {i: {'Material'} for i, _ in matched_objects}
+        def used(values, *names):
+            for i, obj in matched_objects:
+                if obj['fields'] is values:
+                    used_fields[i].update(names)
         texture = next((o for o in matched if o.get('Texture Slot')==0 and 'Texture File' in o
                         and active_renderer_reference(o['Texture File'], self.suffix)), None)
         assigned = False
         textured = False
         if texture:
             try:
-                path = self.assets.find(texture['Texture File'], self.suffix, '.TEX')
+                path = find_character_asset(self.assets,texture['Texture File'],self.suffix,'.TEX')
                 image = self.image(path)
                 node = nodes.new('ShaderNodeTexImage');node.image=image
                 links.new(node.outputs['Color'], surface.inputs['Base Color'])
@@ -106,14 +122,17 @@ class CostumeMaterials:
                 uv = nodes.new('ShaderNodeUVMap');uv.uv_map=f'Source uv {uv_index}'
                 links.new(uv.outputs['UV'], node.inputs['Vector'])
                 material['tt_costume_uv_index'] = uv_index
+                used(texture, 'Texture Slot', 'Texture File')
                 assigned = True
                 textured = True
             except (ValueError, RuntimeError, OSError) as error:
                 self.report.append({'material':entry['name'], 'issue':str(error)})
         if not assigned:
-            tint = next((o['Layer 1 Tint Colour'] for o in matched if 'Layer 1 Tint Colour' in o), None)
-            if tint is not None:
+            tint_fields = next((o for o in matched if 'Layer 1 Tint Colour' in o), None)
+            if tint_fields is not None:
+                tint = tint_fields['Layer 1 Tint Colour']
                 surface.inputs['Base Color'].default_value = tuple(v/12.92 if v<=.04045 else ((v+.055)/1.055)**2.4 for v in tint[:3])+(1,)
+                used(tint_fields, 'Layer 1 Tint Colour')
                 assigned = True
         if not assigned and entry['texture_ids'][0] >= 0:
             try:
@@ -158,17 +177,21 @@ class CostumeMaterials:
             if hasattr(material, 'surface_render_method'):material.surface_render_method='DITHERED'
             material['tt_native_alpha_reference'] = entry['render_flags']['aref']
         normal = surface_normal_binding(entry, model['mesh_version'])
+        normal_applied = False
         if normal:
             try:
                 path, texture, data = self.model_texture(model, normal['texture'])
                 if texture['kind'] != 1 or texture['dds']['format'] != 'DXT5':
                     raise FormatError('Native surface normal needs the verified embedded DXT5 layout')
                 image = self.dds_image((path,normal['texture'],'normal'), data, path.stem+f' / normal {normal["texture"]}')
-                attach_normal_map(material, image, packed_x_alpha=normal['packed_x_alpha'],
-                                  uv_map=f'Source uv {normal["uv"]}')
+                normal_applied = attach_normal_map(material, image, packed_x_alpha=normal['packed_x_alpha'],
+                                                   uv_map=f'Source uv {normal["uv"]}')
                 material['tt_native_normal_source'] = str(path)
                 material['tt_native_normal_texture'] = normal['texture']
             except (ValueError, RuntimeError, OSError) as error:
                 self.report.append({'material':entry['name'], 'issue':str(error)})
+        diagnostic = material_capability_report(model, entry, definition,
+            used_definition_fields=used_fields, normal_binding=normal, normal_applied=normal_applied)
+        if diagnostic:self.report.append(diagnostic)
         material['tt_material_status'] = 'Costume texture/tint or native vertex color; full shader reconstruction incomplete'
         return material

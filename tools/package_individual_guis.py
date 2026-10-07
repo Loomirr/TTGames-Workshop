@@ -57,6 +57,9 @@ def main():
         is_editor = name == 'CU3 Name Editor'
         script = 'formats/cu3/scripts/cu3_name_editor_gui.py' if is_editor else TOOLS[name][0]
         files = dependencies(ROOT / script)
+        archive_diagnostics = name in ('CU3 dependency report', 'TFA archive index', 'DCSV archive index')
+        if archive_diagnostics:
+            files.update(dependencies(ROOT / 'formats/cu3/scripts/inspect_archive_cc.py'))
         if not is_editor:
             files.add(ROOT / 'tools/workshop_gui.py')
         files.add(ROOT / 'docs/LICENSING.md')
@@ -82,6 +85,18 @@ Failed jobs may leave partial output; choose a new output name when retrying.
 Game files and external tools are not included. Format support is limited to
 the versions described above; a GUI does not expand decoder support.
 AI was used to help with this project. See docs/LICENSING.md for reuse notes.
+'''
+        if archive_diagnostics:
+            readme += '''
+If an archive index has unverified trailing data, the bundled read-only
+inspector can save a bounded diagnostic without enabling extraction:
+
+```text
+python formats/cu3/scripts/inspect_archive_cc.py "path/to/GAME.DAT" "new-index-report.json"
+```
+
+Exit code 2 with a saved report means the index remains unsupported/invalid.
+Review its status and error; writing a report does not validate game payloads.
 '''
         launcher = ("from pathlib import Path\nimport runpy, sys\n"
                     "base = Path(__file__).resolve().parent\n"

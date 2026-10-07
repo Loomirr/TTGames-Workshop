@@ -111,12 +111,13 @@ def prepare_live(scene, detail_level=3):
         raise ValueError('Make a full scene copy before configuring live preview')
     if scene.get('tt_live_preview'):
         raise ValueError('This scene already has a live preview setup')
+    from .face_preview import face_objects, prepare_depth, masked_detail
+    facial = set(face_objects(scene))
     groups = {}
     for obj in meshes:
-        if obj.get('source_model', '').startswith('FACE_'):
+        if obj in facial:
             groups.setdefault((obj.parent, obj['source_model']), []).append(obj)
     planned = []
-    from .face_preview import prepare_depth, masked_detail
     for objects in groups.values():
         masks = [o for o in objects if o.get('tt_colour_write_mask') == 0]
         if masks:
@@ -133,7 +134,6 @@ def prepare_live(scene, detail_level=3):
     scene.render.engine = 'BLENDER_EEVEE'; scene.render.film_transparent = False
     for layer in list(scene.view_layers)[1:]:scene.view_layers.remove(layer)
     layer = scene.view_layers[0]; layer.name = 'TT live viewport'
-    facial = {o for o in meshes if o.get('source_model', '').startswith('FACE_') or o.get('source_model') == 'SpiderFace'}
     def unmask(collection):
         # Only undo the facial pass's exclusion; preserve unrelated user/LOD
         # exclusions rather than bringing hidden variants back into view.

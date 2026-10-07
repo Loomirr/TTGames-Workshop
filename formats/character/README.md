@@ -1,17 +1,52 @@
 # TT Character and Animation Importer
 
+Character 0.5.10 / CU3 0.1.19 restore character-relative texture/model lookup and the observed face, cape, Hobbit and Avengers variant associations. [Recovery checks and limits](../../docs/RECOVERY_2026-10-07.md).
+
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.7**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.10**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.7.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.10.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
 An optional extraction cache must be outside the game installation.
+
+The current candidate resolves the specific shared-body variant arrays and
+Avengers index extension supplied after the [workstation review](../../docs/MERGE_PACKET_REVIEW_2026-10-06.md).
+This establishes model routing and index structure for those originals;
+complete character import and visual accuracy still need the matching game tests.
+
+Version 0.5.9 fixes four shared import/preview defects: one missing vertex normal
+no longer discards valid authored normals in the same part; facial asset names
+are matched without a case distinction; declared loose animations retain their
+same-directory scope across filename case changes; and explicit model files
+outside the asset root reach the existing checked texture-companion lookup.
+The native variant reader now selects the explicit full-detail base in the
+supplied HGOL 10/16 model arrays, validating every rig's display/skin ownership.
+The archive reader accepts the observed CC8 v1 pair of bounded ROTV tables while
+retaining their opaque records. These changes have original-file, constructed
+byte and Blender checks; they do not certify complete characters or in-game
+fidelity. See [accuracy checks](../../docs/CHARACTER_ACCURACY_0.5.9.md).
+
+Version 0.5.8 repairs missing import/preview setting definitions after an
+in-session addon update, including issue #1's `tt_face_detail` exception.
+Existing registered settings and values retained by Blender are preserved;
+settings with no stored value use their documented defaults. The settings panel
+offers **Restore missing settings**, and preview creation/application repairs
+them automatically. This was checked with actual Blender 5.1.2 and 5.2.2 using
+synthetic scenes; the reporter's original blend was not available.
+
+The shared live face helper now processes `SpiderFace` with the same grouping
+rule as composed previews. Material reports identify decoded CD fields and
+native shader controls that were not applied, plus unbound normal declarations.
+This does not implement native material remaps or prove the remaining named
+faces correct. [Issue status](../../docs/ISSUE_1_MINIFIGS.md) separates these
+fixes from the open reports. The [read-only inspectors](../../docs/DIAGNOSTIC_TOOLS.md)
+can collect evidence even when skeleton ownership blocks a full import.
 
 For **LEGO Fortnite**, select the installation or `FortniteGame/Content/Paks`
 folder. The optional separately built Unreal extraction bridge indexes it and

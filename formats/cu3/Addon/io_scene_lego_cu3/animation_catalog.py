@@ -52,12 +52,15 @@ def _loose_member(assets, member, set_reference, set_source):
         if not resource:
             continue
         path = PurePosixPath(resource)
-        if ((set_parent is not None and str(set_parent) != '.' and path.parent == set_parent) or
+        if ((set_parent is not None and str(set_parent) != '.' and
+             path.parent.as_posix().casefold() == set_parent.as_posix().casefold()) or
                 set_name in [part.casefold().removesuffix('_as') for part in path.parts[:-1]]):
             scoped.append(resource)
-    # Multiple archive copies of the same spelling are verified by the provider.
+    # Providers compare logical paths case-insensitively and retain spelling.
+    # Let their exact-path gate check case aliases and duplicate archive copies;
+    # different logical paths still cannot be selected by an unqualified name.
     scoped = sorted(set(scoped))
-    if len(scoped) > 1:
+    if len({path.casefold() for path in scoped}) > 1:
         raise FormatError('Ambiguous animation set member: ' + member + '; ' + ', '.join(scoped))
     return assets.find_exact(scoped[0]) if scoped else assets.find(member, required=False)
 

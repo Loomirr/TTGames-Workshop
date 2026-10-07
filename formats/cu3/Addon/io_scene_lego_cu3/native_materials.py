@@ -216,7 +216,11 @@ def shader_prefix(data, start, version, *, limit=None):
 
 
 def read_materials(path):
-    data = Path(path).read_bytes()
+    return read_materials_bytes(Path(path).read_bytes())
+
+
+def read_materials_bytes(data):
+    """Decode the existing material layouts from a caller-bounded snapshot."""
     r = Reader(data)
     marker = data.find(b'LTMU')
     if marker < 0:

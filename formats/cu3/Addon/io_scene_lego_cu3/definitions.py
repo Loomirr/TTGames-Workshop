@@ -16,7 +16,15 @@ FORMATS = {0:'B', 1:'h', 2:'i', 3:'q', 4:'f', 6:'3f', 8:'3f',
 
 
 def read_definition(path):
-    data = Path(path).read_bytes()
+    return read_definition_bytes(Path(path).read_bytes(), source=path)
+
+
+def read_definition_bytes(data, *, source=None):
+    """Decode existing definition layouts without reopening an input snapshot.
+
+    The source is optional provenance; it does not affect layout selection.
+    Compressed definitions retain the existing TT deflate output/block limits.
+    """
     source_sha256 = hashlib.sha256(data).hexdigest()
     if data.startswith(b'Deflate_v1.0'):
         data = decompress(data)
@@ -141,7 +149,7 @@ def read_definition(path):
             values[field['name']] = value
         objects.append({'class':classes[cls], 'offset':start, 'size':end-start,
                         'fields':values, 'decoded_end':pos, 'complete':pos==end})
-    return {'source':str(Path(path).resolve()), 'source_sha256':source_sha256,
+    return {'source':str(Path(source).resolve()) if source is not None else None, 'source_sha256':source_sha256,
             'version':version, 'byte_order':'little', 'objects':objects,
             'structure_identity':{'format':'typed-definition', 'version':version, 'byte_order':'little'},
             'unparsed_scope':'Nested resource objects and unknown field types remain undecoded; dependency closure covers retained declarations only.'}

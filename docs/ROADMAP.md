@@ -4,9 +4,12 @@ The [support notes](SUPPORT.md) records the
 reproduced attachment rollback problem and the P1 dependency-revision fixes.
 The [validation review](MERGE_PACKET_REVIEW_2026-10-06.md) adds shared-source conflict
 rejection, staged publication, bounded archives, explicit resource/skeleton
-identity and stronger DDS/weight diagnostics. The next gate is original-file
-regression of these stricter paths, then the remaining framing, ownership and
-visual work in [next steps](ROADMAP.md).
+identity and stronger DDS/weight diagnostics. The 0.5.9 follow-up resolves the supplied native body variant arrays and
+Avengers index extension; see [the accuracy review](CHARACTER_ACCURACY_0.5.9.md).
+The next gate is fresh complete-character/cutscene regression and visual work. The [read-only diagnostic tools](DIAGNOSTIC_TOOLS.md) now
+collect exact candidate/span and archive-suffix evidence without permitting an
+unverified import. [Issue #1](ISSUE_1_MINIFIGS.md) also tracks missing material
+remaps and the newer Hulkbuster, Vulture and Alfred rendering reports.
 
 See the [workflow audit and milestones](WORKFLOW.md) for the current public
 readers, remaining mesh-extraction dependencies and native editing limits.

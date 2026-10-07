@@ -1,5 +1,29 @@
 # Shading and mesh quality
 
+Character **0.5.9** and CU3 **0.1.18** preserve valid authored vertex normals
+when another vertex in the part has no usable direction. Only those missing
+directions use Blender's automatic-normal fallback; one unused zero direction
+also no longer disables the entire part's custom normals. Native source buffers,
+positions, topology and unchanged exports remain intact in 18 constructed
+MESH 169/170/175 tests covering float/packed directions and nonuniform scaling.
+This needs a fresh import; opening an existing blend does not rebuild its normals.
+
+Facial helpers now recognize `FACE_*` and `SpiderFace` independent of filename
+case, matching asset lookup semantics. Recreate a preview from the original
+imported scene to apply helper changes. These corrections have Blender 5.1.2
+and 5.2.2 fixture coverage; no named issue character is newly certified by them.
+See [the accuracy review](CHARACTER_ACCURACY_0.5.9.md). The supplied shared bodies
+now resolve through their native variant arrays, enabling fresh local character
+comparisons. Other native layouts retain their own explicit gates.
+
+Character **0.5.8** repairs missing Scene settings before preview creation or
+application. An incomplete in-session registration no longer fails at
+`tt_face_detail`; the settings panel also offers **Restore missing settings**.
+Existing settings are preserved, and a setting with no stored value uses its
+documented default. The reproduction and recovery checks use actual Blender
+5.1.2 and 5.2.2, including source isolation and failed-preview cleanup.
+See [the latest issue status](ISSUE_1_MINIFIGS.md).
+
 Character **0.5.5** and CU3 **0.1.14** share the following corrections.
 These are import and Blender preview improvements; they do not establish
 exact game lighting or complete native shader reconstruction.
@@ -84,4 +108,11 @@ To run the portable viewing-copy regression after extracting the character ZIP:
 
 ```text
 blender --background --factory-startup --python formats/character/check_preview_settings_blender.py -- --addon-directory <folder-containing-io_scene_tt_character>
+```
+
+The missing-registration regression runs separately against the same extracted
+package:
+
+```text
+blender --background --factory-startup --python-exit-code 1 --python formats/character/check_preview_registration_blender.py -- --addon-directory <folder-containing-io_scene_tt_character>
 ```

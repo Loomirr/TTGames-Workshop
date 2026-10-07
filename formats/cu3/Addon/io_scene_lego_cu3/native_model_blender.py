@@ -17,7 +17,7 @@ from .face_edit_blender import bind_source
 from .mesh_edit_blender import bind_vertices
 from .material_edit_guard import bind_materials
 from .model_validation import validate_model, validate_draw, matrix
-from .geometry_normals import normal_preservation_status
+from .geometry_normals import normal_preservation_status, apply_authored_normals
 
 
 def load_model(path, *, skeleton_identity=None):
@@ -28,7 +28,7 @@ def load_model(path, *, skeleton_identity=None):
     model = stage('mesh decoding', lambda: read_mesh(path))
     model['display'] = stage('display decoding', lambda: read_display(path, len(model['parts'])))
     model['skeleton'] = stage('skeleton decoding', lambda: read_skeleton(
-        path, display=model['display'], identity=skeleton_identity)) if path.suffix.lower()=='.ghg' else None
+        path, display=model['display'], mesh=model, identity=skeleton_identity)) if path.suffix.lower()=='.ghg' else None
     model['materials'] = stage('material decoding', lambda: read_materials(path)['materials'])
     model['validation'] = stage('decoded model validation', lambda: validate_model(model))
     model['validation']['blender_capabilities'] = dict(normal_preservation=normal_preservation_status())
@@ -106,9 +106,13 @@ def create_model(model, name, collection, definition=None, material_factory=None
         if vertices and all('normal' in v for v in vertices):
             packed = part['attribute_types']['normal'] == 8
             normals = [Vector(tuple(x/127.5-1 if packed else x for x in v['normal'][:3])) for v in vertices]
-            if all(n.length>.1 for n in normals):
+            if any(n.length>.1 for n in normals):
                 rotation = transform.to_3x3().inverted().transposed()
-                mesh.normals_split_custom_set_from_vertices([(rotation@n).normalized() for n in normals])
+                # Blender's zero-vector sentinel keeps the automatic normal
+                # for that vertex. A missing direction (even on an unused
+                # vertex) must not discard valid authored normals elsewhere.
+                apply_authored_normals(obj, [
+                    (rotation@n).normalized() if n.length>.1 else (0,0,0) for n in normals])
         if vertices and 'normal' in vertices[0]:
             baseline=mesh.attributes.new(name='TT_NativeNormalBaseline',type='FLOAT_VECTOR',domain='CORNER')
             baseline.data.foreach_set('vector',[x for normal in mesh.corner_normals for x in normal.vector])

@@ -1,5 +1,7 @@
 # TT Cutscene Importer
 
+Character 0.5.10 / CU3 0.1.19 restore character-relative texture/model lookup and the observed face, cape, Hobbit and Avengers variant associations. [Recovery checks and limits](../../docs/RECOVERY_2026-10-07.md).
+
 An experimental Blender importer and set of tools for TT Games' PC cutscenes.
 The main scene work is for **LEGO Marvel Super Heroes** and **LEGO Batman 3:
 Beyond Gotham**, with broader game support being added through separate format
@@ -8,7 +10,26 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.16** (experimental).
+Current source and packaged build: **0.1.19** (experimental).
+Version 0.1.18 shares the authored-normal, facial-name and scoped companion
+lookup corrections with Character 0.5.9. It also resolves the supplied native
+HGOL 10/16 body variant arrays and the observed Avengers CC8 v1 index extension.
+These checks do not establish complete cutscene actor recovery or scene fidelity.
+See [the accuracy review](../../docs/CHARACTER_ACCURACY_0.5.9.md).
+
+Version 0.1.17 applies the existing bind-matrix validity check before skeleton
+candidate selection, corrects live-preview grouping for `SpiderFace`, and
+reports unapplied material controls. Read-only skeleton, material and archive
+inspectors provide evidence for refused inputs; unknown ownership and archive
+suffixes remain rejected. See [diagnostic commands](../../docs/DIAGNOSTIC_TOOLS.md)
+and [issue #1 status](../../docs/ISSUE_1_MINIFIGS.md).
+
+The supplied bodies and detached Avengers indexes now pass their corrected
+readers. The two original cutscene checks in the earlier
+[workstation review](../../docs/MERGE_PACKET_REVIEW_2026-10-06.md) recovered cameras
+but zero actors; rerun those full dependency/assembly tests locally. This pass
+has no complete cutscene input and does not claim verified actor recovery.
+
 Version 0.1.16 adds explicit resource/profile and skeleton ownership metadata,
 bounded archive and DDS reads, raw skin-weight diagnostics and a visible
 normal-preservation capability report. Attachment animation matching no longer
@@ -66,7 +87,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.16 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.16.zip)
+Download the [0.1.18 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.19.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the
@@ -89,9 +110,10 @@ and LB3 version 19. For TFA/DCSV, choose **Inspect scene references** explicitly
 that mode creates markers and reports, not character geometry. CU3 alone does
 not contain its companion meshes and textures.
 
-The addon declares Blender 4.4+ support. Testing so far has been in Blender
-5.2.2; other versions still need checking. Building the ZIP only needs Python's
-standard library.
+The addon declares Blender 4.4+ support. The current packaged registration and
+synthetic live-preview checks pass in Blender 5.1.2 and 5.2.2; other versions
+and original-file visual fidelity need separate checks. Building the ZIP only
+needs Python's standard library.
 
 To build the ZIP from source, run `python scripts/build_addon.py` from this
 component folder.
