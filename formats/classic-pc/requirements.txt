@@ -1,0 +1,7 @@
+numpy
+Pillow
+# optional
+matplotlib   # preview_obj.py, preview_textured.py
+capstone     # exe_look.py
+pefile       # exe_look.py
+pymem        # mem_tool.py (Windows)

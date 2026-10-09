@@ -10,6 +10,7 @@ whose layout was actually investigated.
 - [NU20 / LIJ1 Xbox 360 prototype](nu20/lij1-xbox360/README.md): tiled texture extraction.
 - [AN4 / LMSH1](an4/lmsh1/README.md): observed skeletal animation layouts.
 - [BTGA / Nintendo 3DS](btga/3ds/README.md): PICA texture and FUSE payload decoding.
+- [Classic PC: LB1, LIJ1, TCS](classic-pc/README.md): read-only DAT, NU20, AN3, CU2 and GIZ readers for the 2007 to 2008 Steam releases.
 
 Identical extensions can contain different versions. Check the component docs
 before mixing assets or readers from different games.
