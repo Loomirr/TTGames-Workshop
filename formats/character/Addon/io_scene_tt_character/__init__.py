@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 5, 10), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 5, 15), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -15,6 +15,7 @@ from ._core.cu3 import FormatError
 from ._core.asset_index import open_assets
 from ._core.geometry_normals import normal_preservation_status
 from .scene_settings import ensure_scene_settings, missing_scene_settings, unregister_scene_settings
+from .preview_identity import linked_child
 
 GAMES = [('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
          ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models'),
@@ -249,16 +250,14 @@ def set_clip(self, context):
             for bone in child.pose.bones:
                 bone.matrix_basis = Matrix.Identity(4)
     for track in tracks:
-        child, action = bpy.data.objects.get(track['object']), bpy.data.actions.get(track['action'])
-        if child not in self.children_recursive:
-            child = next((o for o in self.children_recursive if o.get('tt_preview_source') == track['object']), None)
+        child, action = linked_child(self, track['object']), bpy.data.actions.get(track['action'])
         if child is None or child not in self.children_recursive or action is None:
             continue
         child.animation_data_create()
         child.animation_data.action = action
         child.animation_data.action_slot = next((s for s in action.slots if s.identifier == track['slot']), None)
     for track in faces:
-        child = next((o for o in self.children_recursive if o.name==track['object'] or o.get('tt_preview_source')==track['object']), None)
+        child = linked_child(self, track['object'])
         action = bpy.data.actions.get(track['action'])
         if child is None or child.type!='MESH' or not child.data.shape_keys or action is None:continue
         keys = child.data.shape_keys

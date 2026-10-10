@@ -4,6 +4,7 @@ from mathutils import Vector
 from ._core.face_live import prepare_live
 from ._core.face_preview import prepare_render
 from .preview_settings import copy_settings, isolate_materials, apply_settings
+from .preview_identity import record_copy
 
 
 def create_preview(context, rig, *, composed_faces=False):
@@ -34,7 +35,7 @@ def build_preview(context, rig, *, composed_faces=False):
         for modifier in list(obj.modifiers):
             if modifier.name in ('TT live facial clipping','TT facial depth bias'):
                 obj.modifiers.remove(modifier)
-        obj['tt_preview_source'] = source.name
+        record_copy(source, obj)
         scene.collection.objects.link(obj)
         copies[source] = obj
     for source, obj in copies.items():

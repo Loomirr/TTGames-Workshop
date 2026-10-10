@@ -81,7 +81,8 @@ class ResourceResolver:
     def validate_cutscene(self, cut):
         if self.version is None:
             raise FormatError('This profile supports characters; cutscene assembly is not verified')
-        if cut.version!=self.version:
+        versions=self.profile_info.get('cutscene_versions',(self.version,))
+        if cut.version not in versions:
             raise FormatError('Cutscene version does not match the selected game profile')
 
     def resolve(self, reference):
@@ -89,7 +90,7 @@ class ResourceResolver:
         require_active_renderer(reference,self.suffix)
         key=reference.casefold()
         if key in self.cache:return dict(self.cache[key],reference=reference)
-        definition_path=self.assets.find(reference,extension='.CD',required=False)
+        definition_path=find_character_asset(self.assets,reference,extension='.CD',required=False)
         definition=character_definition(definition_path) if definition_path else None
         model_reference=reference
         if definition:

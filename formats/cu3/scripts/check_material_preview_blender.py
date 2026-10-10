@@ -2,7 +2,7 @@
 import bpy,sys,tempfile,argparse,uuid
 from pathlib import Path
 root=Path(__file__).resolve().parents[1];sys.path.insert(0,str(root/'Addon'))
-from io_scene_lego_cu3.material_preview import attach_vertex_albedo,attach_vertex_opacity
+from io_scene_lego_cu3.material_preview import attach_vertex_albedo,attach_vertex_opacity,attach_albedo_glow
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output-dir',type=Path,help='Writable folder for temporary rendered fixtures')
 args=parser.parse_args(sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else [])
@@ -24,6 +24,15 @@ bpy.context.scene.render.engine='CYCLES';bpy.context.scene.cycles.samples=1
 bpy.ops.object.bake(type='DIFFUSE',pass_filter={'COLOR'})
 pixel=list(image.pixels)[(8*16+8)*4:][:3]
 assert max(abs(x-y) for x,y in zip(pixel,(.4,.15,.3)))<.005,pixel
+# Independently bake the connected albedo as emission. The same recovered
+# linear vertex-color multiplication must survive the new viewing layer.
+assert attach_albedo_glow(mat)
+assert not attach_albedo_glow(mat)
+assert principled.inputs['Emission Color'].links[0].from_socket == principled.inputs['Base Color'].links[0].from_socket
+bpy.ops.object.bake(type='EMIT')
+glow_pixel=list(image.pixels)[(8*16+8)*4:][:3]
+assert max(abs(x-y) for x,y in zip(glow_pixel,(.4,.15,.3)))<.005,glow_pixel
+for link in list(principled.inputs['Emission Color'].links):mat.node_tree.links.remove(link)
 assert not attach_vertex_opacity(mat,native_ignore_vertex_opacity=True,native_can_alpha_blend=True)
 alpha_image=bpy.data.images.new('Source alpha fixture',1,1,float_buffer=True)
 alpha_image.pixels[:]=(1,1,1,.5)

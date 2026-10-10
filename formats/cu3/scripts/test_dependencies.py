@@ -57,6 +57,26 @@ class DependencyTests(unittest.TestCase):
         self.file('chars/Super_Character/Face/FACE_HERO_DX11.GHG',b'namespace')
         self.assertEqual(self.resolver().resolve_model('Super_Character/Face/FACE_HERO').read_bytes(),b'exact')
 
+    def test_character_namespace_definition_paths(self):
+        self.file('chars/Minifigs/Hero/Hero.CD')
+        self.file('chars/Minifigs/Hero/Body_DX11.GHG')
+        self.file('unrelated/Hero.CD',b'wrong')
+        self.definitions['hero']=definition('Minifigs/Hero/Body')
+        resolved=self.resolver().resolve('Minifigs/Hero/Hero')
+        self.assertEqual(resolved['definition_path'].relative_to(self.root).as_posix(),
+                         'chars/Minifigs/Hero/Hero.CD')
+        self.assertEqual(resolved['model'].name,'Body_DX11.GHG')
+
+    def test_original_marvel_versions_pass_profile_gate_only(self):
+        resolver=ResourceResolver(AssetIndex(self.root),'LMSH1')
+        for version in (16,17,18):
+            resolver.validate_cutscene(types.SimpleNamespace(version=version))
+        for version in (15,19,30):
+            with self.assertRaises(FormatError):
+                resolver.validate_cutscene(types.SimpleNamespace(version=version))
+        with self.assertRaises(FormatError):
+            self.resolver().validate_cutscene(types.SimpleNamespace(version=18))
+
     def test_costume_texture_uses_character_namespace_without_basename_fallback(self):
         self.file('chars/Minifigs/Body/PRINT_DX11.TEX',b'correct')
         self.file('other/PRINT_DX11.TEX',b'wrong')

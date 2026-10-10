@@ -225,7 +225,7 @@ def assemble(cut, asset_root, profile, context, *, assets=None, static_environme
         else:
             report['stages'].append({'status':'disabled','issue':'Static environment loading was disabled for this import.'})
         if scene.camera:
-            report['live_preview'] = prepare_live(scene, detail_level=3)
+            report['live_preview'] = prepare_live(scene, detail_level=4)
         scene.frame_set(1)
         scene['cu3_source'] = str(cut.path)
         scene['tt_import_complete'] = False

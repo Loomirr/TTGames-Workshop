@@ -1,8 +1,8 @@
 # PC character compatibility, 6 October 2026
 
-Character 0.5.10 / CU3 0.1.19 restore character-relative texture/model lookup and the observed face, cape, Hobbit and Avengers variant associations. [Recovery checks and limits](../../docs/RECOVERY_2026-10-07.md).
+Character 0.5.15 / CU3 0.1.24 fix scoped definition lookup, older LMSH1 CU3 dispatch and cache diagnostics. [Checks and remaining gaps](../../docs/GITHUB_REVIEW_2026-10-09.md).
 
-Current source candidate: **0.5.10**. The supplied LMSH1/LB3 shared-body variant
+Current source candidate: **0.5.15**. The supplied LMSH1/LB3 shared-body variant
 arrays and the additional Avengers index section now validate. Those original
 records, four shared-code corrections and their tests are documented in the
 [accuracy review](../../docs/CHARACTER_ACCURACY_0.5.9.md). Historical counts and

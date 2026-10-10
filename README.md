@@ -13,27 +13,62 @@ game does not mean support for every TT game that uses the same extension.
 
 ## Start here
 
-**Current candidates:** Character 0.5.10 and CU3 0.1.19 repair native character paths, missing costume textures, face/cape LOD ownership and observed Hobbit/Avengers skeleton variants. See the [recovery checks and remaining limits](docs/RECOVERY_2026-10-07.md).
+**Current candidates:** Character **0.5.15**, CU3 **0.1.24**. This pass fixes
+scoped character-definition lookup, older LMSH1 CU3 dispatch, empty BVH exports
+and cache/CLI diagnostics. See [checks and remaining gaps](docs/GITHUB_REVIEW_2026-10-09.md).
 
-| Area | What is here | Current status |
+## Game and file support
+
+This lists the file families covered by Workshop, not every extension shipped
+with each game. **Partial import** means usable Blender assembly for supported
+layouts with known omissions. **Inspection** reads data or references without
+building the complete model/scene. No row means every asset in that game is verified.
+
+| Game / platform | File types | Support and how to use it |
 | --- | --- | --- |
-| [Characters and animations](formats/character/README.md) | Separate Blender addon: game character browser, CD/GHG/model GSC import and AN4 action list | 0.5.10 experimental; LMSH1/LB3/Hobbit/Avengers plus static LEGO Fortnite exports; constrained TT native editing |
-| [LEGO Fortnite](formats/fortnite/README.md) | Static exported models, recipe materials and optional installed-game extraction bridge | Early JSON/PNG/GLB import; Unreal readers and runtimes supplied separately, shaders incomplete |
-| [CU3 cutscenes](formats/cu3/README.md) | Blender addon, installed-game actor and static stage loading, name editor, source animation and face tools | 0.1.19 experimental; shared accessory-reader fixes, partial LMSH1/LB3 assembly, TFA/DCSV reference inspection |
-| [LSW1 HGP models](formats/hgp/lsw1/README.md) | Character meshes, native skeletons, corrected palette colors, textures, face alpha and normal maps | 0.1.3; original 2005 PC game only |
-| [LIJ1 Xbox 360 prototype textures](formats/nu20/lij1-xbox360/README.md) | Drag-and-drop Windows DDS extractor and format notes | 0.1.2; BC1/2/3/5, float, cubemaps, TEX and font textures |
-| [LMSH1 AN4 animation](formats/an4/lmsh1/README.md) | Scalar decoder, corrected rotation sampler and experimental BVH export | Observed ANI-D layouts and original Marvel rig |
-| [3DS BTGA / FUSE](formats/btga/3ds/README.md) | PICA texture decoding, PNG/DDS export and FUSE payload reader | Universe in Peril USA build research |
+| LEGO Star Wars: The Video Game (2005), PC | HGP | [HGP addon](formats/hgp/lsw1/README.md): models, native rigs and textures; some headers remain unsupported. Does not cover LSW2/TCS. |
+| LEGO Star Wars: The Complete Saga, PC | CU2, AN3, GIZ; NU20 GHG/GSC | [Classic CLI inspectors](formats/classic-pc/README.md) for cutscene references/cameras, animation scalars and gizmos. GHG/GSC Blender import is not enabled yet. Tested on an installed tree with local mods. |
+| LEGO Batman (2008), PC | CU2, AN3, GIZ; NU20 GHG/GSC | [Classic CLI inspectors](formats/classic-pc/README.md); CU2/AN3/GIZ checked against original DAT inputs. No complete model/scene importer yet. |
+| LEGO Indiana Jones 1, PC | CU2, AN3, GIZ; NU20 GHG/GSC | Same [classic inspection tools](formats/classic-pc/README.md) for reported matching layouts. **No local game validation yet.** Separate from the Xbox prototype. |
+| LEGO Indiana Jones 1, Xbox 360 prototype | GHG, GSC, TEX, FNT, DDS | [DDS extractor](formats/nu20/lij1-xbox360/README.md): supported tiled texture allocations, mips and cubemaps. Does not import character meshes. |
+| LEGO Marvel Super Heroes, PC | CD, GHG/model GSC, AN4, CU3, DAT | [Character addon](formats/character/README.md): partial models/materials and supported animations; installed or extracted inputs. [CU3 addon](formats/cu3/README.md): partial scene assembly for v16/17/18, with separate camera/track gates. [AN4 CLI](formats/an4/lmsh1/README.md): scalar/BVH research. |
+| LEGO Batman 3, PC | CD, GHG/model GSC, AN4, CU3, DAT | [Character addon](formats/character/README.md): partial import/playback; [CU3 addon](formats/cu3/README.md): partial v19 scene assembly. Packed and extracted inputs; native shader/scene gaps remain. |
+| LEGO The Hobbit, PC | CD, GHG/model GSC, AN4, DAT | [Character addon](formats/character/README.md): partial import/playback for gated layouts, packed or extracted. Complete cutscene assembly is not enabled. |
+| LEGO Marvel's Avengers, PC | CD, GHG/model GSC, AN4, DAT | [Character addon](formats/character/README.md): partial import/playback, packed or extracted. Observed CC8 archive variant supported; complete cutscene assembly not enabled. |
+| LEGO Star Wars: The Force Awakens, PC | DAT/HDR (CC8), CU3, GHG/AN4 references | [Archive diagnostics](docs/DIAGNOSTIC_TOOLS.md) and [CU3 reference inspection](formats/cu3/README.md). ANI-E playback, full characters and full scenes are not enabled. |
+| LEGO DC Super-Villains, PC | DAT/HDR (CC4), CU3, GHG/AN4 references | [Archive diagnostics](docs/DIAGNOSTIC_TOOLS.md), CU3 inspection and limited [skeleton-transfer research](docs/SKELETON_TRANSFER.md). Not a complete character/scene importer or general native exporter. |
+| LEGO Marvel Super Heroes 2 / LEGO The Lord of the Rings, PC | DAT, GHG/AN4 references | [Version-gated archive/character inspection](formats/character/COMPATIBILITY.md). No complete character importer; unsupported compression/animation layouts remain refused. |
+| The LEGO Movie Videogame, PC | DAT (observed parent -5 index) | [Archive inventory research](docs/RESEARCH_REFERENCES_2026-10-07.md). No full character or cutscene import claim. |
+| The LEGO Ninjago Movie Videogame / LEGO Dimensions | Selected GHG / AN4 resources | [Skeleton-transfer diagnostics](tools/skeleton_transfer/README.md) and a private native weapon proof. No general game importer/exporter yet. |
+| LMSH: Universe in Peril, Nintendo 3DS | BTGA, FUSE | [Texture / payload tools](formats/btga/3ds/README.md): PNG/DDS conversion and observed USA FUSE decoding; no full character/animation importer. |
+| LEGO Fortnite | Exported JSON, GLB, PNG; optional Paks bridge | [Static character profile](formats/fortnite/README.md) in the character addon. External Unreal runtime required for Paks extraction; no animation support and incomplete native shaders. |
+
+Other installed games (including Batman 2, Star Wars III, Jurassic World,
+The Skywalker Saga and handheld editions) do not gain importer support merely
+because their files share these extensions. Unlisted layouts remain unverified.
+
+**Editing/export:** enabled TT character profiles can write constrained edits
+back to matching loose source files. General topology, material, skeleton and
+cross-game animation export is not complete. CU3 name editing and face-target
+writing have separate hash/layout guards; see [support notes](docs/SUPPORT.md).
 
 See the [game index](games/README.md), [format index](formats/README.md),
 [support notes](docs/SUPPORT.md), [project layout](docs/LAYOUT.md) and
 [next steps](docs/ROADMAP.md).
+The [skeleton transfer planner](tools/skeleton_transfer/README.md) adds
+read-only rig/mapping/AN4 checks, item action diagnostics and a rest-relative rotation API. See the
+[cross-game transfer pipeline](docs/SKELETON_TRANSFER.md) for the private native
+proof, validation stages and remaining export limits.
 The [validation review](docs/MERGE_PACKET_REVIEW_2026-10-06.md) records
 this implementation pass and its validation limits. The
 [BactaTank interoperability study](docs/BACTATANK_INTEROP.md) describes a possible
 independent `.bmesh` export path; no BactaTank exporter is enabled yet.
 The [latest tool review](docs/TOOL_REVIEW_2026-10-05.md) records the checks,
 current limitations and priorities across the components.
+The [community reference review](docs/RESEARCH_REFERENCES_2026-10-07.md) records
+independent material/face/archive checks and separates external project claims
+from our validated coverage. That research review copied no external implementation.
+The separate [classic PC contribution](formats/classic-pc/README.md) retains its MIT attribution.
 The [minifigure issue patch notes](docs/ISSUE_1_MINIFIGS.md) cover the newer
 accessory LOD and LMSH1 arm UV fixes, plus the remaining reported problems.
 

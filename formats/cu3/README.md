@@ -1,6 +1,8 @@
 # TT Cutscene Importer
 
-Character 0.5.10 / CU3 0.1.19 restore character-relative texture/model lookup and the observed face, cape, Hobbit and Avengers variant associations. [Recovery checks and limits](../../docs/RECOVERY_2026-10-07.md).
+Character 0.5.15 / CU3 0.1.24 fix scoped definition lookup, older LMSH1 CU3 dispatch and cache diagnostics. [Checks and remaining gaps](../../docs/GITHUB_REVIEW_2026-10-09.md).
+
+The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
 
 An experimental Blender importer and set of tools for TT Games' PC cutscenes.
 The main scene work is for **LEGO Marvel Super Heroes** and **LEGO Batman 3:
@@ -10,7 +12,7 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.19** (experimental).
+Current source and packaged build: **0.1.24** (experimental).
 Version 0.1.18 shares the authored-normal, facial-name and scoped companion
 lookup corrections with Character 0.5.9. It also resolves the supplied native
 HGOL 10/16 body variant arrays and the observed Avengers CC8 v1 index extension.
@@ -24,11 +26,13 @@ inspectors provide evidence for refused inputs; unknown ownership and archive
 suffixes remain rejected. See [diagnostic commands](../../docs/DIAGNOSTIC_TOOLS.md)
 and [issue #1 status](../../docs/ISSUE_1_MINIFIGS.md).
 
-The supplied bodies and detached Avengers indexes now pass their corrected
-readers. The two original cutscene checks in the earlier
-[workstation review](../../docs/MERGE_PACKET_REVIEW_2026-10-06.md) recovered cameras
-but zero actors; rerun those full dependency/assembly tests locally. This pass
-has no complete cutscene input and does not claim verified actor recovery.
+The earlier [workstation review](../../docs/MERGE_PACKET_REVIEW_2026-10-06.md)
+recovered cameras but zero actors. Current original-file checks recover 26
+actor/attachment model instances and 22 cameras in LB3's `2BATCAVEFIGHT_INTRO_NXG`,
+and 7 model instances and 13 cameras in LMSH1's `STARKTOWER_INTRO_NXG`.
+These runs disabled static environments to isolate actor recovery; they do not
+establish complete stages or scene fidelity. See the
+[recovery checks](../../docs/RECOVERY_2026-10-07.md).
 
 Version 0.1.16 adds explicit resource/profile and skeleton ownership metadata,
 bounded archive and DDS reads, raw skin-weight diagnostics and a visible
@@ -87,7 +91,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.18 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.19.zip)
+Download the [0.1.24 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.24.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the
@@ -326,10 +330,12 @@ blender --background --factory-startup --python scripts/check_blender.py -- scen
 See [the format notes](docs/FORMAT_NOTES.md) for the observed byte layouts,
 name relocation approach and remaining unknowns.
 
-Useful references include [JaanDev's NXG format research](https://github.com/JaanDev/lego-tt-nxg-formats)
-and [OpenSaga](https://github.com/opensagadev/saga). OpenSaga targets older
-games, so its structures are research references rather than proof that these
-PC games use exactly the same layouts.
+Useful references include [JaanDev's NXG format research](https://github.com/JaanDev/lego-tt-nxg-formats).
+[OpenSaga](https://github.com/opensagadev/saga) targets Android x86 TCS; its
+platform and era do not validate these PC layouts. The
+[reference review](../../docs/RESEARCH_REFERENCES_2026-10-07.md) records additional
+sources, independent original-file checks and remaining gaps. External
+implementations are not copied or translated into this component.
 
 This component contains source code and documentation; packaged tools are in
 the central builds folder. You'll need your

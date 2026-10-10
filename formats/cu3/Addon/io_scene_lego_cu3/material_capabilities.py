@@ -88,7 +88,7 @@ def material_capability_report(model, entry, definition=None, *,
     if unresolved:
         issues.append('Material-remap declarations could not be associated with a supported costume role')
     if nonzero:
-        issues.append('Nonzero native shader controls have no Blender translation: ' + ', '.join(nonzero))
+        issues.append('Nonzero native shader controls have no complete Blender translation: ' + ', '.join(nonzero))
     if surface['status'] == 'unbound_declaration':
         issues.append('Native surface-map declaration has no verified Blender normal binding; selectors are retained without guessing its encoding')
     elif surface['status'] == 'verified_binding_not_applied':

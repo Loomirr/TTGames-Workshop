@@ -83,6 +83,46 @@ def compressed_definition(data):
 
 
 class Declarations(unittest.TestCase):
+    def test_remap_requires_definition(self):
+        with self.assertRaisesRegex(ValueError, 'requires an explicit'):
+            cli.inspect('not-opened.GHG', remap_library='not-opened.GSC')
+
+    def test_candidate_differences_retain_shader_and_texture_distinctions(self):
+        entries = [dict(fields={'skinned': value, 'numBones': value*4},
+                        render_flags={'nextVariantIdx': 1-value}, table_version=176,
+                        texture_ids=[3, value+4], texture_formats=[]) for value in (0, 1)]
+        differences = {row['field']: row['values'] for row in cli._candidate_differences(entries)}
+        self.assertEqual(differences['fields.numBones'], [0, 4])
+        self.assertEqual(differences['fields.skinned'], [0, 1])
+        self.assertEqual(differences['render_flags.nextVariantIdx'], [1, 0])
+        self.assertEqual(differences['texture_ids'], [[3, 4], [3, 5]])
+        self.assertNotIn('table_version', differences)
+        self.assertEqual(cli._candidate_differences(entries[:1]), [])
+
+    def test_remap_reports_duplicates_missing_names_and_does_not_follow_paths(self):
+        # Both same-named records must survive; name equality does not prove
+        # renderer/LOD ownership. The missing path in the CD is never opened.
+        raw = model_fixture(count=2).replace(b'NativeMaterial1', b'NativeMaterial0')
+        self.model.write_bytes(raw)
+        parsed = {'objects': [dict(complete=True, fields={
+            'Source Material': name, 'Source Material Type': 1, 'Material': 3,
+            'Source Material Resource File': '../not-opened'})
+            for name in ('NativeMaterial0', 'Missing', 'nativematerial0')]}
+        report = cli.remap_comparison(parsed, self.model, max_objects=256, max_text=128)
+        rows = report['declarations']
+        self.assertEqual([row['status'] for row in rows],
+                         ['multiple_name_candidates', 'name_not_found', 'name_not_found'])
+        self.assertEqual([row['index'] for row in rows[0]['candidates']], [0, 1])
+        self.assertEqual(report['source']['sha256'], hashlib.sha256(raw).hexdigest())
+        self.assertEqual(self.model.read_bytes(), raw)
+        limited = cli.remap_comparison(parsed, self.model, max_objects=1, max_text=128)
+        self.assertEqual(limited['omitted_declarations'], 2)
+
+    def test_remap_unknown_table_rejected(self):
+        self.model.write_bytes(model_fixture(version=233))
+        with self.assertRaises(ValueError):
+            cli.remap_comparison({'objects': []}, self.model, max_objects=1, max_text=128)
+
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

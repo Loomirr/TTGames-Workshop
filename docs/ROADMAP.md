@@ -22,6 +22,10 @@ and cutscene completeness come before adding more game profiles.
   animation writing without losing native skeleton or event semantics.
 - Expand DCSV coverage with explicit version gates and original-file checks.
 - Consolidate reusable model/texture readers as their layouts are verified.
+- Extend the [skeleton transfer planner](../tools/skeleton_transfer/README.md)
+  with measured grip calibration and Blender preview jobs. Native transfer
+  exporters need independently validated format profiles and target-game tests;
+  see [the pipeline](SKELETON_TRANSFER.md).
 
 The early LEGO Fortnite profile now accepts user-selected exported recipes and
 baked models, with an optional installed-game extraction bridge. Broaden its

@@ -4,6 +4,9 @@ This is a collection of components, not a new license applied to all files.
 
 - The LSW1 importer retains GPL-3.0-or-later and its LICENSE file.
 - The LIJ1 prototype extractor retains its MIT license and third-party notices.
+- The classic PC CU2/GIZ contribution by Gibby / stryderjoe retains its
+  [MIT license](../formats/classic-pc/LICENSE); see its
+  [attribution and integration scope](../formats/classic-pc/README.md).
 - Other original research components do not yet have an explicit license grant.
   This import does not silently relicense them. Contact the maintainer about
   reuse outside the terms of a component's existing license.

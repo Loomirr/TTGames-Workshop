@@ -1,7 +1,7 @@
 bl_info = {
     'name': 'LEGO CU3 Cutscene Importer (Experimental)',
     'author': 'Loomirr',
-    'version': (0, 1, 19),
+    'version': (0, 1, 24),
     'blender': (4, 4, 0),
     'location': 'File > Import > LEGO CU3 cutscene',
     'description': 'Assemble supported cutscene actors, attachments, materials and cameras from native companion assets',
@@ -34,7 +34,7 @@ class TT_CU3_Preferences(bpy.types.AddonPreferences):
 
 def assembly_profile(cut, requested):
     if requested != 'AUTO':return requested
-    profile = {18:'LMSH1',19:'LB3'}.get(cut.version)
+    profile = {16:'LMSH1',17:'LMSH1',18:'LMSH1',19:'LB3'}.get(cut.version)
     if profile is None:
         raise FormatError(f'Full scene assembly is not implemented for CU3 version {cut.version}. Inspect scene references is available separately; it does not create meshes.')
     return profile

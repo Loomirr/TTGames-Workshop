@@ -1,5 +1,6 @@
 """Synthetic DAT/LZ2K tests: no game payloads or external decoders required."""
 import hashlib
+import errno
 import os
 import struct
 import shutil
@@ -40,6 +41,35 @@ def archive(path,payload=b'abc',name='SAMPLE.CD'):
 
 
 class Compression(unittest.TestCase):
+    def test_cache_temp_name_does_not_extend_asset_basename(self):
+        with tempfile.TemporaryDirectory() as folder:
+            target=Path(folder)/('A'*190+'.GHG.sha256')
+            names=[]
+            replace=os.replace
+            def capture(source,destination):
+                names.append(source.name)
+                replace(source,destination)
+            with patch('io_scene_lego_cu3.archive_assets.os.replace',side_effect=capture):
+                ArchiveAssetIndex._atomic_write(target,b'abc')
+            self.assertEqual(target.read_bytes(),b'abc')
+            self.assertLess(len(names[0]),30)
+
+    def test_cache_path_failure_explained_and_temp_cleaned(self):
+        with tempfile.TemporaryDirectory() as folder:
+            target=Path(folder)/'test'
+            with patch('io_scene_lego_cu3.archive_assets.os.replace',side_effect=OSError(errno.ENAMETOOLONG,'too long')):
+                with self.assertRaisesRegex(FormatError,'shorter cache folder'):
+                    ArchiveAssetIndex._atomic_write(target,b'abc')
+            self.assertEqual(list(Path(folder).iterdir()),[])
+
+    def test_cache_temp_collision_preserves_other_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            existing=Path(folder)/'.tt-fixed.tmp';existing.write_bytes(b'keep')
+            with patch('io_scene_lego_cu3.archive_assets.secrets.token_hex',return_value='fixed'):
+                with self.assertRaises(FileExistsError):
+                    ArchiveAssetIndex._atomic_write(Path(folder)/'test',b'abc')
+            self.assertEqual(existing.read_bytes(),b'keep')
+
     def test_hobbit_parent_index_requires_explicit_version(self):
         with tempfile.NamedTemporaryFile(suffix='.dat',delete=False) as f:path=Path(f.name)
         try:
@@ -55,6 +85,13 @@ class Compression(unittest.TestCase):
 
     def test_overlapping_copy_across_blocks(self):
         self.assertEqual(decode_lz2k_chunk(blocks((1,65,0),(1,256,0)),4),b'AAAA')
+
+    def test_distance_one_symbol_keeps_the_two_byte_history_rule(self):
+        # The AB pattern distinguishes distance 2 from distance 1. Original
+        # LMSH1/LB3/Hobbit/Avengers face streams independently validate with
+        # this rule and fail mesh index checks when symbol 1 is changed to 1.
+        self.assertEqual(decode_lz2k_chunk(blocks((1,65,0),(1,66,0),(1,256,1)),5),b'ABABA')
+        self.assertEqual(decode_lz2k_chunk(blocks((1,65,0),(1,66,0),(1,256,0)),5),b'ABBBB')
 
     def test_copy_before_history_rejected(self):
         with self.assertRaises(FormatError):decode_lz2k_chunk(blocks((1,256,0)),3)

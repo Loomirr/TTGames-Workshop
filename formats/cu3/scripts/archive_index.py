@@ -1,4 +1,9 @@
-"""Read-only Batman 3 DAT inventory and bounded companion extraction."""
+"""Read-only observed parent-index DAT inventory and bounded extraction.
+
+Default -6 is the validated LB3 layout. Explicit -5 covers the observed
+Hobbit/LEGO Movie parent layout, not every archive whose first word is -5.
+The separate LMSH1 tree/hash reader remains separate. Unknown versions fail.
+"""
 from pathlib import Path
 import argparse
 import hashlib
@@ -18,8 +23,8 @@ from io_scene_lego_cu3.bundle_output import publish_bundle
 from io_scene_lego_cu3.cu3 import FormatError
 
 
-def index(path):
-    return index_v6(path)
+def index(path, *, version_expected=-6):
+    return index_v6(path, version_expected=version_expected)
 
 
 def _read_entry(path, entry):
@@ -50,11 +55,11 @@ def _read_entry(path, entry):
     return decode_entry(packed, entry['size'], storage_mode=entry['flags'])
 
 
-def extract(path, entry, dest):
+def extract(path, entry, dest, *, version_expected=-6):
     """Extract one validated entry exclusively, preserving existing files."""
     name = safe_path(entry['path'])
     _, targets = preflight_destination(Path(dest), [name])
-    if entry not in index(path):
+    if entry not in index(path, version_expected=version_expected):
         raise FormatError('DAT entry does not match the validated source index')
     data = _read_entry(path, entry)
     target = targets[0]
@@ -70,8 +75,13 @@ def main():
     parser.add_argument('archive', type=Path)
     parser.add_argument('output', type=Path, help='New inventory/extraction folder')
     parser.add_argument('--extract-cutscenes', action='store_true')
+    parser.add_argument('--index-version', type=int, choices=(-6, -5), default=-6,
+                        help='Explicit native parent-index version: -6 LB3 (default), -5 observed Hobbit/LEGO Movie; not LMSH1 tree indexes')
     args = parser.parse_args()
-    entries = index(args.archive)
+    try:
+        entries = index(args.archive, version_expected=args.index_version)
+    except (ValueError, OSError, struct.error) as error:
+        parser.error(str(error) + '; this reader uses parent indexes (-6 LB3 / -5 Hobbit), not LMSH1 tree indexes')
     selected = [entry for entry in entries if args.extract_cutscenes and (
         entry['path'].upper().endswith('.CU3') or
         entry['path'].upper().startswith('CUT/') and entry['path'].upper().endswith(('.TXT', '.SUB', '.LED')))]
@@ -85,6 +95,7 @@ def main():
     names = [index_name] + ['Extracted/' + entry['path'] for entry in selected]
     preflight_destination(args.output, names + ['archive-manifest.json'], require_absent=True)
     report = dict(schema='tt-dat-extraction-v1', source=str(args.archive.resolve()),
+                  index_version=args.index_version, layout='little-endian parent/name/path-hash tables',
                   indexed_files=len(entries), extracted_files=len(selected), entries=[])
 
     def payloads():

@@ -6,6 +6,7 @@ this bounded implementation and chunk decoder use no external runtime.
 """
 from pathlib import Path, PurePosixPath
 import hashlib
+import errno
 import os
 import secrets
 import struct
@@ -15,6 +16,16 @@ from .archive_paths import safe_path, validate_paths
 
 MAX_ENTRY_BYTES = 256 * 1024 * 1024
 MAX_TOTAL_BYTES = 1024 * 1024 * 1024
+
+
+def _cache_io_error(error, target):
+    """Explain OS path failures without relaxing cache ownership checks."""
+    if (getattr(error, 'winerror', None) == 206 or error.errno == errno.ENAMETOOLONG or
+            (os.name == 'nt' and error.errno == errno.ENOENT and len(str(target.absolute())) >= 240)):
+        raise FormatError('Archive cache write failed; this may exceed the Windows path limit. '
+                          'Choose a shorter cache folder outside the game installation. '
+                          f'Target: {target}; OS error: {error}') from error
+    raise error
 
 
 def _archive_stamp(info):
@@ -218,13 +229,18 @@ class ArchiveAssetIndex:
 
     @staticmethod
     def _atomic_write(target, data):
-        temporary = target.with_name(target.name + '.' + secrets.token_hex(8) + '.tmp')
+        # A short sibling name avoids repeating a long asset/digest basename.
+        temporary = target.with_name('.tt-' + secrets.token_hex(8) + '.tmp')
+        created = False
         try:
             with temporary.open('xb') as output:
+                created = True
                 output.write(data)
             os.replace(temporary, target)
+        except OSError as error:
+            _cache_io_error(error, target)
         finally:
-            if temporary.exists():
+            if created and temporary.exists():
                 temporary.unlink()
 
     def find_exact(self, reference, required=True):
@@ -283,7 +299,10 @@ class ArchiveAssetIndex:
             if target.read_bytes() != data:
                 raise FormatError('Existing cached companion differs; choose a fresh cache folder')
         else:
-            target.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+            except OSError as error:
+                _cache_io_error(error, target)
             self._atomic_write(target, data)
             self.events.append({'path':entry['path'],'bytes':len(data),'archive':archive.name})
         self._atomic_write(digest_file, hashlib.sha256(data).hexdigest().encode('ascii'))

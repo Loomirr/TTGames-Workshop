@@ -65,7 +65,7 @@ def surface_normal_binding(entry, mesh_version):
     """
     fields = entry['fields']
     if (mesh_version, entry.get('table_version')) not in {
-            (169, 176), (170, 191), (175, 196), (175, 202), (175, 232), (175, 234)}:
+            (169, 176), (169, 177), (170, 191), (175, 196), (175, 202), (175, 232), (175, 234)}:
         return None
     if fields.get('surfaceMapMethod') != 1 or fields.get('surfaceMapFormat0') != 5:
         return None

@@ -29,6 +29,7 @@ child = bpy.data.objects.new('Face', bpy.data.armatures.new('Face'))
 bpy.context.scene.collection.objects.link(rig)
 bpy.context.scene.collection.objects.link(child)
 child.parent = rig
+child['tt_character_skeleton'] = True
 rig.select_set(True);bpy.context.view_layer.objects.active=rig
 bpy.ops.object.mode_set(mode='EDIT')
 bone=rig.data.edit_bones.new('Root');bone.head=(0,0,0);bone.tail=(0,0,1)
@@ -97,10 +98,41 @@ scene = create_preview(bpy.context,rig)
 copied=[o for o in scene.objects if o.get('tt_preview_source') in {f.name for f in faces}]
 assert len(copied)==2 and all(o.data.shape_keys.animation_data.action in previous for o in copied)
 
+# Repeated viewing copies must retain original and intermediate link names.
+# Clearing/switching their tracks must never touch the source character.
+preview_rig = next(o for o in scene.objects if o.get('tt_preview_source') == rig.name)
+attachment = bpy.data.actions.new('Attachment clip')
+attachment_slot = attachment.slots.new('OBJECT', child.name)
+body['tt_attachment_actions'] = json.dumps([dict(object=child.name,
+    action=attachment.name, slot=attachment_slot.identifier,
+    fingerprint=action_fingerprint(attachment))])
+blank.action['tt_attachment_actions'] = '[]'
+second = create_preview(bpy.context, preview_rig)
+second_rig = next(o for o in second.objects if o.get('tt_preview_source') == rig.name)
+second_faces = [o for o in second.objects if o.type=='MESH' and o.data.shape_keys]
+assert len(second_faces)==2
+assert all(o.data.shape_keys.animation_data.action in previous for o in second_faces)
+second_attachment = next(o for o in second.objects if o.get('tt_preview_source') == child.name)
+assert second_attachment.animation_data.action == attachment
+second_rig.tt_clip_index=1
+assert all(o.data.shape_keys.animation_data.action is None for o in second_faces)
+assert all(o.data.shape_keys.animation_data.action in previous for o in faces+copied)
+assert second_attachment.animation_data.action is None
+second_rig.tt_clip_index=0
+second.frame_set(2)
+assert all(abs(o.data.shape_keys.key_blocks['TT_Target_017'].value-.7)<1e-6 for o in second_faces)
+assert second_attachment.animation_data.action == attachment
+from io_scene_tt_character.preview_identity import linked_child
+assert all(linked_child(second_rig, o.name) is not None for o in copied)
+# Ambiguous ancestry cannot silently bind a second character surface.
+duplicate=second_faces[0].copy();second.collection.objects.link(duplicate);duplicate.parent=second_faces[0].parent
+assert linked_child(second_rig, faces[0].name) is None
+bpy.data.objects.remove(duplicate, do_unlink=True)
+
 # Native writers must reject edited linked actions, including duration edits.
 previous[0].use_frame_range=True;previous[0].frame_end=4
 try:check_linked_actions(body);raise AssertionError('Edited linked action accepted')
 except ValueError:pass
 (output/'results.json').write_text(json.dumps(dict(padded_end_sample=True,rollback=True,
-    clip_switch=True,preview_links=True,edited_companion_rejected=True),indent=2))
+    clip_switch=True,preview_links=True,nested_preview_links=True,source_isolated=True,edited_companion_rejected=True),indent=2))
 print('FACIAL_CLIP_BINDING_CHECK_PASSED')

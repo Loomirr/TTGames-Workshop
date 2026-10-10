@@ -2,11 +2,88 @@
 
 The [Broken Minifigs report](https://github.com/Loomirr/TTGames-Workshop/issues/1)
 contains several separate problems and remains open. The latest source
-follow-up is Character **0.5.9** and CU3 **0.1.18**. Historical original-file
-results below belong to their stated versions; they do not certify the current
-candidates. The supplied LMSH1/LB3 body variant arrays and Avengers index
-extension now validate; fresh complete-character visual checks remain necessary.
-See the [accuracy review](CHARACTER_ACCURACY_0.5.9.md).
+follow-up is Character **0.5.14** and CU3 **0.1.23**. Nine complete character
+samples have now been imported and rendered across four game profiles, and two
+cutscene actor/camera assemblies checked. These checks establish recovery from
+the recent import regressions, not resolution of every visual report. See the
+[recovery evidence and limits](RECOVERY_2026-10-07.md). Historical results below
+belong to their stated versions.
+
+## Original-material investigation: October 7
+
+The installed LMSH1 definitions confirm that Tony Stark and Iron Man Mark 6
+reference separate `Material_Remap` resources. Tony declares
+`MAT_TONYSTARKGLOW_FRONT`; Mark 6 declares front, back and leg replacements.
+The corresponding GSC material tables decode. The current Blender shader
+uses their verified common additive mask, but does not reconstruct the full
+replacement shader. Re-extracting the ordinary body textures alone will not
+implement those replacements. Their texture selectors,
+UV controls and shader properties need to be interpreted together; a material
+name containing "GLOW" is not sufficient evidence for an emission formula.
+The read-only [material inspector](DIAGNOSTIC_TOOLS.md) now accepts an explicit
+replacement library. Original Tony and Mark 6 comparisons retain three
+same-named records per declared replacement rather than arbitrarily choosing
+the first. Their extracted texture inventories were inspected separately:
+Mark 6 includes a reactor mask and BRDF maps, while Hulkbuster's gold resource
+includes a cubemap. This explains why treating every binding as ordinary
+albedo is insufficient; the native shader formulas remain unverified.
+
+The three same-named replacements are not interchangeable decoded records:
+both original libraries differ in `numBones`, `skinned`, `fastBlend`,
+`disableFresnel` and native variant-chain pointers. The inspector now lists
+these differences explicitly. Matching a material name alone must not select
+the first record as a fully reconstructed replacement shader.
+
+Character 0.5.12 / CU3 0.1.21 recover the observed common additive layer for
+MESH 169 / UMTL 176 replacement resources. Every exact-name candidate must
+agree on slot 1 and UV pair 1, with the observed glow/additive controls.
+Conflicting bindings are refused; no full replacement shader is selected.
+Original Tony Stark and Mark 6 before/after renders were inspected. Tony's
+previously missing cyan reactor is now visible, and Mark 6's reactor receives
+its white additive layer. Both unchanged native-export checks passed, including
+the consumed replacement resource and texture-store dependencies.
+
+The preview uses unit emission strength. Native brightness/exposure, metallic
+and BRDF reconstruction remain incomplete. Gold replacement layers and unknown
+version/control combinations are not interpreted through the additive rule.
+
+Character 0.5.14 / CU3 0.1.23 additionally recover observed untextured additive
+vertex-color surfaces in MESH 169 / UMTL 177 and MESH 175 / UMTL 202. The
+predicate requires the decoded additive/glow controls, vertex albedo and no
+layer-0/1 texture. Before/after original Hulkbuster, Mark 6 and LB3 Batman
+renders show their eyes/reactor retaining the additive color under shading.
+A separate linear emission bake verifies the recovered color multiplication.
+All three no-op native exports passed. Environment/shaded glow, refraction,
+metallic layers and other layout/control combinations remain separate.
+
+The current GitHub screenshots were inspected directly. Vulture and Alfred's
+own idle clips also passed import, facial-preview rendering and no-op export.
+Those sampled frames do not prove the reported eye issue resolved throughout
+their animation ranges. Alfred's side hair-print step reproduces, and alternate
+head UV sampling does not repair it. No blanket UV or transparency adjustment
+has been made for these remaining reports.
+
+A separate cross-profile check inspected 79 costume-texture uses on LMSH1
+Wolverine, LB3 Alfred, Hobbit Thrain and Avengers Captain America AOU. All
+sampled texture alpha channels were fully opaque. This does not support a
+blanket transparency change as a fix for these faces; it also does not establish
+the alpha semantics of other textures or profiles. Base-head prints, animated
+facial details and depth-only surfaces must still be checked independently.
+
+Character 0.5.11 / CU3 0.1.20 enable the existing packed-normal binding for
+MESH 169 / UMTL 177. Hulkbuster's shoulder and body materials declare format 5,
+texture slot 6 and UV pair 4. Both original maps have zero red, tangent X in
+alpha and the same neutral green/blue/alpha pattern as the independently
+inspected Hulk and Colossus UMTL 176 maps. An earlier investigation note
+mistakenly described Hulkbuster's normal encoding as format 0; that was not
+the cause. Format 0 remains unsupported.
+
+Before/after Hulkbuster renders show recovered panel and groove detail, with
+15 material uses bound to normals. Source geometry remains unchanged and
+native no-op export has zero patched vertex bytes. This is a Blender rendering
+and export check, not in-game shader equivalence. Other mesh/table combinations
+and surface encodings remain gated. The gold hatch's cubemap shader, reported
+shoulder spot, Vulture's eyes and Alfred's head-print seam remain open.
 
 ## Shared import follow-up: 0.5.9 / 0.1.18
 
@@ -167,3 +244,25 @@ They also preserve custom normals lost by facial preview helpers. The character
 sidebar offers a viewing-copy normal-strength multiplier; the suggested values
 are comparisons, not established native shader values. See
 [shading evidence and remaining limits](SHADING_AND_QUALITY.md).
+
+## Repeated preview copies and live cutscene quality
+
+Character 0.5.14 preserves facial and attachment animation links when making
+a viewing copy from an existing viewing copy, including a composed preview
+from a live preview. Previously the second copy reset the target weights and
+could not find the original linked meshes by their intermediate copied names.
+Links now retain scene-local ancestry, and ambiguous matches are rejected.
+Source meshes, shape keys and animation bindings are unchanged.
+
+The asset-free regression reproduces the dropped facial actions before the
+fix and checks nested copies, clip switching, attachment links, source
+isolation and ambiguous ancestry after it. Original animated close-up renders
+cover Wolverine, Vulture, Alfred, Thrain and Captain America AOU in both live
+and composed modes at three frames. These expose remaining expression/depth
+limitations; passing import checks does not mean every face is accurate.
+
+CU3 0.1.23 uses the highest existing clipping-detail setting when assembling
+a cutscene or making its live viewing copy, matching character previews.
+Lower detail remains available in the live-copy operator for faster playback.
+This reduces polygonal clipping edges; it does not reconstruct the native
+facial shader or correct unresolved expression timing.

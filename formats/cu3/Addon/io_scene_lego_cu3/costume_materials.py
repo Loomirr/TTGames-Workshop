@@ -5,13 +5,14 @@ import math
 from pathlib import Path
 import bpy
 from .cu3 import FormatError
-from .material_preview import attach_vertex_albedo, attach_vertex_opacity, attach_normal_map
+from .material_preview import attach_vertex_albedo, attach_vertex_opacity, attach_normal_map, attach_albedo_glow
 from .texture_store import read_texture_store
 from .dds import read_embedded_dds
-from .native_materials import costume_slot, costume_uv_index, surface_normal_binding
+from .native_materials import costume_slot, costume_uv_index, surface_normal_binding, read_materials_bytes
 from .profiles import active_renderer_reference
 from .material_capabilities import material_capability_report
 from .dependencies import find_character_asset
+from .material_remaps import shared_glow_binding, native_vertex_glow
 
 def multiply_base_tint(material, tint, label, property_name):
     if len(tint)!=3 or not all(math.isfinite(v) and v>=0 for v in tint):
@@ -33,6 +34,7 @@ class CostumeMaterials:
         self.assets, self.suffix, self.report = assets, suffix, report
         self.images = {}
         self.stores = {}
+        self.remap_tables = {}
         self.provenance = provenance
 
     def image(self, path):
@@ -90,6 +92,46 @@ class CostumeMaterials:
     def model_image(self, model, index):
         path, entry, data = self.model_texture(model, index)
         return self.dds_image((path,index), data, path.stem+f' / texture {index}')
+
+    def remap_glow(self, material, model, matched_objects, used_fields):
+        declarations = [(i, o['fields']) for i, o in matched_objects
+                        if o['fields'].get('Source Material Type') == 1
+                        and o['fields'].get('Source Material Resource File')
+                        and o['fields'].get('Source Material')]
+        if not declarations or model['mesh_version'] != 169:return
+        if len(declarations) != 1:
+            raise FormatError('Multiple replacement-material declarations match this costume role')
+        index, fields = declarations[0]
+        path = find_character_asset(self.assets, fields['Source Material Resource File'], self.suffix, '.GSC')
+        if path not in self.remap_tables:
+            with path.open('rb') as stream:
+                data = stream.read(256*1024*1024+1)
+            if len(data) > 256*1024*1024:
+                raise FormatError('Replacement-material resource exceeds the supported byte limit')
+            self.remap_tables[path] = (read_materials_bytes(data), data)
+        table, data = self.remap_tables[path]
+        binding = shared_glow_binding(table['materials'], fields['Source Material'], model['mesh_version'])
+        if binding is None:return
+        if self.provenance:self.provenance.record(path, 'material-remap', data=data)
+        resource = dict(source=str(path))
+        store, texture, payload = self.model_texture(resource, binding['texture'])
+        if texture['kind'] != 0:
+            raise FormatError('Replacement glow requires an ordinary color texture')
+        image = self.dds_image((store,binding['texture'],'glow'), payload, path.stem+' / additive glow')
+        tree=material.node_tree;surface=tree.nodes.get('Principled BSDF')
+        node=tree.nodes.new('ShaderNodeTexImage');node.image=image;node.label='Native replacement additive layer'
+        uv=tree.nodes.new('ShaderNodeUVMap');uv.uv_map=f'Source uv {binding["uv"]}'
+        tree.links.new(uv.outputs['UV'],node.inputs['Vector'])
+        tree.links.new(node.outputs['Color'],surface.inputs['Emission Color'])
+        surface.inputs['Emission Strength'].default_value=1
+        used_fields[index].update(('Source Material Type','Source Material Resource File','Source Material'))
+        material['tt_remap_glow_source']=str(path)
+        material['tt_remap_glow_texture']=binding['texture']
+        material['tt_remap_glow_uv']=binding['uv']
+        material['tt_remap_glow_preview']='Common additive mask; unit preview intensity, native exposure/intensity unverified'
+        self.report.append(dict(kind='material_remap_glow',material=material.name,source=str(path),
+            declaration_index=index,binding=binding,
+            issue='Additive mask reconstructed at unit preview intensity; replacement BRDF/metallic shader remains incomplete'))
 
     def __call__(self, model, entry, definition, attachment_tint=None):
         material = bpy.data.materials.new(Path(model['source']).stem+' / '+entry['name'])
@@ -190,6 +232,11 @@ class CostumeMaterials:
                 material['tt_native_normal_texture'] = normal['texture']
             except (ValueError, RuntimeError, OSError) as error:
                 self.report.append({'material':entry['name'], 'issue':str(error)})
+        if native_vertex_glow(entry, model['mesh_version']):
+            attach_albedo_glow(material)
+        try:self.remap_glow(material, model, matched_objects, used_fields)
+        except (ValueError, RuntimeError, OSError) as error:
+            self.report.append({'material':entry['name'], 'issue':'Replacement material: '+str(error)})
         diagnostic = material_capability_report(model, entry, definition,
             used_definition_fields=used_fields, normal_binding=normal, normal_applied=normal_applied)
         if diagnostic:self.report.append(diagnostic)

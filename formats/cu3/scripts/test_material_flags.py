@@ -23,18 +23,21 @@ class MaterialFlagTests(unittest.TestCase):
 
     def test_verified_normal_slot_and_uv(self):
         self.assertEqual(surface_normal_binding(self.normal_entry(),169),dict(texture=3,uv=0,packed_x_alpha=True))
-        for mesh, table in ((170,191),(175,196),(175,202),(175,232),(175,234)):
+        for mesh, table in ((169,177),(170,191),(175,196),(175,202),(175,232),(175,234)):
             entry=self.normal_entry();entry['table_version']=table
             self.assertEqual(surface_normal_binding(entry,mesh),dict(texture=3,uv=0,packed_x_alpha=True))
 
     def test_normal_version_gate(self):
-        for mesh,table in ((175,176),(169,175),(169,232)):
+        for mesh,table in ((175,176),(169,175),(169,232),(170,177),(169,178)):
             entry=self.normal_entry();entry['table_version']=table
             self.assertIsNone(surface_normal_binding(entry,mesh))
 
     def test_unknown_surface_encoding_is_not_a_normal(self):
-        entry=self.normal_entry();entry['fields']['surfaceMapFormat0']=4
-        self.assertIsNone(surface_normal_binding(entry,169))
+        for table in (176,177):
+            for encoding in (0,4,6):
+                entry=self.normal_entry();entry['table_version']=table
+                entry['fields']['surfaceMapFormat0']=encoding
+                self.assertIsNone(surface_normal_binding(entry,169))
 
     def test_normal_requires_enabled_valid_uv(self):
         for uv in ((0,0),(1,0xffffffff),(1,16)):

@@ -227,8 +227,15 @@ def main():
     parser.add_argument('--actor', required=True, help='Exact source actor name')
     parser.add_argument('--clip-index', type=int, default=0)
     args = parser.parse_args()
-    args.destination.mkdir(parents=True, exist_ok=True)
-    rig = skeleton(args.skeleton)
+    try:
+        rig = skeleton(args.skeleton)
+    except (ValueError, OSError, IndexError, struct.error) as error:
+        parser.error('Skeleton refused: ' + str(error))
+    if not args.source.exists():
+        parser.error('Animation source does not exist')
+    if args.destination.exists():
+        parser.error('Choose a new decode output folder')
+    args.destination.mkdir(parents=True)
     (args.destination / 'skeleton.json').write_text(json.dumps(rig, indent=2))
     sources = [args.source] if args.source.is_file() else sorted(args.source.rglob('*.an4'))
     results = []

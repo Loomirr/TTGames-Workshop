@@ -21,7 +21,7 @@ from tt_character_audit.native_display import read_display
 from tt_character_audit.native_materials import read_materials
 from tt_character_audit.skeleton import read_skeleton
 from tt_character_audit.native_layers import selected_layer_metadata
-from tt_character_audit.dependencies import active_attachments
+from tt_character_audit.dependencies import active_attachments, find_character_asset
 
 PROFILES = ('LMSH1', 'LB3', 'AVENGERS', 'TFA', 'DCSV', 'LMSH2', 'LOTR', 'HOBBIT')
 
@@ -37,7 +37,8 @@ def audit(root, game, cache, limit=0):
     records = []
 
     def model(reference):
-        source = assets.find(reference, suffix, '.GHG', required=False) or assets.find(reference, suffix, '.GSC')
+        source = (find_character_asset(assets, reference, suffix, '.GHG', required=False) or
+                  find_character_asset(assets, reference, suffix, '.GSC'))
         key = str(source)
         if key not in models:
             value = {}
@@ -82,10 +83,10 @@ def audit(root, game, cache, limit=0):
                             raise ValueError('Draw material outside table')
                     row['joints'] = len(skeleton['joints'])
                     row['selected_draws'] = len(draws)
-            for attachment in active_attachments(definition, layer_mode='default'):
+            for attachment in active_attachments(definition, layer_mode='default', renderer_suffix=suffix):
                 item = {'reference': attachment['Resource File']}
                 try:
-                    cd = assets.find(item['reference'], extension='.CD', required=False)
+                    cd = find_character_asset(assets, item['reference'], extension='.CD', required=False)
                     ad = character_definition(cd) if cd else None
                     ref = (ad['character'].get('Override Model File') or ad['character']['Skeleton Name']) if ad else item['reference']
                     ap, am = model(ref)

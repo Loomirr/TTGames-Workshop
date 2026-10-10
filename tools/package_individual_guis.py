@@ -98,6 +98,18 @@ python formats/cu3/scripts/inspect_archive_cc.py "path/to/GAME.DAT" "new-index-r
 Exit code 2 with a saved report means the index remains unsupported/invalid.
 Review its status and error; writing a report does not validate game payloads.
 '''
+        if name == 'Face targets: decode':
+            readme += '''
+For a small diagnostic report instead of the editable offset payload, run:
+
+```text
+python formats/cu3/scripts/decode_face_targets.py "path/to/FACE.GHG" --summary --output "new-summary.json"
+```
+
+The summary preserves native target IDs, affected vertex counts and source-space
+displacement bounds. It does not infer expressions or sample animation timing,
+and cannot be used as an input to the native target writer.
+'''
         launcher = ("from pathlib import Path\nimport runpy, sys\n"
                     "base = Path(__file__).resolve().parent\n"
                     "sys.path.insert(0, str(base / 'formats/cu3/scripts'))\n"

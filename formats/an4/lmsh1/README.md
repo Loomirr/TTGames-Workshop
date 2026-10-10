@@ -17,6 +17,9 @@ The skeleton reader expects the verified HGOL v10 63-joint Marvel rig. The CLI
 requires an explicit `--actor` and accepts `--clip-index`; the Python `animation`
 function accepts `actor_name` and `clip_index`. Source scalar JSON preserves original channels.
 Unsupported layouts are recorded in the decode manifest.
+Choose new decode and BVH output folders. A decode set with no supported clips
+produces an empty BVH export manifest (`no_decoded_clips`); it is not a successful
+animation conversion. Unverified skeleton layouts are refused before output is created.
 
 BVH is an experimental transform preview. It does not preserve meshes, native
 attachment events, visibility, gameplay notifies or all rig semantics. The

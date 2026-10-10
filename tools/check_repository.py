@@ -31,6 +31,11 @@ def main():
     for name in ['test_skeleton_versions.py','test_animation_sources.py','test_tt_deflate.py','test_an4_standalone.py','test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py','test_native_display.py','test_morph_controls.py','test_dependencies.py','test_native_layers.py','test_camera_version_gate.py','test_archive_cc8.py','test_tfa_structure.py','test_archive_assets.py','test_archive_v5.py','test_scene_configuration.py','test_stage_geometry.py']:
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'tools/test_prune_builds.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_readers.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/an4/lmsh1/test_cli.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'tools/skeleton_transfer/test_transfer.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'tools/skeleton_transfer/test_animation_audit.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'tools/skeleton_transfer/test_item_routes.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_fortnite_catalog.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_fortnite_backend.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_source_bundle.py')],check=True,cwd=ROOT)
@@ -39,7 +44,8 @@ def main():
                  'test_archive_cc_diagnostics.py','test_archive_cc_rotv.py',
                  'test_skeleton_diagnostics.py','test_native_variants.py',
                  'test_material_capabilities.py','test_face_live_groups.py',
-                 'test_material_declarations.py']:
+                 'test_material_declarations.py','test_material_remaps.py','test_material_parameters.py',
+                 'test_face_target_summary.py']:
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_mesh_edit.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_model_validation.py')],check=True,cwd=ROOT)

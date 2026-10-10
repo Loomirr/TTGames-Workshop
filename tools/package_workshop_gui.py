@@ -33,6 +33,8 @@ def main():
         'formats/btga/3ds/FORMAT.md', 'formats/cu3/scripts/inspect_archive_cc.py',
         'formats/cu3/scripts/inspect_skeleton_candidates.py',
         'formats/cu3/scripts/inspect_material_declarations.py')}
+    files.update(ROOT / 'formats/cu3/scripts' / name for name in
+                 ('material_parameter_inspection.py', 'face_target_summary.py', 'archive_index.py'))
     files.update(ROOT / data[0] for data in TOOLS.values())
     # Headless CU3 helpers import sibling parser modules, bypassing Blender's entry point.
     files.update((ROOT / 'formats/cu3/Addon/io_scene_lego_cu3').glob('*.py'))

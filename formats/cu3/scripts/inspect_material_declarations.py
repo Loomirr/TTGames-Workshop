@@ -20,6 +20,7 @@ package.__path__ = [str(Path(__file__).resolve().parents[1] / 'Addon/io_scene_le
 sys.modules.setdefault(package.__name__, package)
 from material_declaration_inspection.native_materials import read_materials_bytes, costume_slot
 from material_declaration_inspection.definitions import read_definition_bytes
+from material_parameter_inspection import inspect_parameters
 
 
 MAX_MODEL_BYTES = 256 * 1024 * 1024
@@ -101,7 +102,7 @@ def _opaque_bytes(values):
                 interpretation='Opaque bytes; individual meanings are not decoded')
 
 
-def _material(entry):
+def _material(entry, data=None):
     fields = entry['fields']
     shader = {key: value for key, value in fields.items()
               if key not in ('uvSets', 'opaqueShaderFlags') and key not in SURFACE_FIELDS}
@@ -118,6 +119,8 @@ def _material(entry):
         row['opaque_shader_flags'] = _opaque_bytes(fields['opaqueShaderFlags'])
     if 'opaqueModernTail' in entry['render_flags']:
         row['opaque_footer_tail'] = _opaque_bytes(entry['render_flags']['opaqueModernTail'])
+    if data is not None:
+        row['parameter_block'] = inspect_parameters(data, entry)
     return row
 
 
@@ -161,7 +164,65 @@ def _definition_report(parsed, source, materials, *, max_objects, max_fields, ma
                 omitted_fields=total_fields - emitted_fields, objects=objects)
 
 
-def inspect(source, definition=None, *, max_materials=256, max_objects=256, max_fields=128, max_text=2048):
+def _candidate_differences(entries):
+    """Retain differing decoded controls; equality is not renderer ownership."""
+    differences = []
+    if len(entries) < 2:
+        return differences
+    for group in ('fields', 'render_flags'):
+        for key in sorted(set().union(*(entry[group].keys() for entry in entries))):
+            values = [entry[group].get(key) for entry in entries]
+            if any(value != values[0] for value in values[1:]):
+                differences.append(dict(field=group+'.'+key, values=values))
+    for key in ('table_version', 'texture_ids', 'texture_formats'):
+        values = [entry[key] for entry in entries]
+        if any(value != values[0] for value in values[1:]):
+            differences.append(dict(field=key, values=values))
+    return differences
+
+
+def remap_comparison(parsed_definition, library, *, max_objects, max_text):
+    """Compare names only; never select a renderer variant or follow CD paths."""
+    library = Path(library)
+    if library.suffix.casefold() not in ('.gsc', '.ghg'):
+        raise ValueError('Choose an extracted GSC/GHG material library')
+    data, source = _snapshot(library, MAX_MODEL_BYTES)
+    marker = data.find(b'LTMU')
+    if marker < 0 or marker + 12 > len(data):
+        raise ValueError('Material library table header missing or truncated')
+    if struct.unpack_from('>I', data, marker + 8)[0] > MAX_DECODED_MATERIALS:
+        raise ValueError('Material library count exceeds inspection limit')
+    table = read_materials_bytes(data)
+    rows, total = [], 0
+    for index, obj in enumerate(parsed_definition['objects']):
+        fields = obj['fields']
+        if not any(key in fields for key in ('Source Material Resource File', 'Source Material')):
+            continue
+        total += 1
+        if len(rows) >= max_objects:
+            continue
+        name = fields.get('Source Material')
+        matches = [entry for entry in table['materials'] if isinstance(name, str) and entry['name'] == name]
+        rows.append(dict(object_index=index, complete=obj['complete'],
+            declared_resource=_value(fields.get('Source Material Resource File'), max_text),
+            declared_name=_value(name, max_text), source_material_type=_value(fields.get('Source Material Type'), max_text),
+            costume_role=_value(fields.get('Material'), max_text),
+            status='multiple_name_candidates' if len(matches) > 1 else 'single_name_candidate' if matches else 'name_not_found',
+            total_candidates=len(matches), omitted_candidates=max(0, len(matches)-MAX_ROLE_MATCHES),
+            candidate_differences=_candidate_differences(matches[:MAX_ROLE_MATCHES]),
+            difference_scope='Reported candidates only; indices correspond to candidate order; equality does not prove shader equivalence',
+            candidates=[_material(entry, data) for entry in matches[:MAX_ROLE_MATCHES]]))
+    return dict(source=source, material_table_version=table['version'],
+        total_declarations=total, omitted_declarations=total-len(rows), declarations=rows,
+        pairing='Explicit user-selected library; declared resource ownership and active renderer are not verified',
+        comparison='Exact case-sensitive material names; duplicates remain separate and no candidate is selected',
+        renderer_evaluation='Not applied; texture payloads, shader semantics and visual fidelity are not evaluated')
+
+
+def inspect(source, definition=None, *, max_materials=256, max_objects=256, max_fields=128, max_text=2048,
+            remap_library=None):
+    if remap_library is not None and definition is None:
+        raise ValueError('--remap-library requires an explicit --definition')
     for value, minimum, maximum, name in ((max_materials, 1, 1024, 'max_materials'),
             (max_objects, 1, 2048, 'max_objects'), (max_fields, 1, 256, 'max_fields'), (max_text, 64, 4096, 'max_text')):
         if type(value) is not int or not minimum <= value <= maximum:
@@ -190,7 +251,7 @@ def inspect(source, definition=None, *, max_materials=256, max_objects=256, max_
                   role_basis='costume_role uses the existing native costume-slot gate; native_special_id retains the authored scalar',
                   total_materials=len(entries), reported_materials=min(len(entries), max_materials),
                   omitted_materials=max(0, len(entries) - max_materials),
-                  materials=[_material(entry) for entry in entries[:max_materials]], definition=None,
+                  materials=[_material(entry, data) for entry in entries[:max_materials]], definition=None,
                   limits=dict(model_bytes=MAX_MODEL_BYTES, cd_stored_and_decoded_bytes=MAX_CD_BYTES,
                       decoded_materials=MAX_DECODED_MATERIALS, report_bytes=MAX_REPORT_BYTES,
                       materials=max_materials, definition_objects=max_objects, fields_per_object=max_fields,
@@ -206,8 +267,13 @@ def inspect(source, definition=None, *, max_materials=256, max_objects=256, max_
             raise ValueError('Definition digest does not identify the inspected snapshot')
         report['definition'] = _definition_report(cd, cd_source, entries,
             max_objects=max_objects, max_fields=max_fields, max_text=max_text)
+        if remap_library is not None:
+            report['remap_comparison'] = remap_comparison(cd, remap_library, max_objects=max_objects, max_text=max_text)
     report['declaration_lists_truncated'] = bool(report['omitted_materials'] or report['definition'] and
         (report['definition']['omitted_objects'] or report['definition']['omitted_fields']))
+    comparison = report.get('remap_comparison', {})
+    report['declaration_lists_truncated'] |= bool(comparison.get('omitted_declarations') or
+        any(row['omitted_candidates'] for row in comparison.get('declarations', [])))
     return report
 
 
@@ -225,6 +291,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source', type=Path, help='Extracted, uncompressed GHG/GSC; never modified')
     parser.add_argument('--definition', type=Path, help='Optional matching CD, selected explicitly by the user')
+    parser.add_argument('--remap-library', type=Path, help='Optional explicit GSC/GHG replacement-material library; names compared only')
     parser.add_argument('--output', type=Path, required=True, help='New JSON report filename; existing files/links are protected')
     parser.add_argument('--max-materials', type=int, default=256, help='Material detail limit (1-1024)')
     parser.add_argument('--max-objects', type=int, default=256, help='CD object detail limit (1-2048)')
@@ -235,7 +302,8 @@ def main(argv=None):
         if args.output.exists() or args.output.is_symlink():
             raise ValueError('Choose a new diagnostic report filename')
         report = inspect(args.source, args.definition, max_materials=args.max_materials,
-                         max_objects=args.max_objects, max_fields=args.max_fields, max_text=args.max_text)
+                         max_objects=args.max_objects, max_fields=args.max_fields, max_text=args.max_text,
+                         remap_library=args.remap_library)
         rendered = _render(report)
         # Complete parsing and bounded serialization before creating output.
         with args.output.open('x', encoding='utf-8', newline='\n') as output:

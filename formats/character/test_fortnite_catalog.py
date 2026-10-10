@@ -58,13 +58,15 @@ class ExportCatalogTests(unittest.TestCase):
             catalog.ExportLibrary(self.root).material('/A/Test.0')
 
     def test_no_character_specific_name_dependency(self):
-        self.asset('FortniteGame/Plugins/Juno/FigureCosmetics/Content/Figure/Figure_Example/Mutable/Dataless/COI_Figure_Example_Dataless.json',[])
+        # This checks naming, not mount parsing (covered by test_plugin_path).
+        # Keep the fixture short enough for Windows runners with deep TEMP paths.
+        self.asset('FigureCosmetics/Figure/Figure_Example/Mutable/Dataless/COI_Figure_Example_Dataless.json',[])
         entries = catalog.ExportLibrary(self.root).catalog()
         self.assertEqual(entries[0]['code'],'Example')
         self.assertEqual(entries[0]['label'],'Example')
 
     def test_baked_textures_not_catalog_characters(self):
-        self.asset('FortniteGame/Plugins/Juno/FigureCosmetics/Content/Figure/Figure_Example/Bake/FigureBake_Example_TexColorD.json',[])
+        self.asset('FigureCosmetics/Figure/Figure_Example/Bake/FigureBake_Example_TexColorD.json',[])
         self.assertEqual(catalog.ExportLibrary(self.root).catalog(),[])
 
     def test_unknown_inventory_rejected(self):

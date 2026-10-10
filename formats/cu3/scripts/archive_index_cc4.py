@@ -2,6 +2,7 @@
 from pathlib import Path
 import argparse
 import json
+import struct
 import sys
 import types
 
@@ -24,7 +25,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.output.exists() or args.output.is_symlink():
         parser.error('Choose a new output filename')
-    rows = index(args.archive)
+    try:
+        rows = index(args.archive)
+    except (ValueError, OSError, struct.error) as error:
+        parser.error(str(error) + '; this tool requires the DCSV CC4 v2/-12 layout')
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open('x', encoding='utf-8') as stream:
         json.dump(rows, stream, indent=2)

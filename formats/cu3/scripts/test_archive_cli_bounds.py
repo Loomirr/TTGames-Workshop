@@ -45,6 +45,17 @@ def cc4_fixture():
 
 
 class ArchiveCliBounds(unittest.TestCase):
+    def test_wrong_layout_cli_errors_are_short_and_leave_no_output(self):
+        self.source.write_bytes(b'not an archive index')
+        scripts=Path(__file__).resolve().parent
+        for name in ('archive_index.py','archive_index_cc4.py','archive_index_cc8.py'):
+            with self.subTest(script=name):
+                result=subprocess.run([sys.executable,str(scripts/name),str(self.source),str(self.output)],capture_output=True,text=True)
+                self.assertNotEqual(result.returncode,0)
+                self.assertIn('error:',result.stderr)
+                self.assertNotIn('Traceback',result.stderr)
+                self.assertFalse(self.output.exists())
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -127,6 +138,31 @@ class ArchiveCliBounds(unittest.TestCase):
                                  str(self.source), str(self.output)], capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual((self.output / 'GAME-index.json').read_bytes(), original)
+
+    def test_explicit_parent_version_five_does_not_relax_default_or_unknown_gates(self):
+        archive(self.source)
+        raw=bytearray(self.source.read_bytes());at=struct.unpack_from('<I',raw)[0]
+        struct.pack_into('<i',raw,at,-5);self.source.write_bytes(raw)
+        with self.assertRaisesRegex(ValueError,'version'):index(self.source)
+        entry=index(self.source,version_expected=-5)[0]
+        target=extract(self.source,entry,self.output,version_expected=-5)
+        self.assertEqual(target.read_bytes(),b'abc')
+        with self.assertRaisesRegex(ValueError,'layout'):index(self.source,version_expected=-7)
+        with self.assertRaisesRegex(ValueError,'version'):index_cc8(self.source)
+
+    def test_cli_explicit_parent_version_and_manifest(self):
+        archive(self.source)
+        raw=bytearray(self.source.read_bytes());at=struct.unpack_from('<I',raw)[0]
+        struct.pack_into('<i',raw,at,-5);self.source.write_bytes(raw)
+        args=[sys.executable,str(Path(__file__).with_name('archive_index.py')),str(self.source),str(self.output)]
+        result=subprocess.run(args,capture_output=True,text=True)
+        self.assertNotEqual(result.returncode,0)
+        self.assertFalse(self.output.exists())
+        result=subprocess.run(args+['--index-version','-5'],capture_output=True,text=True)
+        self.assertEqual(result.returncode,0,result.stderr)
+        manifest=json.loads((self.output/'archive-manifest.json').read_text())
+        self.assertEqual(manifest['index_version'],-5)
+        self.assertEqual(manifest['indexed_files'],1)
 
 
 if __name__ == '__main__':

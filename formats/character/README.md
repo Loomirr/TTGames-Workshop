@@ -1,24 +1,28 @@
 # TT Character and Animation Importer
 
-Character 0.5.10 / CU3 0.1.19 restore character-relative texture/model lookup and the observed face, cape, Hobbit and Avengers variant associations. [Recovery checks and limits](../../docs/RECOVERY_2026-10-07.md).
+Character 0.5.15 / CU3 0.1.24 fix scoped definition lookup, older LMSH1 CU3 dispatch and cache diagnostics. [Checks and remaining gaps](../../docs/GITHUB_REVIEW_2026-10-09.md).
+
+The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.10**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.15**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.10.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.15.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
 An optional extraction cache must be outside the game installation.
 
-The current candidate resolves the specific shared-body variant arrays and
-Avengers index extension supplied after the [workstation review](../../docs/MERGE_PACKET_REVIEW_2026-10-06.md).
-This establishes model routing and index structure for those originals;
-complete character import and visual accuracy still need the matching game tests.
+The current build resolves the observed shared-body variant arrays, character-relative
+texture paths and Avengers index extension. Nine complete character samples
+were imported and rendered across the four native profiles; five character-specific
+idle clips and native export checks also passed. These are sample checks, not
+whole-roster fidelity certification. See the [recovery report](../../docs/RECOVERY_2026-10-07.md)
+and [remaining visual reports](../../docs/ISSUE_1_MINIFIGS.md).
 
 Version 0.5.9 fixes four shared import/preview defects: one missing vertex normal
 no longer discards valid authored normals in the same part; facial asset names
@@ -351,3 +355,7 @@ Version 0.4.2 restores verified older LMSH1 static accessories, corrects UMTL
 switching clips. Magneto's helmet, face and cape were checked with three idle
 clips. Facial sampling checks also cover Wolverine, B66 Catwoman, Bilbo and
 Captain America. See [compatibility](COMPATIBILITY.md) for scope and failures.
+
+Version 0.5.15 retains facial and attachment animation bindings through repeated
+preview copies. Clip changes in the viewing scene leave the source character
+unchanged. Native facial shaders and expression fidelity remain approximate.

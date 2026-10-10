@@ -57,6 +57,14 @@ def main():
                     imported.append(module.name)
                 addon.register()
                 registered.append(addon)
+                if name == 'io_scene_lego_cu3':
+                    from types import SimpleNamespace
+                    for version in (16,17,18):
+                        assert addon.assembly_profile(SimpleNamespace(version=version),'AUTO') == 'LMSH1'
+                    assert addon.assembly_profile(SimpleNamespace(version=19),'AUTO') == 'LB3'
+                    try:addon.assembly_profile(SimpleNamespace(version=30),'AUTO')
+                    except ValueError:pass
+                    else:raise AssertionError('Unverified assembly version accepted')
                 core = name + '._core' if name == 'io_scene_tt_character' else name
                 status = importlib.import_module(core + '.geometry_normals').normal_preservation_status()
                 assert status['supported'] == hasattr(bpy.types, 'GeometryNodeSetMeshNormal')

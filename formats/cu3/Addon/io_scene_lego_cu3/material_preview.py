@@ -45,6 +45,20 @@ def attach_vertex_opacity(material, *, native_ignore_vertex_opacity, native_can_
     material['tt_vertex_opacity_layer']=layer
     return True
 
+def attach_albedo_glow(material):
+    """Unit-intensity viewing approximation for a verified additive albedo layer."""
+    tree=material.node_tree
+    if not tree:return False
+    p=next((node for node in tree.nodes if node.type=='BSDF_PRINCIPLED'),None)
+    if not p or p.inputs['Emission Color'].is_linked:return False
+    base=p.inputs['Base Color']
+    if base.is_linked:tree.links.new(base.links[0].from_socket,p.inputs['Emission Color'])
+    else:p.inputs['Emission Color'].default_value=base.default_value
+    p.inputs['Emission Strength'].default_value=1
+    material['tt_native_albedo_glow']='Declared additive vertex color; unit preview intensity, native intensity unverified'
+    return True
+
+
 def attach_normal_map(material, image, packed_x_alpha=False, flip_green=True, uv_map=None):
     tree=material.node_tree;nodes=tree.nodes;links=tree.links
     principled=next((n for n in nodes if n.type=='BSDF_PRINCIPLED'),None)

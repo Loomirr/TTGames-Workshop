@@ -57,16 +57,22 @@ def export(clip, rig, fps):
     return '\n'.join(lines) + '\n'
 
 
-if __name__ == '__main__':
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('decoded', type=Path)
     parser.add_argument('destination', type=Path)
     parser.add_argument('--fps', type=float, default=30)
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     if not 0 < args.fps < 1000:
-        raise ValueError('FPS must be positive')
-    rig = json.loads((args.decoded / 'skeleton.json').read_text())
-    manifest = json.loads((args.decoded / 'decode-manifest.json').read_text())
+        parser.error('FPS must be positive and below 1000')
+    try:
+        rig = json.loads((args.decoded / 'skeleton.json').read_text())
+        manifest = json.loads((args.decoded / 'decode-manifest.json').read_text())
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
+    if args.destination.exists():
+        parser.error('Choose a new BVH output folder')
+    args.destination.mkdir(parents=True)
     records = []
     for item in manifest:
         if item['status'] != 'decoded_scalars':
@@ -79,6 +85,10 @@ if __name__ == '__main__':
         target.write_text(export(clip, rig, args.fps))
         records.append(dict(source=str(source), output=str(target.resolve()), frames=clip['frame_count']))
     (args.destination / 'export-manifest.json').write_text(json.dumps(dict(
-        status='experimental_transform_mapping_not_visually_verified',
+        status='experimental_transform_mapping_not_visually_verified' if records else 'no_decoded_clips',
         fps_assumption=args.fps, units='original game units', clips=records), indent=2))
     print(f'Exported {len(records)} experimental BVH files at assumed {args.fps:g} FPS')
+
+
+if __name__ == '__main__':
+    main()

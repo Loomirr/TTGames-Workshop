@@ -42,7 +42,8 @@ class SCENE_OT_tt_live_preview(bpy.types.Operator):
     bl_idname = 'scene.tt_live_preview'
     bl_label = 'Make live camera preview copy'
     bl_options = {'REGISTER', 'UNDO'}
-    detail_level: IntProperty(name='Mask edge detail', default=3, min=0, max=4)
+    detail_level: IntProperty(name='Mask edge detail', default=4, min=0, max=4,
+        description='Highest edge detail by default; lower values improve playback speed')
 
     @classmethod
     def poll(cls, context):return bool(context.scene.camera) and not context.scene.get('tt_live_preview')

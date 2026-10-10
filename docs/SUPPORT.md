@@ -1,11 +1,17 @@
 # Support and validation
 
-Character 0.5.10 / CU3 0.1.19 restore character-relative texture/model lookup and the observed face, cape, Hobbit and Avengers variant associations. [Recovery checks and limits](RECOVERY_2026-10-07.md).
+Character 0.5.15 / CU3 0.1.24 fix scoped definition lookup, older LMSH1 CU3 dispatch and cache diagnostics. [Checks and remaining gaps](GITHUB_REVIEW_2026-10-09.md).
 
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
-The current experimental candidates are Character 0.5.10 and CU3 0.1.19.
+The current experimental candidates are Character 0.5.15 and CU3 0.1.24.
+The [7 October reference review](RESEARCH_REFERENCES_2026-10-07.md) adds read-only
+LMSH1 material-parameter diagnostics, bounded native face target summaries and
+an explicit standalone parent `-5` inventory option validated on four LEGO
+Movie DATs. It does not enable a new character profile or change native shader
+behavior. The proposed alternate LZ2K distance rule failed original face mesh
+checks in all four enabled TT character games; the existing decoder is retained.
 The latest shared corrections preserve valid authored normals when another
 vertex lacks a usable direction, recognize facial filenames case-insensitively,
 and fix scoped animation/texture companion lookups. The new bounded native
@@ -153,6 +159,24 @@ from the public source. They remain in the private migrated archive.
 Run portable checks manually with `python tools/check_repository.py`.
 Blender-dependent and original-file tests are documented in each component.
 There are no scheduled checks or CI workflows in this first version.
+
+The [skeleton transfer planner](../tools/skeleton_transfer/README.md) provides
+read-only rig/mapping/AN4 inspection and an explicit-axis, rest-relative rotation
+API. Seven portable tests cover rest offsets/scale, axis changes, hierarchy
+differences, count-only mapping refusal and output protection. The original
+Dimensions HGOL 16 donor and a privately decoded recipient reference were also
+planned; compact recipient arrays remain rejected as native input by the public
+reader. Six additional portable audit tests cover byte order, segment starts,
+flags, subframe comparison, explicit edit scope and protected output. Seven
+item declaration tests cover literal paths, comments, nested ownership,
+references, duplicate/orphan blocks and protected output. This audit inspects
+the observed braced text subset; it does not resolve binary action resources.
+Cross-game native transplant export is not enabled. A combined private candidate
+failed the DCSV runtime test; decoder/Blender results did not certify it. A
+subsequent original-motion control ran without a reported crash or broken
+weapon motion, but body attacks and grip still need work. The retained
+evidence and unresolved validation are separate in
+[the transfer notes](SKELETON_TRANSFER.md).
 
 Public Markdown encoding and relative file links are checked with
 `python tools/check_docs.py`, also included in the manual repository check.

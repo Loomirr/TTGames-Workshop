@@ -121,6 +121,12 @@ python scripts/test_face_targets.py
 
 ## Validation and limits
 
+For a small target inventory without editable vertex payloads, the standalone
+decoder also accepts `--summary`. It preserves native IDs and source-space
+displacement statistics, without expression labels or timing. That diagnostic
+schema is deliberately rejected by the writer. See
+[commands and scope](../../../docs/DIAGNOSTIC_TOOLS.md#face-target-summaries).
+
 Local checks covered 11 face assets and 3,817 part-target records, including LOD
 duplicates. All 11 no-op exports were byte-for-byte identical. A strength edit
 in each asset passed a fresh full target extraction using the original log.

@@ -6,7 +6,9 @@ These read-only tools collect evidence for the shared-body skeleton, archive
 and material problems recorded in the [workstation review](MERGE_PACKET_REVIEW_2026-10-06.md)
 and [minifigure issue](ISSUE_1_MINIFIGS.md). They work without Blender and do
 not require a successful character import. Supply your own original files.
-No tool here modifies, extracts or repacks a game archive.
+No diagnostic inspector here modifies, extracts or repacks a game archive.
+The separate parent-index CLI below can optionally extract supported CU3
+companions; that is a separate operation from index inspection.
 
 Run the commands from the repository root with Python 3.10 or newer. Replace
 the example paths with your own. Create a new folder under ignored `local/`
@@ -115,6 +117,26 @@ shader controls and decoded CD objects with completeness information. Input
 snapshots and report detail are bounded; original hashes make comparisons
 repeatable. Unsupported readers remain unsupported.
 
+For characters with `Source Material Resource File` declarations, add
+`--remap-library "path/to/MATERIAL_REMAP_CHARACTER_NXG.GSC"` alongside
+`--definition`. This compares each declared material name against the supplied
+library, retaining every same-named candidate with its texture/UV selectors and
+shader fields. Missing names and duplicate candidates are explicit. The
+comparisons also list differing decoded shader flags, variant pointers and
+texture bindings in candidate order; equal fields do not prove native shader
+equivalence. Differences cover only the reported candidates if detail is capped.
+Library paths are chosen by you; the command does not follow paths from the CD or prove
+that the chosen library belongs to it. No candidate is selected or applied.
+The library snapshot is hashed, and unknown table versions remain rejected.
+
+Each reported material now includes a `parameter_block` span/hash. Only the
+observed UMTL 176/177, 492-byte, 13-sampler block is decoded into sampler values
+and finite constant candidates. Other layouts remain `unverified_layout`;
+invalid values also leave the block uninterpreted. Candidate field names do
+not establish Blender shader units or behavior. No constants are applied to
+materials by this inspector. See the [reference review and original-file
+checks](RESEARCH_REFERENCES_2026-10-07.md).
+
 This is a declaration inventory. It does not create a shader, load textures,
 prove a CD belongs to that model, or determine whether a material was rendered
 correctly. In particular, decoded fields are not evidence of working native
@@ -131,6 +153,49 @@ Man Mark 6 and Hulkbuster, and the face/base-head resources for Vulture and LB3
 Alfred. These are investigation targets from the issue, not newly validated
 characters. Compare exact source hashes, game/platform and layout versions;
 do not copy a shader/UV rule between games based only on a similar screenshot.
+
+## Face target summaries
+
+Use a supported extracted, uncompressed face GHG. The ordinary decoder writes
+an editable offset companion; `--summary` instead produces a small diagnostic:
+
+```text
+python formats/cu3/scripts/decode_face_targets.py "path/to/FACE.GHG" --summary --output "local/my-new-check/face-summary.json"
+```
+
+It preserves native part/target IDs, source record offsets, vertex counts,
+encodings, affected vertex counts and source-space displacement bounds. It does
+not label expressions, sample BSA/AN4 curves or evaluate masks/renderer output.
+Part and target detail caps include omission counts. Repeated targets in LODs
+are counted as separate part-target records, not unique expressions.
+
+The summary uses `tt.face-target-summary.v1` and cannot be used as an editable
+companion by the native writer. Omit `--summary` for the usual
+`tt.relative-position-targets.v1` offset payload. No extraction log is required.
+See [face GHG editing and its constraints](../formats/cu3/docs/FACE_GHG_EDITING.md).
+
+## Explicit parent-index DAT inventory
+
+The existing standalone script defaults to LB3's observed `-6` parent layout.
+For the observed Hobbit/LEGO Movie `-5` parent layout, select that version
+explicitly and choose a new output folder:
+
+```text
+python formats/cu3/scripts/archive_index.py "path/to/GAME.DAT" "local/my-new-check/parent-index" --index-version -5
+```
+
+This writes an entry list and manifest, extracting no payloads by default.
+The manifest records the selected index version. Original checks validated
+all four LEGO Movie DAT indexes (47,783 per-archive entries), not their full
+character/cutscene pipelines. Every file still passes the known name, path/hash
+and extent checks. A `-5` first word is not sufficient: LMSH1 uses a different
+tree/hash layout and remains on its separate reader. `-7`, CC families and
+other unknown layouts remain rejected here.
+
+Optional `--extract-cutscenes` uses the existing bounded storage-mode 0/2
+decoder to write separate CU3/declared companion copies. Extraction success
+does not prove those files are supported by the Blender importer. Installed
+archives are never edited or repacked.
 
 ## Follow-up validation
 
