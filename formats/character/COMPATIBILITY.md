@@ -1,13 +1,13 @@
-# PC character compatibility, 6 October 2026
+# PC character compatibility
 
-Character 0.5.15 / CU3 0.1.24 fix scoped definition lookup, older LMSH1 CU3 dispatch and cache diagnostics. [Checks and remaining gaps](../../docs/GITHUB_REVIEW_2026-10-09.md).
+Character 0.5.16 adds classic PC raw model inspection; CU3 0.1.25 adds a separate CU2 reference importer. These are incomplete inspection modes, not complete classic character or cutscene assembly. [Checks and remaining gaps](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
 
-Current source candidate: **0.5.15**. The supplied LMSH1/LB3 shared-body variant
+Current source candidate: **0.5.16**. The supplied LMSH1/LB3 shared-body variant
 arrays and the additional Avengers index section now validate. Those original
 records, four shared-code corrections and their tests are documented in the
 [accuracy review](../../docs/CHARACTER_ACCURACY_0.5.9.md). Historical counts and
 original-file successes below do not certify the current candidate or a whole
-roster. The enabled game profiles have not expanded.
+roster. LB1 and TCS are now selectable as raw model inspection profiles. They do not have complete character assembly, AN3 playback or native export.
 
 ## Historical 0.5.6 coverage
 

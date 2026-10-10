@@ -9,6 +9,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from package_individual_guis import dependencies, ADDON
+from package_classic import add_classic_backend
 
 
 def main():
@@ -22,6 +23,7 @@ def main():
     target = ROOT / 'builds/blender' / f'TT_Character_Importer_{version}.zip'
     prefix = 'io_scene_tt_character/'
     with ZipFile(target, 'w', ZIP_DEFLATED, compresslevel=9) as archive:
+        add_classic_backend(archive, prefix.rstrip('/'))
         for path in sorted((ROOT / 'formats/character/Addon/io_scene_tt_character').glob('*.py')):
             archive.write(path, prefix + path.name)
         for path in sorted(files):

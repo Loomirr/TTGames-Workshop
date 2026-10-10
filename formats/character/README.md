@@ -1,17 +1,22 @@
 # TT Character and Animation Importer
 
-Character 0.5.15 / CU3 0.1.24 fix scoped definition lookup, older LMSH1 CU3 dispatch and cache diagnostics. [Checks and remaining gaps](../../docs/GITHUB_REVIEW_2026-10-09.md).
+Character 0.5.16 adds classic PC raw model inspection; CU3 0.1.25 adds a separate CU2 reference importer. These are incomplete inspection modes, not complete classic character or cutscene assembly. [Checks and remaining gaps](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
 
 The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.15**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.16**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
 ## Install
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.15.zip).
+**LB1 and TCS are separate inspection profiles.** They expose raw classic PC
+GHG/GSC draws and native rigs, not fully assembled characters. Rigid attachments
+can be hidden as unresolved, variants can overlap, shaders are approximate and
+AN3 playback/native export are unavailable. See [classic instructions](../classic-pc/README.md#blender-inspection).
+
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.16.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -102,6 +107,8 @@ The easiest route is **3D View > N sidebar > TT Character**: select the game,
 set its folder, press **Browse game characters**, and search for a character. Supported companions are read into a separate cache automatically.
 The browser lists minifig, small, bigfig and creature CD resources; individual
 props/attachments use the file importer below. Some listed definitions may still use unsupported layouts.
+The classic LB1/TCS profiles instead browse GHG files beneath `CHARS`; they do
+not use modern CD definitions. Read their separate inspection instructions above.
 
 For an already extracted file:
 

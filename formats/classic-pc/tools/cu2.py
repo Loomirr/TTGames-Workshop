@@ -71,7 +71,10 @@ import os
 import re
 import struct
 import sys
-from reader_bounds import read_file, span, finite
+try:
+    from .reader_bounds import read_file, span, finite
+except ImportError:
+    from reader_bounds import read_file, span, finite
 
 # version: how many of the 452 files of the three games the layout was checked on
 VERSIONS = {516: 1, 517: 30, 519: 181, 520: 240}

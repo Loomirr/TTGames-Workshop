@@ -1,14 +1,14 @@
 {
   "packages": [
     {
-      "path": "blender/TT_Character_Importer_0.5.15.zip",
-      "bytes": 198864,
-      "sha256": "7e578b2f02f223bb3009c6bd08921618454e5e8f7bd4b57c9c4e38df52b0e678"
+      "path": "blender/TT_Character_Importer_0.5.16.zip",
+      "bytes": 229187,
+      "sha256": "3c335a7271ee602cc236fb2dec512266eba6671aa4ada14ba7755690ad0ff60d"
     },
     {
-      "path": "blender/TT_Cutscene_Importer_0.1.24.zip",
-      "bytes": 163776,
-      "sha256": "14b96114f59065d040297aa5d9913beb84bd246a553e7d43d471c6b60ac90a61"
+      "path": "blender/TT_Cutscene_Importer_0.1.25.zip",
+      "bytes": 193566,
+      "sha256": "2ba82339911a7d1d4d6674423ee0f6718c0860a043639314f77e8103fe2c08d6"
     },
     {
       "path": "blender/lsw1_hgp_importer-0.1.3.zip",
@@ -31,9 +31,9 @@
       "sha256": "f0282f3b30d187840d03b9b9af61cadcf5dcf51ab884d4182419c26c2cc88cb6"
     },
     {
-      "path": "python/Classic_PC_Inspectors-0.1.0.zip",
-      "bytes": 18685,
-      "sha256": "8cb4249a40ce4bf1002fcaab4e796ef55b036e868218d820a6b2a79675fa43d2"
+      "path": "python/Classic_PC_Inspectors-0.1.1.zip",
+      "bytes": 30310,
+      "sha256": "cd8c9be86a37c6c60ef91b7f55e8f0588569edfb007750ffae30330254b3100e"
     },
     {
       "path": "python/DCSV_Archive_Index_GUI-0.1.6.zip",
@@ -61,14 +61,19 @@
       "sha256": "47213256a21d006acd7eba5b8f2ca1a2b82c267348788ac77b7b760dd5eebd2e"
     },
     {
+      "path": "python/PC_DAT_Index_GUI-0.1.1.zip",
+      "bytes": 33175,
+      "sha256": "cf79b9d1d692c2a252f525ef547a9ab7b72b8d0d50aad08ef149772815362971"
+    },
+    {
       "path": "python/TFA_Archive_Index_GUI-0.1.5.zip",
       "bytes": 17319,
       "sha256": "0a0c60a19ae7641c233450629076f3a955f6a961d72141d0ef2ac93810ba9775"
     },
     {
-      "path": "python/TTGames_Workshop_GUI-0.1.7.zip",
-      "bytes": 273296,
-      "sha256": "5f5501ca29fcd5d33692a54308ae44b3d99cc59f219bd1fecf023ce83fbe0d02"
+      "path": "python/TTGames_Workshop_GUI-0.1.8.zip",
+      "bytes": 275389,
+      "sha256": "248ba43717ab96008d8757c1778bc9b69dc384977ff9ff3b8444a002ffcc41a1"
     },
     {
       "path": "windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip",

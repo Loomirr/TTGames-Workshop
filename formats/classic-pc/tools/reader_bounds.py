@@ -5,11 +5,11 @@ from pathlib import Path
 MAX_INPUT_BYTES = 64 * 1024 * 1024
 
 
-def read_file(path):
+def read_file(path, max_bytes=MAX_INPUT_BYTES):
     with Path(path).open('rb') as stream:
-        data = stream.read(MAX_INPUT_BYTES + 1)
-    if len(data) > MAX_INPUT_BYTES:
-        raise ValueError('Inspection input exceeds the 64 MiB limit')
+        data = stream.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise ValueError(f'Inspection input exceeds the {max_bytes // (1024*1024)} MiB limit')
     return data
 
 

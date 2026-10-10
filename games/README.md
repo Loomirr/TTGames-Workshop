@@ -2,7 +2,7 @@
 
 Each game folder points to the tools and research that apply to that edition.
 
-- [LEGO Batman (2008), TCS and Indiana Jones 1 PC](../formats/classic-pc/README.md): classic CU2/AN3/GIZ inspection, with local validation limits.
+- [LEGO Batman (2008), TCS and Indiana Jones 1 PC](../formats/classic-pc/README.md): NU20/CU2/AN3/GIZ inspection; raw LB1/TCS Blender models and CU2 static reference scenes, with explicit missing assembly/playback features and local validation limits.
 
 - [LEGO Marvel Super Heroes, PC](lmsh1/README.md)
 - [LEGO Batman 3: Beyond Gotham, PC](lb3/README.md)

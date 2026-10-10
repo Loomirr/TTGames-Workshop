@@ -31,7 +31,9 @@ def children(widget):
     for child in widget.winfo_children():
         yield child
         yield from children(child)
-assert not any(w.winfo_class() == 'TCombobox' and w.winfo_manager() and len(w.cget('values')) > 2 for w in children(root))
+# A game/layout selector is legitimate. Only the toolbox selector should be absent.
+assert not any(w.winfo_class() == 'TCombobox' and w.winfo_manager() and
+               '3DS BTGA to DDS / PNG' in w.cget('values') for w in children(root))
 root.destroy()
 for path in Path('formats').rglob('*.py'):
     if path.parent.name == 'scripts':

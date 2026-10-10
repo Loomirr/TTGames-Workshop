@@ -7,13 +7,13 @@ from package_workshop_gui import markdown_for_package
 from prune_builds import keep_latest
 
 ROOT=Path(__file__).resolve().parents[1]
-VERSION='0.1.0'
+VERSION='0.1.1'
 
 
 def main():
     source=ROOT/'formats/classic-pc'
     files={source/name for name in ('LICENSE','README.md','tools/reader_bounds.py',
-                                   'tools/cu2.py','tools/an3.py','tools/giz.py')}
+                                   'tools/cu2.py','tools/an3.py','tools/giz.py','tools/nu20.py')}
     target=ROOT/'builds/python'/f'Classic_PC_Inspectors-{VERSION}.zip'
     target.parent.mkdir(parents=True,exist_ok=True)
     with ZipFile(target,'w',ZIP_DEFLATED) as archive:

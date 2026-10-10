@@ -14,6 +14,7 @@ PACKAGES = dict(zip(TOOLS, (
     'CU3_Dependency_Checker', 'Face_Target_Decoder', 'Face_Target_Writer',
     'TFA_Archive_Index', 'DCSV_Archive_Index')))
 PACKAGES['CU3 Name Editor'] = 'CU3_Name_Editor'
+PACKAGES['PC DAT index'] = 'PC_DAT_Index'
 
 
 def package_version(name):

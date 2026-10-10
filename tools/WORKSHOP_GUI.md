@@ -1,6 +1,6 @@
 # Standalone tool GUI
 
-Version 0.1.7. A small native Tkinter window with browse buttons, forms and a
+Version 0.1.8. A small native Tkinter window with browse buttons, forms and a
 live log. No browser, server or extra GUI framework.
 
 **Separate downloads are now available for each tool** in
@@ -43,6 +43,7 @@ partial output, which is never silently overwritten on retry.
 - LB3/LMSH1 CU3 dependency report: game folder and separate companion cache.
 - Native face target decode: supported original GHG only; no extraction log is needed in decoder 0.1.2. Older downloads required a plain-text model-extractor log containing mesh part offsets and vertex counts. Target JSON is the output, not that log.
 - Native face target write: verified edited-target JSON into a separate GHG.
+- PC DAT index: explicit LB1, TCS, LB2, SW3, LMSH1, Hobbit, Movie1 and LB3 layouts. Reports paths and file spans without extraction.
 - TFA CC8 and DCSV CC4 archive indexes: path listings, not full extraction.
 - A button opens the existing CU3 instance-name editor in its own window.
 
@@ -59,7 +60,7 @@ python tools/test_individual_guis.py
 ```
 
 The six toolbox checks exercise forms, a BTGA job and output protection. The
-nine standalone-package checks extract the current per-tool version and open
+ten standalone-package checks extract the current per-tool version and open
 its launcher with windows hidden, then import its own backends. They do not
 prove format fidelity or execute every backend on real game data. The toolbox
 0.1.1 package keeps bundled documentation links offline when possible and

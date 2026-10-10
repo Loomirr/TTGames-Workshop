@@ -32,6 +32,8 @@ def main():
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'tools/test_prune_builds.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_readers.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_models.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_archive_classic.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/an4/lmsh1/test_cli.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'tools/skeleton_transfer/test_transfer.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'tools/skeleton_transfer/test_animation_audit.py')],check=True,cwd=ROOT)

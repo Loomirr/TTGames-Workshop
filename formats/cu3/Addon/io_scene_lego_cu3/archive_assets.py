@@ -156,10 +156,10 @@ class ArchiveAssetIndex:
         self._packed_total = self._decoded_total = 0
         self._archive_stats = {}
         self.game_root = Path(root).resolve()
-        if profile not in ('LB3', 'LMSH1', 'AVENGERS', 'TFA', 'DCSV', 'LMSH2', 'HOBBIT', 'LOTR'):
+        if profile not in ('LB3', 'LMSH1', 'AVENGERS', 'TFA', 'DCSV', 'LMSH2', 'HOBBIT', 'LOTR', 'LB1', 'TCS', 'LB2', 'SW3', 'MOVIE1'):
             raise FormatError('Unsupported installed archive profile')
         archives = sorted(p for p in self.game_root.iterdir() if p.is_file() and p.suffix.casefold()=='.dat'
-                          and p.stem.upper().startswith(('GAME','DLC')))
+                          and p.stem.upper().startswith(('GAME','DLC','HERO','VILLAIN','EPISODE') if profile in ('LB1','TCS') else ('GAME','DLC')))
         if not archives:
             raise FormatError('No supported game archives in the selected folder')
         if cache_root is None:
@@ -178,7 +178,10 @@ class ArchiveAssetIndex:
         self.cache_base = cache_root
         self._validate_cache_root()
         self.files, self.events = {}, []
-        if profile == 'LMSH1':
+        if profile in ('LB1', 'TCS', 'LB2', 'SW3'):
+            from .archive_v5 import index_v5
+            reader = lambda path: index_v5(path, layout={'LB1': -2, 'TCS': -3, 'LB2': -4, 'SW3': -4}[profile])
+        elif profile == 'LMSH1':
             from .archive_v5 import index_v5
             reader = index_v5
         elif profile == 'LOTR':
@@ -186,14 +189,14 @@ class ArchiveAssetIndex:
             reader = lambda path: index_v5(path, name_tags=True)
         elif profile == 'LB3':
             reader = index_v6
-        elif profile == 'HOBBIT':
+        elif profile in ('HOBBIT', 'MOVIE1'):
             reader = lambda path: index_v6(path, version_expected=-5)
         else:
             from .archive_cc import index
             reader = index
         for archive in archives:
             for entry in reader(archive):
-                if PurePosixPath(entry['path']).suffix.casefold() in ('.ghg','.gsc','.cd','.tex','.nxg_textures','.cu3','.an4','.as','.pak','.txt','.led'):
+                if PurePosixPath(entry['path']).suffix.casefold() in ('.ghg','.gsc','.cd','.tex','.nxg_textures','.cu3','.an4','.as','.pak','.txt','.led','.cu2','.an3','.giz'):
                     self.files.setdefault(PurePosixPath(entry['path']).name.casefold(), []).append((archive, entry))
         self.profile, self.archive_count = profile, len(archives)
 

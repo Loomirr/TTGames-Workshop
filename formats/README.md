@@ -4,7 +4,7 @@ Folders are organized by container/format first, then by the game or platform
 whose layout was actually investigated.
 
 - [CU3](cu3/README.md): PC cutscenes, names, animation and facial research.
-- [Classic PC](classic-pc/README.md): separate CU2/AN3/GIZ inspectors for Batman 1, TCS and reported Indiana Jones 1 layouts; not a Blender importer yet.
+- [Classic PC](classic-pc/README.md): separate NU20/CU2/AN3/GIZ inspectors, LB1/TCS raw model inspection and CU2 static reference scenes. Complete classic character assembly and animation playback remain unavailable; Indiana Jones layouts are contributor-reported.
 - [Character importer](character/README.md): independent Blender CD/GHG/model GSC and AN4 workflow, using shared native readers.
 - [LEGO Fortnite](fortnite/README.md): separate Unreal export bridge and static LEGO recipe/GLB/PNG material import.
 - [HGP / original LSW1](hgp/lsw1/README.md): character models and embedded textures.

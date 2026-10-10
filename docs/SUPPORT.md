@@ -1,11 +1,15 @@
 # Support and validation
 
-Character 0.5.15 / CU3 0.1.24 fix scoped definition lookup, older LMSH1 CU3 dispatch and cache diagnostics. [Checks and remaining gaps](GITHUB_REVIEW_2026-10-09.md).
+Character 0.5.16 / CU3 0.1.25 add LB1/TCS raw model inspection and a separate
+classic CU2 reference importer. Missing rigid attachments, overlapping variants,
+approximate shaders and unavailable AN3 playback remain explicit limitations.
+The PC DAT index tool covers eight selected game/layout profiles.
+[Checks and remaining gaps](COMPATIBILITY_EXPANSION_2026-10-09.md).
 
 The repository import is a reorganization of existing work, not a claim that
 all formats or games are now supported.
 
-The current experimental candidates are Character 0.5.15 and CU3 0.1.24.
+The current experimental candidates are Character 0.5.16 and CU3 0.1.25.
 The [7 October reference review](RESEARCH_REFERENCES_2026-10-07.md) adds read-only
 LMSH1 material-parameter diagnostics, bounded native face target summaries and
 an explicit standalone parent `-5` inventory option validated on four LEGO

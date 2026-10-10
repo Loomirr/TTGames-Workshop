@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 5, 15), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 5, 16), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -20,6 +20,8 @@ from .preview_identity import linked_child
 GAMES = [('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
          ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models'),
          ('AVENGERS', "LEGO Marvel's Avengers", 'Observed PC DX11 characters'),
+         ('LB1', 'LEGO Batman 1 (raw model inspection)', 'Classic PC geometry/rig inspection; incomplete costume and rigid-part assembly; no AN3 playback'),
+         ('TCS', 'LEGO Star Wars TCS (raw model inspection)', 'Classic PC geometry/rig inspection; incomplete costume and rigid-part assembly; no AN3 playback'),
          ('FORTNITE', 'LEGO Fortnite', 'Static models from exported LEGO recipes/baked meshes; no animations')]
 _catalog = []
 _catalog_assets = None
@@ -32,13 +34,15 @@ class TTCHAR_Preferences(bpy.types.AddonPreferences):
     lmsh1: StringProperty(name='LMSH1 game / extracted folder', subtype='DIR_PATH')
     avengers: StringProperty(name='Avengers game / extracted folder', subtype='DIR_PATH')
     hobbit: StringProperty(name='The Hobbit game / extracted folder', subtype='DIR_PATH')
+    lb1: StringProperty(name='Batman 1 game / extracted folder', subtype='DIR_PATH')
+    tcs: StringProperty(name='TCS game / extracted folder', subtype='DIR_PATH')
     fortnite: StringProperty(name='LEGO Fortnite game / Paks / exported folder', subtype='DIR_PATH', description='Fortnite installation, Content/Paks folder, or an existing Exports/Models library; archive exports use a separate cache')
     fortnite_extractor: StringProperty(name='Optional LEGO Fortnite extractor', subtype='FILE_PATH', description='Separately built Workshop.Fortnite.Extractor executable; no external tools are bundled')
     fortnite_settings: StringProperty(name='Private Fortnite extractor settings', subtype='FILE_PATH', description='Private JSON with mappings, key-file and Oodle paths; Paks mode sets source and cache output automatically')
     cache: StringProperty(name='Optional asset cache', subtype='DIR_PATH')
 
     def draw(self, context):
-        for prop in ('lb3', 'lmsh1', 'hobbit', 'avengers', 'fortnite', 'fortnite_extractor', 'fortnite_settings', 'cache'):
+        for prop in ('lb3', 'lmsh1', 'hobbit', 'avengers', 'lb1', 'tcs', 'fortnite', 'fortnite_extractor', 'fortnite_settings', 'cache'):
             self.layout.prop(self, prop)
 
 
@@ -59,15 +63,27 @@ def fortnite_source(prefs):
 def character_catalog(assets):
     paths = set()
     for name, entries in assets.files.items():
-        if not name.endswith('.cd'):
+        classic = getattr(assets, 'profile', None) in ('LB1', 'TCS')
+        if not name.endswith('.ghg' if classic else '.cd'):
             continue
         for entry in entries:
             path = entry[1]['path'] if isinstance(entry, tuple) else entry.relative_to(assets.root).as_posix()
             upper = path.upper()
+            if classic:
+                if upper.startswith('CHARS/') and '_LR_PC.' not in upper:
+                    paths.add(path)
+                continue
             categories = ('/MINIFIG', '/SMALL/', '/BIGFIG', '/BIGGERFIG', '/CREATURE')
             if (any(c in '/' + upper for c in categories) and '/SUPER_CHAR' not in upper) or '/' not in path:
                 paths.add(path)
     return [(p, Path(p).stem, p) for p in sorted(paths)]
+
+
+def import_classic_model(context, path):
+    from ._classic.blender_inspect import inspect_model
+    from ._core.dds import read_dds
+    from ._core.geometry_normals import apply_authored_normals
+    return inspect_model(context, path, read_dds, apply_authored_normals)
 
 
 class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
@@ -106,6 +122,8 @@ class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
                 cache_root=bpy.path.abspath(prefs.cache) if prefs.cache else None)
             _catalog = character_catalog(_catalog_assets)
             if not _catalog:
+                if game in ('LB1', 'TCS'):
+                    raise FormatError('No classic GHG files found under CHARS. Select the game/extracted root containing CHARS, or inspect a GHG/GSC directly.')
                 raise FormatError('No character CD files found. Select a game folder or extracted folder containing character CDs; a model/texture-only folder is not enough. You can also import a CD directly.')
         except (ValueError, OSError) as error:
             self.report({'ERROR'}, str(error))
@@ -137,7 +155,13 @@ class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
                 rig, report = import_fortnite(context, _catalog_assets.root, self.resource)
                 self.report({'INFO'}, f'Imported {rig.name}; static source printing and normals. See TT LEGO Fortnite report for shader limits.')
                 return {'FINISHED'}
+            if getattr(_catalog_assets, 'profile', None) != game:
+                raise ValueError('The game changed; open the character browser again')
             path = _catalog_assets.find_exact(self.resource)
+            if game in ('LB1', 'TCS'):
+                collection, report = import_classic_model(context, path)
+                self.report({'WARNING'}, f'Classic inspection: {report["meshes"]} meshes, {report["unbound_rigid_meshes"]} unbound rigid pieces hidden. See Classic model report.')
+                return {'FINISHED'}
             rig, report = import_character(context, path, Path(bpy.path.abspath(getattr(prefs, game.lower()))), game,
                 cache=Path(bpy.path.abspath(prefs.cache)) if prefs.cache else None, assets=_catalog_assets,
                 attachments=context.scene.tt_import_attachments, layer_mode=context.scene.tt_costume_layers,
@@ -183,6 +207,15 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
             return {'CANCELLED'}
         root = self.assets or (getattr(prefs, self.game.lower()) if prefs else '') or str(Path(self.filepath).parent)
         try:
+            if self.game in ('LB1', 'TCS'):
+                if Path(self.filepath).suffix.lower() not in ('.ghg', '.gsc'):
+                    raise ValueError('Classic inspection requires a PC GHG/GSC; modern CD definitions are not supported')
+                collection, report = import_classic_model(context, Path(self.filepath))
+                if prefs and self.assets:
+                    setattr(prefs, self.game.lower(), self.assets)
+                context.scene.tt_character_game = self.game
+                self.report({'WARNING'}, f'Classic raw inspection: {report["meshes"]} meshes; see Classic model report for omitted parts and shader limits.')
+                return {'FINISHED'}
             rig, report = import_character(context, Path(self.filepath), Path(bpy.path.abspath(root)), self.game,
                 definition_path=Path(bpy.path.abspath(self.definition)) if self.definition else None,
                 cache=Path(bpy.path.abspath(prefs.cache)) if prefs and prefs.cache else None,
@@ -494,6 +527,12 @@ class TTCHAR_PT_tools(bpy.types.Panel):
         if prefs:
             layout.prop(prefs, context.scene.tt_character_game.lower(), text='Game folder')
         layout.operator('import_scene.tt_game_character', text='Browse game characters', icon='VIEWZOOM')
+        if context.scene.tt_character_game in ('LB1','TCS'):
+            layout.operator('import_scene.tt_character',text='Inspect classic GHG / GSC')
+            layout.label(text='Raw geometry and native rig inspection.')
+            layout.label(text='Rigid attachment/costume assembly incomplete.')
+            layout.label(text='AN3 playback and native export not enabled.')
+            return
         if context.scene.tt_character_game == 'FORTNITE':
             from .fortnite_importer import find_fortnite
             character = find_fortnite(context.object)

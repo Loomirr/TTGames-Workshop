@@ -1,6 +1,6 @@
 # TT Cutscene Importer
 
-Character 0.5.15 / CU3 0.1.24 fix scoped definition lookup, older LMSH1 CU3 dispatch and cache diagnostics. [Checks and remaining gaps](../../docs/GITHUB_REVIEW_2026-10-09.md).
+Character 0.5.16 adds classic PC raw model inspection; CU3 0.1.25 adds a separate CU2 reference importer. These are incomplete inspection modes, not complete classic character or cutscene assembly. [Checks and remaining gaps](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
 
 The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
 
@@ -12,7 +12,14 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.24** (experimental).
+Current source and packaged build: **0.1.25** (experimental).
+
+Version 0.1.25 adds a separate **File > Import > LEGO CU2 references (classic
+PC; inspection only)** entry. It creates static actor/object and camera-reference
+empties plus shot markers, not a playable cutscene. Use the matching Character
+0.5.16 profile for raw classic GHG/GSC inspection. See [classic instructions](../classic-pc/README.md)
+and [checks and limitations](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
+
 Version 0.1.18 shares the authored-normal, facial-name and scoped companion
 lookup corrections with Character 0.5.9. It also resolves the supplied native
 HGOL 10/16 body variant arrays and the observed Avengers CC8 v1 index extension.
@@ -91,7 +98,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.24 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.24.zip)
+Download the [0.1.24 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.25.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

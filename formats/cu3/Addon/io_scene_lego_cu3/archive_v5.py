@@ -1,8 +1,9 @@
-"""Read-only index for the observed LMSH1 PC DAT version -5.
+"""Read-only index for observed PC DAT layouts -2, -3, -4 and -5.
 
 Name records form a tree through last-child and previous-sibling indices.
 They do not contain the explicit parent field used by the later -6 layout.
-Each leaf's negative ordinal is cross-checked against its stored path hash.
+Leaf ordinals are cross-checked against stored path hashes; TCS -3 instead
+requires a unique full-path hash match because its leaf order differs.
 This module only inventories bounded archive ranges; it never extracts files.
 """
 from pathlib import Path
@@ -27,8 +28,8 @@ def _safe_segment(name):
     safe_path(name)
 
 
-def _parse_index(data, payload_limit, *, name_tags=False):
-    """Decode a complete -5 index; payload_limit is its archive file offset."""
+def _parse_index(data, payload_limit, *, name_tags=False, layout=-5):
+    """Decode one explicitly selected layout; payload_limit is the index offset."""
     if not isinstance(payload_limit, int) or payload_limit < 8:
         raise ValueError('Invalid DAT payload extent')
     if len(data) > MAX_INDEX_BYTES:
@@ -39,8 +40,9 @@ def _parse_index(data, payload_limit, *, name_tags=False):
             raise ValueError('Truncated DAT index')
         return struct.unpack_from('<' + fmt, data, at)
     version, count = get('iI', 0)
-    if version != -5:
-        raise ValueError(f'Unsupported DAT index version {version}; expected -5')
+    if layout not in (-2, -3, -4, -5) or version != layout:
+        raise ValueError(f'Unsupported DAT index version {version}; expected {layout}')
+    record_size = 12 if layout == -5 else 8
     if not 0 < count < MAX_NAMES:
         raise ValueError('Unsupported DAT file count')
     names_count_at = 8 + count * 16
@@ -48,7 +50,7 @@ def _parse_index(data, payload_limit, *, name_tags=False):
     if not count < names_count <= MAX_NAMES:
         raise ValueError('Unsupported DAT name count')
     names_at = names_count_at + 4
-    string_length_at = names_at + names_count * 12
+    string_length_at = names_at + names_count * record_size
     string_length, = get('I', string_length_at)
     strings_at = string_length_at + 4
     hashes_at = strings_at + string_length
@@ -58,7 +60,9 @@ def _parse_index(data, payload_limit, *, name_tags=False):
     strings = data[strings_at:hashes_at]
     nodes = []
     for index in range(names_count):
-        child, previous, name_offset, padding = get('hhiI', names_at + index * 12)
+        row = get('hhiI' if record_size == 12 else 'hhi', names_at + index * record_size)
+        child, previous, name_offset = row[:3]
+        padding = row[3] if record_size == 12 else 0
         if (padding and not name_tags) or not 0 <= previous < names_count or child >= names_count:
             raise ValueError('Invalid DAT name-tree reference')
         if not 0 <= name_offset < string_length or (name_offset and strings[name_offset-1] != 0):
@@ -78,6 +82,7 @@ def _parse_index(data, payload_limit, *, name_tags=False):
     hashes = [get('I', hashes_at + i*4)[0] for i in range(count)]
     if len(set(hashes)) != count:
         raise ValueError('Ambiguous duplicate DAT path hashes')
+    hash_ordinals = {value: i for i, value in enumerate(hashes)}
     queue, seen, queued, paths = [(0, '', 0)], set(), {0}, [None] * count
     while queue:
         index, parent, depth = queue.pop()
@@ -100,7 +105,7 @@ def _parse_index(data, payload_limit, *, name_tags=False):
                 queue.append((child, path+'\\' if path else '', depth+1))
                 child = nodes[child][1]
         else:
-            ordinal = -child
+            ordinal = hash_ordinals.get(_path_hash(path), count) if layout == -3 else -child
             if ordinal >= count or paths[ordinal] is not None:
                 raise ValueError('Invalid or duplicate DAT file ordinal')
             if _path_hash(path) != hashes[ordinal]:
@@ -112,8 +117,10 @@ def _parse_index(data, payload_limit, *, name_tags=False):
     result = []
     for index, path in enumerate(paths):
         high_offset, packed, size, flags = get('4I', 8 + index * 16)
-        offset = (high_offset << 8) + (flags >> 24)
-        flags &= 0xffffff
+        offset = ((high_offset << 8) + (flags >> 24) if layout == -5 else
+                  (high_offset << 8) if layout == -4 else
+                  (high_offset << 8) + ((flags >> 8) & 255))
+        flags &= 0xffffff if layout == -5 else 0xff
         if name_tags:
             # LOTR retains opaque tag bits above the storage-mode byte.
             # Paths still have to match the separate complete file hash table.
@@ -128,8 +135,8 @@ def _parse_index(data, payload_limit, *, name_tags=False):
     return result
 
 
-def index_v5(path, *, name_tags=False):
-    """Return validated -5 file entries from an installed archive, read-only."""
+def index_v5(path, *, name_tags=False, layout=-5):
+    """Return checked entries for an explicit layout (default -5), read-only."""
     path = Path(path)
     with path.open('rb') as source:
         source.seek(0, 2)
@@ -147,4 +154,4 @@ def index_v5(path, *, name_tags=False):
         data = source.read(size)
         if len(data) != size:
             raise ValueError('DAT index could not be read completely')
-    return _parse_index(data, offset, name_tags=name_tags)
+    return _parse_index(data, offset, name_tags=name_tags, layout=layout)

@@ -28,7 +28,7 @@ class AssetIndex:
             raise FormatError('Choose a folder containing extracted game assets')
         self.files = {}
         for path in self.root.rglob('*'):
-            if path.is_file() and path.suffix.lower() in ('.ghg', '.gsc', '.cd', '.tex', '.nxg_textures', '.cu3', '.an4', '.as', '.pak', '.txt', '.led'):
+            if path.is_file() and path.suffix.lower() in ('.ghg', '.gsc', '.cd', '.tex', '.nxg_textures', '.cu3', '.an4', '.as', '.pak', '.txt', '.led', '.cu2', '.an3', '.giz'):
                 # Do not follow a link outside the selected asset tree.
                 if path.resolve().is_relative_to(self.root):
                     self.files.setdefault(path.name.casefold(), []).append(path)

@@ -13,9 +13,9 @@ game does not mean support for every TT game that uses the same extension.
 
 ## Start here
 
-**Current candidates:** Character **0.5.15**, CU3 **0.1.24**. This pass fixes
-scoped character-definition lookup, older LMSH1 CU3 dispatch, empty BVH exports
-and cache/CLI diagnostics. See [checks and remaining gaps](docs/GITHUB_REVIEW_2026-10-09.md).
+**Current candidates:** Character **0.5.16**, CU3 **0.1.25**. This pass adds
+classic PC model inspection, CU2 reference scenes and explicit older DAT layouts.
+See [validation and remaining gaps](docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
 
 ## Game and file support
 
@@ -27,8 +27,8 @@ building the complete model/scene. No row means every asset in that game is veri
 | Game / platform | File types | Support and how to use it |
 | --- | --- | --- |
 | LEGO Star Wars: The Video Game (2005), PC | HGP | [HGP addon](formats/hgp/lsw1/README.md): models, native rigs and textures; some headers remain unsupported. Does not cover LSW2/TCS. |
-| LEGO Star Wars: The Complete Saga, PC | CU2, AN3, GIZ; NU20 GHG/GSC | [Classic CLI inspectors](formats/classic-pc/README.md) for cutscene references/cameras, animation scalars and gizmos. GHG/GSC Blender import is not enabled yet. Tested on an installed tree with local mods. |
-| LEGO Batman (2008), PC | CU2, AN3, GIZ; NU20 GHG/GSC | [Classic CLI inspectors](formats/classic-pc/README.md); CU2/AN3/GIZ checked against original DAT inputs. No complete model/scene importer yet. |
+| LEGO Star Wars: The Complete Saga, PC | DAT -3; NU20 GHG/GSC; CU2, AN3, GIZ | [Classic inspection](formats/classic-pc/README.md): raw models/rigs/textures in the character addon; CU2 static references in the cutscene addon; AN3/GIZ CLI inspection. Rigid attachments, costume selection, native shaders and animation playback remain incomplete. Installed tree has local mods. |
+| LEGO Batman (2008), PC | DAT -2; NU20 GHG/GSC; CU2, AN3, GIZ | Same [classic inspection](formats/classic-pc/README.md), with installed-DAT or extracted character browsing. Raw Blender models and CU2 reference scenes have explicit omissions; no complete character/cutscene or AN3 playback claim. |
 | LEGO Indiana Jones 1, PC | CU2, AN3, GIZ; NU20 GHG/GSC | Same [classic inspection tools](formats/classic-pc/README.md) for reported matching layouts. **No local game validation yet.** Separate from the Xbox prototype. |
 | LEGO Indiana Jones 1, Xbox 360 prototype | GHG, GSC, TEX, FNT, DDS | [DDS extractor](formats/nu20/lij1-xbox360/README.md): supported tiled texture allocations, mips and cubemaps. Does not import character meshes. |
 | LEGO Marvel Super Heroes, PC | CD, GHG/model GSC, AN4, CU3, DAT | [Character addon](formats/character/README.md): partial models/materials and supported animations; installed or extracted inputs. [CU3 addon](formats/cu3/README.md): partial scene assembly for v16/17/18, with separate camera/track gates. [AN4 CLI](formats/an4/lmsh1/README.md): scalar/BVH research. |
@@ -38,13 +38,15 @@ building the complete model/scene. No row means every asset in that game is veri
 | LEGO Star Wars: The Force Awakens, PC | DAT/HDR (CC8), CU3, GHG/AN4 references | [Archive diagnostics](docs/DIAGNOSTIC_TOOLS.md) and [CU3 reference inspection](formats/cu3/README.md). ANI-E playback, full characters and full scenes are not enabled. |
 | LEGO DC Super-Villains, PC | DAT/HDR (CC4), CU3, GHG/AN4 references | [Archive diagnostics](docs/DIAGNOSTIC_TOOLS.md), CU3 inspection and limited [skeleton-transfer research](docs/SKELETON_TRANSFER.md). Not a complete character/scene importer or general native exporter. |
 | LEGO Marvel Super Heroes 2 / LEGO The Lord of the Rings, PC | DAT, GHG/AN4 references | [Version-gated archive/character inspection](formats/character/COMPATIBILITY.md). No complete character importer; unsupported compression/animation layouts remain refused. |
-| The LEGO Movie Videogame, PC | DAT (observed parent -5 index) | [Archive inventory research](docs/RESEARCH_REFERENCES_2026-10-07.md). No full character or cutscene import claim. |
+| The LEGO Movie Videogame, PC | DAT parent -5; character/cutscene payloads unverified | [PC DAT index GUI/CLI](docs/COMPATIBILITY_EXPANSION_2026-10-09.md): checked paths and file spans. No character or cutscene assembly yet. |
+| LEGO Batman 2 / LEGO Star Wars III, PC | DAT -4; character/cutscene payloads unverified | [PC DAT index GUI/CLI](docs/COMPATIBILITY_EXPANSION_2026-10-09.md): checked paths and file spans for installed archives. Does not enable Blender character/animation import. |
+| LEGO Jurassic World, PC | DAT parent -7 observed | Diagnostic research only; unresolved hashes and trailing index tables remain refused. |
+| LEGO Star Wars: The Skywalker Saga, PC | Later DAT layouts observed | Diagnostic research only; archive and character layouts remain unverified. |
 | The LEGO Ninjago Movie Videogame / LEGO Dimensions | Selected GHG / AN4 resources | [Skeleton-transfer diagnostics](tools/skeleton_transfer/README.md) and a private native weapon proof. No general game importer/exporter yet. |
 | LMSH: Universe in Peril, Nintendo 3DS | BTGA, FUSE | [Texture / payload tools](formats/btga/3ds/README.md): PNG/DDS conversion and observed USA FUSE decoding; no full character/animation importer. |
 | LEGO Fortnite | Exported JSON, GLB, PNG; optional Paks bridge | [Static character profile](formats/fortnite/README.md) in the character addon. External Unreal runtime required for Paks extraction; no animation support and incomplete native shaders. |
 
-Other installed games (including Batman 2, Star Wars III, Jurassic World,
-The Skywalker Saga and handheld editions) do not gain importer support merely
+Other installed games and handheld editions do not gain importer support merely
 because their files share these extensions. Unlisted layouts remain unverified.
 
 **Editing/export:** enabled TT character profiles can write constrained edits

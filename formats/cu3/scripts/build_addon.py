@@ -2,6 +2,9 @@
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 import ast
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]/'tools'))
+from package_classic import add_classic_backend
 
 
 def main():
@@ -14,6 +17,7 @@ def main():
     destination = root / 'dist' / f'TT_Cutscene_Importer_{version}.zip'
     destination.parent.mkdir(exist_ok=True)
     with ZipFile(destination, 'w', ZIP_DEFLATED) as archive:
+        add_classic_backend(archive, 'io_scene_lego_cu3')
         for source in sorted(addon.glob('*.py')):
             archive.write(source, f'io_scene_lego_cu3/{source.name}')
     print(destination)

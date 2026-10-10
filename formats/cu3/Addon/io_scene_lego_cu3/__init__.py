@@ -1,7 +1,7 @@
 bl_info = {
     'name': 'LEGO CU3 Cutscene Importer (Experimental)',
     'author': 'Loomirr',
-    'version': (0, 1, 24),
+    'version': (0, 1, 25),
     'blender': (4, 4, 0),
     'location': 'File > Import > LEGO CU3 cutscene',
     'description': 'Assemble supported cutscene actors, attachments, materials and cameras from native companion assets',
@@ -174,14 +174,36 @@ class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
             return {'CANCELLED'}
 
 
+class IMPORT_SCENE_OT_lego_cu2(bpy.types.Operator, ImportHelper):
+    bl_idname='import_scene.lego_cu2_references'
+    bl_label='LEGO CU2 references (classic PC; inspection only)'
+    bl_options={'REGISTER','UNDO'}
+    filter_glob: StringProperty(default='*.cu2;*.CU2',options={'HIDDEN'})
+
+    def draw(self,context):
+        self.layout.label(text='Source placements, names and shot markers.')
+        self.layout.label(text='No animated cameras, actors or stage assembly yet.')
+
+    def execute(self,context):
+        from ._classic.blender_inspect import inspect_cutscene
+        try:
+            scene,report=inspect_cutscene(context,self.filepath)
+        except (ValueError,OSError,RuntimeError) as error:
+            self.report({'ERROR'},str(error));return {'CANCELLED'}
+        self.report({'WARNING'},'CU2 reference scene created; full playback and companion assembly are not implemented. See CU2 report.')
+        return {'FINISHED'}
+
+
 def menu_import(self, context):
     self.layout.operator(IMPORT_SCENE_OT_lego_cu3.bl_idname, text='LEGO CU3 cutscene (.cu3) [experimental]')
+    self.layout.operator(IMPORT_SCENE_OT_lego_cu2.bl_idname)
 
 
 def register():
     from . import face_edit_ui, face_preview_ui, playback_ui
     bpy.utils.register_class(TT_CU3_Preferences)
     bpy.utils.register_class(IMPORT_SCENE_OT_lego_cu3)
+    bpy.utils.register_class(IMPORT_SCENE_OT_lego_cu2)
     bpy.types.TOPBAR_MT_file_import.append(menu_import)
     face_edit_ui.register()
     face_preview_ui.register()
@@ -195,4 +217,5 @@ def unregister():
     face_edit_ui.unregister()
     bpy.types.TOPBAR_MT_file_import.remove(menu_import)
     bpy.utils.unregister_class(IMPORT_SCENE_OT_lego_cu3)
+    bpy.utils.unregister_class(IMPORT_SCENE_OT_lego_cu2)
     bpy.utils.unregister_class(TT_CU3_Preferences)
