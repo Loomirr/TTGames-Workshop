@@ -44,6 +44,29 @@ class DependencyTests(unittest.TestCase):
 
     def resolver(self):return ResourceResolver(AssetIndex(self.root),'LB3')
 
+    def test_marvel_missing_rig_family_uses_owned_companion(self):
+        self.file('chars/armour/Shell.CD')
+        self.file('chars/armour/Shell_NXG.GHG')
+        self.file('unrelated/Shell_NXG.GHG',b'wrong')
+        self.definitions['shell']=definition('GenericRig')
+        resolver=ResourceResolver(AssetIndex(self.root),'LMSH1')
+        self.assertEqual(resolver.resolve('Shell')['model'].relative_to(self.root).as_posix(),
+                         'chars/armour/Shell_NXG.GHG')
+        self.definitions['shell']['character']['Override Model File']='MissingOverride'
+        with self.assertRaises(MissingResource):
+            ResourceResolver(AssetIndex(self.root),'LMSH1').resolve('Shell')
+
+    def test_marvel_companion_does_not_replace_shared_model(self):
+        self.file('Shell.CD');self.file('Shell_NXG.GHG');self.file('GenericRig_NXG.GHG')
+        self.definitions['shell']=definition('GenericRig')
+        self.assertEqual(ResourceResolver(AssetIndex(self.root),'LMSH1').resolve('Shell')['model'].name,
+                         'GenericRig_NXG.GHG')
+
+    def test_marvel_companion_ambiguity_rejected(self):
+        self.file('Shell.CD');self.file('Shell_NXG.GHG');self.file('Shell_NXG.GSC')
+        self.definitions['shell']=definition('GenericRig')
+        with self.assertRaises(FormatError):ResourceResolver(AssetIndex(self.root),'LMSH1').resolve('Shell')
+
     def test_character_namespace_model_paths(self):
         self.file('chars/Super_Character/Face/FACE_HERO_DX11.GHG')
         self.file('unrelated/FACE_HERO_DX11.GHG',b'wrong')

@@ -78,6 +78,21 @@ def surface_normal_binding(entry, mesh_version):
 
 def shader_prefix(data, start, version, *, limit=None):
     r = _MaterialReader(data, start, limit)
+    if version == 168:
+        # LMSH1 armour: bounded older prefix, 18 IDs at +399. The word
+        # at +395 precedes the IDs; treating it as an ID shifts every texture.
+        r.span(start,399)
+        fields=dict(version=r.get('I',start),shaderType=r.get('I',start+4),
+                    lightingModel=r.get('I',start+8),
+                    uvSets=[r.get('2I',start+120+i*8) for i in range(16)],
+                    shaderVersion=r.get('I',start+320),GPUVendor=r.get('I',start+324),
+                    colourSpace=r.get('I',start+328),
+                    opaqueShaderFlags=list(data[start+248:start+320]),
+                    vertAlbedo=r.get('B',start+279),canAlphaBlend=None,ignoreVertexOpacity=None)
+        if fields['version']!=2 or fields['shaderVersion']!=4 or fields['vertAlbedo'] not in (0,1) or any(
+                a not in (0,1) or b not in (*range(16),0xffffffff) for a,b in fields['uvSets']):
+            raise FormatError('Unverified UMTL 168 shader prefix')
+        return fields,start+399
     if version == 163:
         # Older static NXG accessories have a separate bounded prefix. Boolean
         # meanings remain opaque; do not reuse the later flag offsets.
@@ -226,7 +241,7 @@ def read_materials_bytes(data):
     if marker < 0:
         raise FormatError('Native material table missing')
     version, count = r.get('2I', marker+4)
-    if version not in (163, 174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 229, 232, 234, 235) or count > 65536:
+    if version not in (163, 168, 174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 229, 232, 234, 235) or count > 65536:
         raise FormatError(f'Unverified native material table version/count: {version}/{count}')
     start = marker+12
     if version < 190:

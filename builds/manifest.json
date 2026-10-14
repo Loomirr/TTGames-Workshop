@@ -1,14 +1,14 @@
 {
   "packages": [
     {
-      "path": "blender/TT_Character_Importer_0.5.16.zip",
-      "bytes": 229187,
-      "sha256": "3c335a7271ee602cc236fb2dec512266eba6671aa4ada14ba7755690ad0ff60d"
+      "path": "blender/TT_Character_Importer_0.5.17.zip",
+      "bytes": 229936,
+      "sha256": "ed57c58f65e33bbd14729aa885aa48a1fdb7b8971dbfc47f52e524317db189ba"
     },
     {
-      "path": "blender/TT_Cutscene_Importer_0.1.25.zip",
-      "bytes": 193566,
-      "sha256": "2ba82339911a7d1d4d6674423ee0f6718c0860a043639314f77e8103fe2c08d6"
+      "path": "blender/TT_Cutscene_Importer_0.1.26.zip",
+      "bytes": 194228,
+      "sha256": "83e0dcfccdfefcf7012d8ae549f6f7c8929f78fa4e956432eeca8a925762e302"
     },
     {
       "path": "blender/lsw1_hgp_importer-0.1.3.zip",

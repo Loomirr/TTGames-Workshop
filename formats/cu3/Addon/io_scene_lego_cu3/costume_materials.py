@@ -139,8 +139,14 @@ class CostumeMaterials:
         nodes, links = material.node_tree.nodes, material.node_tree.links
         surface = nodes.get('Principled BSDF')
         surface.inputs['Roughness'].default_value = .5
+        if entry.get('table_version') == 168 and entry['fields']['shaderType'] == 15:
+            # Inspection approximation for the older glass pass. This keeps
+            # the screen behind it visible; it is not the native refraction.
+            surface.inputs['Alpha'].default_value = .12
+            material['tt_preview_glass_approximation'] = True
+            self.report.append({'material':entry['name'], 'issue':'Older glass shader uses a transparent preview; native refraction remains unresolved'})
         slot = costume_slot(entry)
-        if entry.get('table_version') in (163, 174):
+        if entry.get('table_version') in (163, 168, 174):
             self.report.append({'material':entry['name'], 'issue':'Older static shader flag meanings remain unresolved; texture/UV and render footer are decoded, shading is approximate'})
         matched_objects = [(i, o) for i, o in enumerate(definition['objects']) if o['fields'].get('Material')==slot] if definition and slot is not None else []
         matched = [o['fields'] for _, o in matched_objects]

@@ -105,8 +105,7 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
     provenance = SourceProvenance(assets)
     definition = character_definition(path) if path.suffix.lower() == '.cd' else character_definition(definition_path) if definition_path else None
     if path.suffix.lower() == '.cd':
-        reference = definition['character'].get('Override Model File') or definition['character']['Skeleton Name']
-        model_path = resolver.resolve_model(reference)
+        model_path = resolver.resolve_definition_model(definition, path)
     else:
         model_path = path
     report = dict(source=str(path), game=game, layer_mode=layer_mode, mesh_detail='highest' if highest_detail else 'authored', models=[], materials=[], issues=[],

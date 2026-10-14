@@ -13,7 +13,7 @@ game does not mean support for every TT game that uses the same extension.
 
 ## Start here
 
-**Current candidates:** Character **0.5.16**, CU3 **0.1.25**. This pass adds
+**Current candidates:** Character **0.5.17**, CU3 **0.1.26**. This pass adds
 classic PC model inspection, CU2 reference scenes and explicit older DAT layouts.
 See [validation and remaining gaps](docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
 

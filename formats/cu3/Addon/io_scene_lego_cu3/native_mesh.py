@@ -202,8 +202,6 @@ class MeshReader:
                                    streams=streams, index_buffer=indices, first_index=first_index,
                                    index_count=index_count, first_vertex=first_vertex,
                                    vertex_count=vertex_count, palette=palette, morphs=targets))
-            if self.version == 161 and palette:
-                raise FormatError('Only unskinned MESH 161 static accessories are verified')
         if self.bases is not None and len(self.bases) != 1:
             raise FormatError('Ambiguous native buffer reference base')
         base = next(iter(self.bases)) if self.bases else None
@@ -217,8 +215,10 @@ class MeshReader:
             return item
         for part in self.parts:
             self.decode_part(part, resolve)
-            if self.version == 161 and any('indices' in v or 'packed_weights' in v for v in part['vertices']):
-                raise FormatError('MESH 161 skin streams are not verified')
+            if self.version == 161 and part['palette']:
+                types=part['attribute_types']
+                if types.get('position')!=6 or types.get('indices')!=7 or types.get('packed_weights')!=8:
+                    raise FormatError('MESH 161 skin requires the verified half-position and byte index/weight layout')
         return dict(schema='tt.native-mesh.v1', mesh_version=self.version,
                     end_offset=c.at, reference_base=base, parts=self.parts)
 

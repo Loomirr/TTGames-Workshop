@@ -1,15 +1,15 @@
 # Download builds
 
-Character 0.5.16 adds classic PC raw model inspection; CU3 0.1.25 adds a separate CU2 reference importer. These are incomplete inspection modes, not complete classic character or cutscene assembly. [Checks and remaining gaps](../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
+Character 0.5.17 adds classic PC raw model inspection; CU3 0.1.26 adds a separate CU2 reference importer. These are incomplete inspection modes, not complete classic character or cutscene assembly. [Checks and remaining gaps](../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
 
 These packages are built from our tools in this repository. Click a package
 below, then use GitHub's **Download raw file** button to save the ZIP.
 
 | Tool | Package | Use |
 | --- | --- | --- |
-| Character and animation importer 0.5.16 | [Blender addon ZIP](blender/TT_Character_Importer_0.5.16.zip) | LMSH1/LB3/Hobbit/Avengers, raw LB1/TCS inspection, plus static LEGO Fortnite Paks/export-library browsing; [instructions](../formats/character/README.md) |
+| Character and animation importer 0.5.17 | [Blender addon ZIP](blender/TT_Character_Importer_0.5.17.zip) | LMSH1/LB3/Hobbit/Avengers, raw LB1/TCS inspection, plus static LEGO Fortnite Paks/export-library browsing; [instructions](../formats/character/README.md) |
 | Original LSW1 HGP importer 0.1.3 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.3.zip) | Native character meshes/rigs, corrected palette colors, textures, alpha and normals |
-| CU3 importer 0.1.25 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.25.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages, with shared older-accessory fixes; TFA/DCSV reference inspection; separate classic CU2 static references |
+| CU3 importer 0.1.26 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.26.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages, with shared older-accessory fixes; TFA/DCSV reference inspection; separate classic CU2 static references |
 | LIJ1 Xbox 360 prototype extractor 0.1.2 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip) | GHG/GSC/TEX/FNT/DDS inputs; cubemaps, BC5, float and legacy textures |
 | Classic PC inspectors 0.1.1 | [Python CLI ZIP](python/Classic_PC_Inspectors-0.1.1.zip) | Reviewed NU20/CU2/AN3/GIZ CLI readers; [coverage and limits](../formats/classic-pc/README.md). Raw classic inspection also available in the Blender addons. |
 

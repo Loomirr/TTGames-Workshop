@@ -96,7 +96,7 @@ class ResourceResolver:
         if definition:
             fields=definition['character']
             model_reference=fields.get('Override Model File') or fields['Skeleton Name']
-        model=self.resolve_model(model_reference,required=False)
+        model=self.resolve_definition_model(definition, definition_path, required=False) if definition else self.resolve_model(model_reference,required=False)
         if model is None:
             relative=PurePosixPath(str(model_reference).replace('\\','/'))
             stem=relative.stem
@@ -111,6 +111,26 @@ class ResourceResolver:
                 'profile_identity':self.identity}
         self.cache[key]=result
         return result
+
+    def resolve_definition_model(self, definition, definition_path, *, required=True):
+        fields=definition['character']
+        reference=fields.get('Override Model File') or fields['Skeleton Name']
+        model=self.resolve_model(reference,required=False)
+        # Observed LMSH1 armour CDs name a rig family (ARMOUR_GENERIC),
+        # while their compiled geometry is the same-directory CD companion.
+        # Never replace an explicit override, an existing model, or search
+        # unrelated directories for a similarly named asset.
+        if model is None and self.profile=='LMSH1' and not fields.get('Override Model File'):
+            logical=logical_path(self.assets,definition_path)
+            if logical:
+                stem=PurePosixPath(logical).with_suffix('').as_posix()
+                candidates=[self.assets.find_exact(stem+self.suffix+ext,required=False) for ext in ('.GHG','.GSC')]
+                candidates=[p for p in candidates if p is not None]
+                if len(candidates)>1:
+                    raise FormatError('Ambiguous same-directory definition model companions: '+logical)
+                if candidates:model=candidates[0]
+        if model is None and required:return self.resolve_model(reference)
+        return model
 
     def resolve_model(self, reference, *, required=True):
         reference=logical_reference(reference)
