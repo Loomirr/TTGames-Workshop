@@ -7,6 +7,8 @@ This is a collection of components, not a new license applied to all files.
 - The classic PC NU20/CU2/GIZ contribution by Gibby / stryderjoe retains its
   [MIT license](../formats/classic-pc/LICENSE); see its
   [attribution and integration scope](../formats/classic-pc/README.md).
+- The LSW2 HGP addon by Gibby / stryderjoe retains its
+  [MIT license](../formats/hgp/lsw2/LICENSE).
 - Other original research components do not yet have an explicit license grant.
   This import does not silently relicense them. Contact the maintainer about
   reuse outside the terms of a component's existing license.

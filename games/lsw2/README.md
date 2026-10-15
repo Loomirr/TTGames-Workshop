@@ -40,7 +40,7 @@ separate reader; Workshop does not extract classic archives.
 | --- | ---: | --- |
 | AN3 (`4INA`) | 2,440 | All pass the [classic AN3 inspector](../../formats/classic-pc/README.md), sampled at first/middle/last frames |
 | CU2 (75 version 517 in `cut/`, one version 516 in `levels/episode_v/ending/`) | 76 | All pass the classic CU2 inspector. None has a companion stating `fpsec`, so every rate is the labelled 30 FPS assumption. `cut/episodeii/` holds only four leftover `.txt` scripts with no CU2 |
-| HGP characters | 259 | 255 begin with their own length followed by `NU20`; both the LSW1 HGP reader and the classic NU20 reader refuse them. The other four use the LSW1 layout and read with the LSW1 reader; they look like leftovers (`chars/chewbacca/_chewbacca.hgp`, `chars/yoda/_yoda.hgp`, `chars/palpatine/walk.hgp`, `chars/obiwankenobi/tpm/obiwankenobi.hgp`) |
+| HGP characters | 259 | 255 begin with their own length followed by `NU20`; both the LSW1 HGP reader and the classic NU20 reader refuse them. The other four use the LSW1 layout and read with the LSW1 reader; they look like leftovers (`chars/chewbacca/_chewbacca.hgp`, `chars/yoda/_yoda.hgp`, `chars/palpatine/walk.hgp`, `chars/obiwankenobi/tpm/obiwankenobi.hgp`). The [LSW2 HGP addon](../../formats/hgp/lsw2/README.md) reads and writes the 255 (and two cutscene HGPs) |
 
 The LSW2 character model layout is not decoded. Inspector passes are layout
 checks, not skeleton ownership, playback or visual fidelity. Levels (`.nup`,
