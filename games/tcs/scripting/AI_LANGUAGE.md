@@ -14,11 +14,11 @@ opponent, origin, locator or path; a level controller can coordinate messages
 and scene objects. A valid command name does not guarantee a meaningful actor
 or resource exists in the current context.
 
-**Open:** exact update frequency, condition priority when multiple tests pass,
-action completion/yield rules, and transitions during a running action. Do not
-assume every action runs once, every action runs every frame, or each action
-waits for the previous one to finish. Preserve a working script's ordering
-until the relevant handler/runtime path is understood.
+**Native, with emulated checks:** actions run in order until a handler waits;
+conditions can then interrupt that waiting action. The first successful
+condition or conjunction wins. See [execution details](EXECUTION.md) for setup
+versus update calls, condition priority and unknown-command pitfalls. Exact
+game update frequency and every reference/return interaction remain open.
 
 ## State blocks
 
@@ -34,13 +34,16 @@ state Base {
 }
 ```
 
-`Base` is a common starting state in the referenced scripts. It is a convention worth
-preserving, not evidence that it is the first state entered in every loading
-context: scripts also contain states such as `InActive` and `Activate`.
+The native parser places `Base` first in the state list, and the processor's
+ordinary fallback selects the first state when none is current. This does not
+mean every loading context enters `Base`: explicit initialization and script
+references can select other states.
 Braces may appear on the declaration line or the next line. Empty condition
 and action blocks occur in the referenced scripts.
 
-Keep state names unique and match transition targets exactly. State names,
+Keep state names unique and use consistent spelling for transition targets.
+Native state lookup is case-insensitive, but this does not establish the same
+rule for resource filenames. State names,
 script names and scene object names belong to different namespaces; sharing a
 spelling does not link them automatically.
 
@@ -80,15 +83,18 @@ if OpponentRange < 2 goto Nearby
 
 Retain the repeated `if`; this is not C's `&&` syntax. The transition belongs
 at the end of the chain. Do not insert a transition midway through a chain.
-Arbitrary parenthesized expressions, C-style operators and general expression
-precedence are not established here. The supported semantics of `or` remain
-open in this guide.
+The inspected suffix parser recognizes `goto` and `and`, not `or`. Use separate
+conditions with the same destination for alternatives, remembering that the
+first successful group wins. Arbitrary parenthesized expressions, C-style
+operators and general expression precedence are not established here.
 
 ### Result and timer queries
 
-`PreviousResult` is used after native operations in the referenced scripts. Treat it
-as operation-dependent feedback; this guide does not establish a universal
-success code for every action.
+`PreviousResult` reuses the most recent condition query's numeric result in the
+current evaluation. It does not hold the previous action's success code or the
+boolean outcome of the previous comparison. A fresh condition-list evaluation
+starts that result at zero. See [values and messages](VALUES_AND_MESSAGES.md#previousresult-means-the-previous-querys-number)
+for a worked example and native checks.
 
 `Timer` is often compared with zero after `ResetTimer` receives a negative
 starting value, including randomized negative bounds. That is an observed
@@ -118,6 +124,12 @@ table. Core entries are 12 bytes in the analyzed 32-bit build. The lookup's
 comparison routine folds ASCII letter case. That establishes case-insensitive
 action-name lookup on this path, not universal case insensitivity for filenames,
 resource names or every parameter parser. Keep existing spelling conventions.
+
+An unknown ordinary action is not necessarily a visible parse error. In the
+analyzed PC build, the text parser takes an empty diagnostic path and omits
+the action node. Unknown conditions can also be omitted; this must not be
+interpreted as a guaranteed false test. See the [37-name audit](UNRESOLVED_NAMES.md)
+before relying on a command solely because it appears in a script file.
 
 Adding a line such as `MyNewAction` does not implement an engine feature.
 Use registered handlers and the native macro facilities. Likewise, an existing action may still require a particular actor
@@ -150,11 +162,15 @@ state Nearby {
 ```
 
 The declaration supplies an index, a name and a numeric default. `NATIVE.SCP`
-uses this pattern for two combat distances. **Native:** the inspected condition
-parser checks four parameter-name slots when resolving a right-hand operand.
-This is evidence about that lookup path, not a claim that every script-related
-storage pool has the same capacity. Avoid inventing arbitrary mutable variables
-or increasing indexes beyond verified support.
+uses this pattern for two combat distances. **Native:** the declaration handler
+accepts indexes **0 through 3**, and condition operand lookup checks those four
+named parameter slots. This is a script-parameter limit, not the capacity of
+every script-related pool. These declarations do not establish arbitrary
+mutable variables.
+
+`SetParam` can update those declared values on an actor's current processor.
+Its name/value pairs and context requirements are documented in
+[updating declared parameters](VALUES_AND_MESSAGES.md#updating-declared-parameters).
 
 Constants and macros also exist in the native parser vocabulary; they are
 listed under advanced constructs below. Parameters are not the only named
@@ -195,8 +211,10 @@ call with a local stack.
 
 **Native:** the reference parser recognizes `Script`, `ReturnState`,
 `Conditions` and `Source`. It distinguishes `Global` and `Level` source flags.
-When neither flag is set it enables both; the search order when both are enabled
-is not established here. Use an explicit source for predictable authoring.
+When neither flag is set it enables both. The inspected script lookup searches
+the enabled level list before the enabled global list. Use an explicit source
+when relying on a particular script. Some callers can request a global
+`default` fallback; do not assume every missing reference does so.
 
 ## Worked pattern: a message latch
 
@@ -248,14 +266,78 @@ commands. Words inside comments and disabled experiments are not valid evidence
 of a supported command. A naive split on `//` or `;` can also damage a quoted
 argument.
 
-## Advanced constructs awaiting authoring documentation
+## Native macros
 
-The native top-level dispatch table includes `CONST`, `CONDITIONMACRO`,
-`ACTIONMACRO`, `DERIVEFROMSCRIPT` and `INCLUDE`, alongside `STATE`, `PARAM` and
-`REFERENCESCRIPT`. The condition parser also recognizes `OnMacro`.
+Macros copy lists of actions or conditions during parsing. They do not create
+new native handlers. Declare them before use in the containing script; the
+inspected parser resolves against macros already defined there.
 
-These are real parser vocabulary, but this guide does not yet establish their
-complete declaration syntax, scope, recursion rules, precedence or loading
-behaviour. Do not substitute a C preprocessor's `#include`/`#define` syntax.
-Further examples and handler tracing should extend this section without
-presenting guessed syntax as usable instructions.
+An action macro contains actions directly, without an extra `Actions` block:
+
+```text
+ACTIONMACRO WorkshopStartTimer {
+    ResetTimer "time=-2"
+}
+
+state Base {
+    Conditions {
+        if Timer > 0 goto Ready
+    }
+    Actions {
+        DoMacro WorkshopStartTimer
+        Idle
+    }
+}
+
+state Ready {
+    Conditions {
+    }
+    Actions {
+        Idle
+    }
+}
+```
+
+Use `DoMacro WorkshopStartTimer`, not a bare `WorkshopStartTimer` action.
+An ordinary unknown action is not automatically a macro invocation.
+
+A condition macro contains conditions directly. The invocation supplies the
+transition suffix, which is applied to the last copied condition:
+
+```text
+CONDITIONMACRO WorkshopCloseOpponent {
+    if GotOpponent == 1 and
+    if OpponentRange < 2
+}
+```
+
+Inside a state's `Conditions` block, use:
+
+```text
+OnMacro WorkshopCloseOpponent goto Nearby
+```
+
+Define `Nearby` in the same script. Native declaration and expansion were
+checked with controlled token input; these complete teaching examples have not
+been gameplay-tested. Macro arguments, recursion and cross-file scope are not
+established. Do not assume C-preprocessor substitution rules.
+
+## Constants, derivation and inclusion
+
+The `CONST` handler reads a name followed by a numeric value. Constants provide
+another source for named condition operands; they are separate from the four
+indexed `PARAM` slots. Constant lifetime across nested parsing needs more work,
+so this guide does not promise file-wide or project-wide constant scope.
+
+`DERIVEFROMSCRIPT` recognizes a block with `Script=...` and `Source=Global` or
+`Source=Level`. Native finalization copies parent states whose names are absent
+from the child. A child state with the same case-insensitive name takes
+precedence as a whole state; its actions are not automatically appended to the
+parent state's actions. Empty child parameter slots can inherit parent names
+and defaults. This is static parser/finalizer evidence, not gameplay validation
+of arbitrary inheritance chains.
+
+`INCLUDE` reads a following name and invokes nested script loading. Complete
+path resolution, loading precedence, recursion limits and interaction with
+constant/macro scope remain unverified. Do not substitute C's `#include` syntax
+or assume it is equivalent to `ReferenceScript` or `DERIVEFROMSCRIPT`.

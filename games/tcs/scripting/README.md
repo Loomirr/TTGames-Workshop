@@ -1,6 +1,6 @@
 # TCS PC scripting guide
 
-Research revision: 14 October 2026.
+Research revision: 15 October 2026.
 
 TCS uses several text-driven systems. Its AI `.SCP` files describe state
 machines that call native conditions and actions. Character definitions,
@@ -11,8 +11,9 @@ Sharing a text extension does not make their commands interchangeable.
 
 1. [AI language](AI_LANGUAGE.md): states, transitions, arguments, parameters,
    referenced scripts and original worked examples.
-2. [Command reference](COMMANDS.md): commonly observed commands and the
-   bounded native core registration tables.
+2. [Command reference](COMMANDS.md): commonly observed commands, checked handler
+   arguments and the core tables. The [gameplay inventory](GAMEPLAY_COMMANDS.md)
+   and [JSON index](COMMAND_INDEX.json) complete the two checked table layers.
 3. [Character and level integration](INTEGRATION.md): where scripts fit,
    resource dependencies and TXT definitions.
 4. [Character authoring](CHARACTERS.md): identity, categories, inherited
@@ -24,6 +25,14 @@ Sharing a text extension does not make their commands interchangeable.
 7. [Native recipes](RECIPES.md): practical editing and level-script patterns.
 8. [Testing and research evidence](RESEARCH.md): troubleshooting, reproducible
    checks, native addresses and remaining unknowns.
+9. [Names without PC bindings](UNRESOLVED_NAMES.md): an audit of 37 names,
+   including `SetDefensive`, and why packaged scripts can contain ignored actions.
+10. [Native execution](EXECUTION.md): action scheduling, condition priority,
+    conjunctions, macro-test scope and the consequences of unrecognized names.
+11. [LSW1 comparison](LEGACY_COMPARISON.md): sixteen earlier native bindings,
+    including `SetDefensive`, and script text inherited by TCS.
+12. [Values and messages](VALUES_AND_MESSAGES.md): condition-result reuse,
+    parameter updates, message counters and the saved return-state slot.
 
 ## Which file am I editing?
 
@@ -43,6 +52,8 @@ Sharing a text extension does not make their commands interchangeable.
 
 - **Native:** checked in the analyzed PC executable's parser or registration
   tables. This establishes the stated code fact, not that every use works in-game.
+- **Emulated:** original native instructions executed with controlled inputs.
+  Each check states what was modeled or omitted; this is not a gameplay test.
 - **Observed:** present in a referenced script or character definition. Syntax
   examples show how a construct is written; parser support and runtime behaviour
   require separate verification.

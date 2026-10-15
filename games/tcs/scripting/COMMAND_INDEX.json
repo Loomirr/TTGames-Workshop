@@ -1,0 +1,3586 @@
+{
+  "description": "Native TCS PC script registration entries. Registration is not an argument signature or gameplay validation. A null handler does not imply that a registered special condition is unsupported. Gameplay lookup precedes core lookup.",
+  "image_base": "0x00400000",
+  "executable_sha256": "6C9C2B35AA9452BA36C4F816A4AE50E3E8DE133971AE1899A20DE102D7E20ADB",
+  "entries": [
+    {
+      "kind": "condition",
+      "name": "GlynTest",
+      "table": "gameplay",
+      "entry_va": "0x007F6858",
+      "handler_va": "0x00440810",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "Debug",
+      "table": "gameplay",
+      "entry_va": "0x007F6864",
+      "handler_va": "0x00440820",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "Active",
+      "table": "gameplay",
+      "entry_va": "0x007F6870",
+      "handler_va": "0x00440830",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "GotGun",
+      "table": "gameplay",
+      "entry_va": "0x007F687C",
+      "handler_va": "0x00440850",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PrefersBrawling",
+      "table": "gameplay",
+      "entry_va": "0x007F6888",
+      "handler_va": "0x00440880",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "IsAlive",
+      "table": "gameplay",
+      "entry_va": "0x007F6894",
+      "handler_va": "0x004416B0",
+      "prepare_va": "0x00441690"
+    },
+    {
+      "kind": "condition",
+      "name": "IsOnScreen",
+      "table": "gameplay",
+      "entry_va": "0x007F68A0",
+      "handler_va": "0x004417A0",
+      "prepare_va": "0x00441780"
+    },
+    {
+      "kind": "condition",
+      "name": "OffScreenTimer",
+      "table": "gameplay",
+      "entry_va": "0x007F68AC",
+      "handler_va": "0x00441800",
+      "prepare_va": "0x004417D0"
+    },
+    {
+      "kind": "condition",
+      "name": "OnObject",
+      "table": "gameplay",
+      "entry_va": "0x007F68B8",
+      "handler_va": "0x00441B00",
+      "prepare_va": "0x004418C0"
+    },
+    {
+      "kind": "condition",
+      "name": "OnSameObjectAsPlayer",
+      "table": "gameplay",
+      "entry_va": "0x007F68C4",
+      "handler_va": "0x00441B70",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerOnObject",
+      "table": "gameplay",
+      "entry_va": "0x007F68D0",
+      "handler_va": "0x00441910",
+      "prepare_va": "0x004418C0"
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerOnObject",
+      "table": "gameplay",
+      "entry_va": "0x007F68DC",
+      "handler_va": "0x00441970",
+      "prepare_va": "0x004418C0"
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerLocatorRangeXZ",
+      "table": "gameplay",
+      "entry_va": "0x007F68E8",
+      "handler_va": "0x00441A30",
+      "prepare_va": "0x00441A10"
+    },
+    {
+      "kind": "condition",
+      "name": "OnGround",
+      "table": "gameplay",
+      "entry_va": "0x007F68F4",
+      "handler_va": "0x00441860",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "BeenAlerted",
+      "table": "gameplay",
+      "entry_va": "0x007F6900",
+      "handler_va": "0x00441890",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerOnGround",
+      "table": "gameplay",
+      "entry_va": "0x007F690C",
+      "handler_va": "0x00441830",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "SpawnCount",
+      "table": "gameplay",
+      "entry_va": "0x007F6918",
+      "handler_va": "0x00441BD0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "BehindCamera",
+      "table": "gameplay",
+      "entry_va": "0x007F6924",
+      "handler_va": "0x00441C00",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "LocatorOnScreen",
+      "table": "gameplay",
+      "entry_va": "0x007F6930",
+      "handler_va": "0x00441CA0",
+      "prepare_va": "0x00441C80"
+    },
+    {
+      "kind": "condition",
+      "name": "Blocking",
+      "table": "gameplay",
+      "entry_va": "0x007F693C",
+      "handler_va": "0x00441CE0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "BeenHit",
+      "table": "gameplay",
+      "entry_va": "0x007F6948",
+      "handler_va": "0x00441D80",
+      "prepare_va": "0x00441D50"
+    },
+    {
+      "kind": "condition",
+      "name": "HoverPhase",
+      "table": "gameplay",
+      "entry_va": "0x007F6954",
+      "handler_va": "0x00441DC0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "HitPoints",
+      "table": "gameplay",
+      "entry_va": "0x007F6960",
+      "handler_va": "0x00441E20",
+      "prepare_va": "0x00441DF0"
+    },
+    {
+      "kind": "condition",
+      "name": "OnDynamicGrapple",
+      "table": "gameplay",
+      "entry_va": "0x007F696C",
+      "handler_va": "0x00442210",
+      "prepare_va": "0x004421E0"
+    },
+    {
+      "kind": "condition",
+      "name": "XPos",
+      "table": "gameplay",
+      "entry_va": "0x007F6978",
+      "handler_va": "0x00441F00",
+      "prepare_va": "0x00441ED0"
+    },
+    {
+      "kind": "condition",
+      "name": "YPos",
+      "table": "gameplay",
+      "entry_va": "0x007F6984",
+      "handler_va": "0x00441F30",
+      "prepare_va": "0x00441ED0"
+    },
+    {
+      "kind": "condition",
+      "name": "ZPos",
+      "table": "gameplay",
+      "entry_va": "0x007F6990",
+      "handler_va": "0x00441F60",
+      "prepare_va": "0x00441ED0"
+    },
+    {
+      "kind": "condition",
+      "name": "CollidingWithOpponent",
+      "table": "gameplay",
+      "entry_va": "0x007F699C",
+      "handler_va": "0x00441E60",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "Colliding",
+      "table": "gameplay",
+      "entry_va": "0x007F69A8",
+      "handler_va": "0x00441EA0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "ObstacleAtStart",
+      "table": "gameplay",
+      "entry_va": "0x007F69B4",
+      "handler_va": "0x00440910",
+      "prepare_va": "0x004408B0"
+    },
+    {
+      "kind": "condition",
+      "name": "ObstacleAtEnd",
+      "table": "gameplay",
+      "entry_va": "0x007F69C0",
+      "handler_va": "0x00440940",
+      "prepare_va": "0x004408B0"
+    },
+    {
+      "kind": "condition",
+      "name": "SpecialAtStart",
+      "table": "gameplay",
+      "entry_va": "0x007F69CC",
+      "handler_va": "0x00440910",
+      "prepare_va": "0x004408E0"
+    },
+    {
+      "kind": "condition",
+      "name": "SpecialAtEnd",
+      "table": "gameplay",
+      "entry_va": "0x007F69D8",
+      "handler_va": "0x00440940",
+      "prepare_va": "0x004408E0"
+    },
+    {
+      "kind": "condition",
+      "name": "ObstacleLockedOpen",
+      "table": "gameplay",
+      "entry_va": "0x007F69E4",
+      "handler_va": "0x00440990",
+      "prepare_va": "0x004409B0"
+    },
+    {
+      "kind": "condition",
+      "name": "ObstacleLockedShut",
+      "table": "gameplay",
+      "entry_va": "0x007F69F0",
+      "handler_va": "0x00440970",
+      "prepare_va": "0x004409B0"
+    },
+    {
+      "kind": "condition",
+      "name": "ForceAtStart",
+      "table": "gameplay",
+      "entry_va": "0x007F69FC",
+      "handler_va": "0x00440A60",
+      "prepare_va": "0x00440A30"
+    },
+    {
+      "kind": "condition",
+      "name": "ForceAtEnd",
+      "table": "gameplay",
+      "entry_va": "0x007F6A08",
+      "handler_va": "0x00440A90",
+      "prepare_va": "0x00440A30"
+    },
+    {
+      "kind": "condition",
+      "name": "ObstacleOpenedByPlayer",
+      "table": "gameplay",
+      "entry_va": "0x007F6A14",
+      "handler_va": "0x004409E0",
+      "prepare_va": "0x004409B0"
+    },
+    {
+      "kind": "condition",
+      "name": "ObstacleOpenedByEitherPlayer",
+      "table": "gameplay",
+      "entry_va": "0x007F6A20",
+      "handler_va": "0x00440A00",
+      "prepare_va": "0x004409B0"
+    },
+    {
+      "kind": "condition",
+      "name": "AnimationFinished",
+      "table": "gameplay",
+      "entry_va": "0x007F6A2C",
+      "handler_va": "0x00442580",
+      "prepare_va": "0x00442530"
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerPullingLever",
+      "table": "gameplay",
+      "entry_va": "0x007F6A38",
+      "handler_va": "0x00441400",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerUsingHatMachine",
+      "table": "gameplay",
+      "entry_va": "0x007F6A44",
+      "handler_va": "0x00441470",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerUsingPanel",
+      "table": "gameplay",
+      "entry_va": "0x007F6A50",
+      "handler_va": "0x004414E0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerWearingHelmet",
+      "table": "gameplay",
+      "entry_va": "0x007F6A5C",
+      "handler_va": "0x00441550",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PartyUnderCover",
+      "table": "gameplay",
+      "entry_va": "0x007F6A68",
+      "handler_va": "0x00442CF0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "NumBaddiesThatCanSeePlayers",
+      "table": "gameplay",
+      "entry_va": "0x007F6A74",
+      "handler_va": "0x00442D00",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerUsingForce",
+      "table": "gameplay",
+      "entry_va": "0x007F6A80",
+      "handler_va": "0x00441050",
+      "prepare_va": "0x00440FF0"
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerUsingForce",
+      "table": "gameplay",
+      "entry_va": "0x007F6A8C",
+      "handler_va": "0x00441070",
+      "prepare_va": "0x00440FF0"
+    },
+    {
+      "kind": "condition",
+      "name": "UsingForce",
+      "table": "gameplay",
+      "entry_va": "0x007F6A98",
+      "handler_va": "0x00441020",
+      "prepare_va": "0x00440FF0"
+    },
+    {
+      "kind": "condition",
+      "name": "OnForcePlatform",
+      "table": "gameplay",
+      "entry_va": "0x007F6AA4",
+      "handler_va": "0x004410F0",
+      "prepare_va": "0x004410B0"
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerOnForcePlatform",
+      "table": "gameplay",
+      "entry_va": "0x007F6AB0",
+      "handler_va": "0x00441180",
+      "prepare_va": "0x004410B0"
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerOnForcePlatform",
+      "table": "gameplay",
+      "entry_va": "0x007F6ABC",
+      "handler_va": "0x00441200",
+      "prepare_va": "0x004410B0"
+    },
+    {
+      "kind": "condition",
+      "name": "ForceBeingUsed",
+      "table": "gameplay",
+      "entry_va": "0x007F6AC8",
+      "handler_va": "0x00441300",
+      "prepare_va": "0x00440FF0"
+    },
+    {
+      "kind": "condition",
+      "name": "ForcePushing",
+      "table": "gameplay",
+      "entry_va": "0x007F6AD4",
+      "handler_va": "0x00440B70",
+      "prepare_va": "0x00440B50"
+    },
+    {
+      "kind": "condition",
+      "name": "TurretAlive",
+      "table": "gameplay",
+      "entry_va": "0x007F6AE0",
+      "handler_va": "0x00440BE0",
+      "prepare_va": "0x00440BB0"
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerDeflectingPart",
+      "table": "gameplay",
+      "entry_va": "0x007F6AEC",
+      "handler_va": "0x00441320",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "ForceComplete",
+      "table": "gameplay",
+      "entry_va": "0x007F6AF8",
+      "handler_va": "0x004415A0",
+      "prepare_va": "0x00441570"
+    },
+    {
+      "kind": "condition",
+      "name": "ForceFinished",
+      "table": "gameplay",
+      "entry_va": "0x007F6B04",
+      "handler_va": "0x004415C0",
+      "prepare_va": "0x00441570"
+    },
+    {
+      "kind": "condition",
+      "name": "BuildItComplete",
+      "table": "gameplay",
+      "entry_va": "0x007F6B10",
+      "handler_va": "0x00441610",
+      "prepare_va": "0x004415E0"
+    },
+    {
+      "kind": "condition",
+      "name": "BlowupBlownup",
+      "table": "gameplay",
+      "entry_va": "0x007F6B1C",
+      "handler_va": "0x00441660",
+      "prepare_va": "0x00441630"
+    },
+    {
+      "kind": "condition",
+      "name": "IAmA",
+      "table": "gameplay",
+      "entry_va": "0x007F6B28",
+      "handler_va": "0x00440D30",
+      "prepare_va": "0x00440CD0"
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentIsA",
+      "table": "gameplay",
+      "entry_va": "0x007F6B34",
+      "handler_va": "0x00440DC0",
+      "prepare_va": "0x00440D60"
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentIsAThreat",
+      "table": "gameplay",
+      "entry_va": "0x007F6B40",
+      "handler_va": "0x00440DF0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "CanFightLikeAJedi",
+      "table": "gameplay",
+      "entry_va": "0x007F6B4C",
+      "handler_va": "0x00440E20",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "IAmAGoody",
+      "table": "gameplay",
+      "entry_va": "0x007F6B58",
+      "handler_va": "0x00440E50",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "IAmABaddy",
+      "table": "gameplay",
+      "entry_va": "0x007F6B64",
+      "handler_va": "0x00440E80",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "IAmANeutral",
+      "table": "gameplay",
+      "entry_va": "0x007F6B70",
+      "handler_va": "0x00440EB0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "IAmAGoodyBaddy",
+      "table": "gameplay",
+      "entry_va": "0x007F6B7C",
+      "handler_va": "0x00440EE0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "IAmAPartyCharacter",
+      "table": "gameplay",
+      "entry_va": "0x007F6B88",
+      "handler_va": "0x00440CA0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "CategoryIs",
+      "table": "gameplay",
+      "entry_va": "0x007F6B94",
+      "handler_va": "0x00440C30",
+      "prepare_va": "0x00440C00"
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerCategoryIs",
+      "table": "gameplay",
+      "entry_va": "0x007F6BA0",
+      "handler_va": "0x00440C70",
+      "prepare_va": "0x00440C00"
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerIs",
+      "table": "gameplay",
+      "entry_va": "0x007F6BAC",
+      "handler_va": "0x00440F30",
+      "prepare_va": "0x00440F10"
+    },
+    {
+      "kind": "condition",
+      "name": "Player1Is",
+      "table": "gameplay",
+      "entry_va": "0x007F6BB8",
+      "handler_va": "0x00440F60",
+      "prepare_va": "0x00440F10"
+    },
+    {
+      "kind": "condition",
+      "name": "Player2Is",
+      "table": "gameplay",
+      "entry_va": "0x007F6BC4",
+      "handler_va": "0x00440F80",
+      "prepare_va": "0x00440F10"
+    },
+    {
+      "kind": "condition",
+      "name": "IsSetAlive",
+      "table": "gameplay",
+      "entry_va": "0x007F6BD0",
+      "handler_va": "0x00441FD0",
+      "prepare_va": "0x00441F90"
+    },
+    {
+      "kind": "condition",
+      "name": "NumInSetAlive",
+      "table": "gameplay",
+      "entry_va": "0x007F6BDC",
+      "handler_va": "0x00442000",
+      "prepare_va": "0x00441F90"
+    },
+    {
+      "kind": "condition",
+      "name": "Context",
+      "table": "gameplay",
+      "entry_va": "0x007F6BE8",
+      "handler_va": "0x00442030",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "InContext",
+      "table": "gameplay",
+      "entry_va": "0x007F6BF4",
+      "handler_va": "0x00442180",
+      "prepare_va": "0x00442060"
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentContext",
+      "table": "gameplay",
+      "entry_va": "0x007F6C00",
+      "handler_va": "0x004421B0",
+      "prepare_va": "0x00442060"
+    },
+    {
+      "kind": "condition",
+      "name": "Player2Active",
+      "table": "gameplay",
+      "entry_va": "0x007F6C0C",
+      "handler_va": "0x00442250",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "NumBaddies",
+      "table": "gameplay",
+      "entry_va": "0x007F6C18",
+      "handler_va": "0x00442270",
+      "prepare_va": "0x00442260"
+    },
+    {
+      "kind": "condition",
+      "name": "NumForceObjects",
+      "table": "gameplay",
+      "entry_va": "0x007F6C24",
+      "handler_va": "0x00442310",
+      "prepare_va": "0x004422C0"
+    },
+    {
+      "kind": "condition",
+      "name": "BeenToLevel",
+      "table": "gameplay",
+      "entry_va": "0x007F6C30",
+      "handler_va": "0x004423B0",
+      "prepare_va": "0x00442320"
+    },
+    {
+      "kind": "condition",
+      "name": "LastLevel",
+      "table": "gameplay",
+      "entry_va": "0x007F6C3C",
+      "handler_va": "0x00442460",
+      "prepare_va": "0x004423F0"
+    },
+    {
+      "kind": "condition",
+      "name": "Message",
+      "table": "gameplay",
+      "entry_va": "0x007F6C48",
+      "handler_va": "0x004424B0",
+      "prepare_va": "0x00442480"
+    },
+    {
+      "kind": "condition",
+      "name": "ScriptParam",
+      "table": "gameplay",
+      "entry_va": "0x007F6C54",
+      "handler_va": "0x00442510",
+      "prepare_va": "0x004424C0"
+    },
+    {
+      "kind": "condition",
+      "name": "CutSceneStarted",
+      "table": "gameplay",
+      "entry_va": "0x007F6C60",
+      "handler_va": "0x00442660",
+      "prepare_va": "0x00442640"
+    },
+    {
+      "kind": "condition",
+      "name": "CutSceneFinished",
+      "table": "gameplay",
+      "entry_va": "0x007F6C6C",
+      "handler_va": "0x004426A0",
+      "prepare_va": "0x00442680"
+    },
+    {
+      "kind": "condition",
+      "name": "CutSceneExists",
+      "table": "gameplay",
+      "entry_va": "0x007F6C78",
+      "handler_va": "0x004426F0",
+      "prepare_va": "0x004426D0"
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerInSock",
+      "table": "gameplay",
+      "entry_va": "0x007F6C84",
+      "handler_va": "0x00442750",
+      "prepare_va": "0x00442730"
+    },
+    {
+      "kind": "condition",
+      "name": "CutScenePlaying",
+      "table": "gameplay",
+      "entry_va": "0x007F6C90",
+      "handler_va": "0x00442720",
+      "prepare_va": "0x00442700"
+    },
+    {
+      "kind": "condition",
+      "name": "RigidAnimFrame",
+      "table": "gameplay",
+      "entry_va": "0x007F6C9C",
+      "handler_va": "0x00442630",
+      "prepare_va": "0x004425E0"
+    },
+    {
+      "kind": "condition",
+      "name": "SockDistanceToPlayer",
+      "table": "gameplay",
+      "entry_va": "0x007F6CA8",
+      "handler_va": "0x00442790",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "SockDistanceToOpponent",
+      "table": "gameplay",
+      "entry_va": "0x007F6CB4",
+      "handler_va": "0x00442820",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "SockXDistanceToPlayer",
+      "table": "gameplay",
+      "entry_va": "0x007F6CC0",
+      "handler_va": "0x004428B0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerDistanceAlongSock",
+      "table": "gameplay",
+      "entry_va": "0x007F6CCC",
+      "handler_va": "0x00442970",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "FurthestPlayerDistanceAlongSock",
+      "table": "gameplay",
+      "entry_va": "0x007F6CD8",
+      "handler_va": "0x00442990",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "FinishedSpline",
+      "table": "gameplay",
+      "entry_va": "0x007F6CE4",
+      "handler_va": "0x004429D0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "CurrentHintId",
+      "table": "gameplay",
+      "entry_va": "0x007F6CF0",
+      "handler_va": "0x00442A10",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "HintAvailable",
+      "table": "gameplay",
+      "entry_va": "0x007F6CFC",
+      "handler_va": "0x00442A40",
+      "prepare_va": "0x00442A20"
+    },
+    {
+      "kind": "condition",
+      "name": "HintComplete",
+      "table": "gameplay",
+      "entry_va": "0x007F6D08",
+      "handler_va": "0x00442A60",
+      "prepare_va": "0x00442A20"
+    },
+    {
+      "kind": "condition",
+      "name": "Freeplay",
+      "table": "gameplay",
+      "entry_va": "0x007F6D14",
+      "handler_va": "0x00442A80",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "Indy",
+      "table": "gameplay",
+      "entry_va": "0x007F6D20",
+      "handler_va": "0x00442A90",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "MissionMode",
+      "table": "gameplay",
+      "entry_va": "0x007F6D2C",
+      "handler_va": "0x00442AA0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "MissionWon",
+      "table": "gameplay",
+      "entry_va": "0x007F6D38",
+      "handler_va": "0x00442AC0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "ChallengeMode",
+      "table": "gameplay",
+      "entry_va": "0x007F6D44",
+      "handler_va": "0x00442AE0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PSP",
+      "table": "gameplay",
+      "entry_va": "0x007F6D50",
+      "handler_va": "0x00442AF0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "AIOverrideControl",
+      "table": "gameplay",
+      "entry_va": "0x007F6D5C",
+      "handler_va": "0x00441750",
+      "prepare_va": "0x00441730"
+    },
+    {
+      "kind": "condition",
+      "name": "BoltsDontGetDeflectedBack",
+      "table": "gameplay",
+      "entry_va": "0x007F6D68",
+      "handler_va": "0x00442B00",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "CheatProgress",
+      "table": "gameplay",
+      "entry_va": "0x007F6D74",
+      "handler_va": "0x00442B30",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "BigJumpComplete",
+      "table": "gameplay",
+      "entry_va": "0x007F6D80",
+      "handler_va": "0x00442B40",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "RespawnLocatorIs",
+      "table": "gameplay",
+      "entry_va": "0x007F6D8C",
+      "handler_va": "0x00442B90",
+      "prepare_va": "0x00442B70"
+    },
+    {
+      "kind": "condition",
+      "name": "InMiniCut",
+      "table": "gameplay",
+      "entry_va": "0x007F6D98",
+      "handler_va": "0x00442BB0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "MaulShouldRunAway",
+      "table": "gameplay",
+      "entry_va": "0x007F6DA4",
+      "handler_va": "0x00442BD0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "DropBackInTimer",
+      "table": "gameplay",
+      "entry_va": "0x007F6DB0",
+      "handler_va": "0x00442CE0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "HelpWithTriggers",
+      "table": "gameplay",
+      "entry_va": "0x007F6DBC",
+      "handler_va": "0x00442D10",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerPushingSpinner",
+      "table": "gameplay",
+      "entry_va": "0x007F6DC8",
+      "handler_va": "0x00442E00",
+      "prepare_va": "0x00442DE0"
+    },
+    {
+      "kind": "condition",
+      "name": "CharacterRange",
+      "table": "gameplay",
+      "entry_va": "0x007F6DD4",
+      "handler_va": "0x00442E80",
+      "prepare_va": "0x00442E50"
+    },
+    {
+      "kind": "condition",
+      "name": "BeenSpawned",
+      "table": "gameplay",
+      "entry_va": "0x007F6DE0",
+      "handler_va": "0x00442EC0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "LastAttackerRange",
+      "table": "gameplay",
+      "entry_va": "0x007F6DEC",
+      "handler_va": "0x00443390",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "LastAttackerIsActivePlayer",
+      "table": "gameplay",
+      "entry_va": "0x007F6DF8",
+      "handler_va": "0x004433E0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PartyContainsDroids",
+      "table": "gameplay",
+      "entry_va": "0x007F6E04",
+      "handler_va": "0x00442D70",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "CannotReachDestination",
+      "table": "gameplay",
+      "entry_va": "0x007F6E10",
+      "handler_va": "0x00442DC0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "TakenOver",
+      "table": "gameplay",
+      "entry_va": "0x007F6E1C",
+      "handler_va": "0x00443050",
+      "prepare_va": "0x00443020"
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerTakenOver",
+      "table": "gameplay",
+      "entry_va": "0x007F6E28",
+      "handler_va": "0x004430F0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerTakenOver",
+      "table": "gameplay",
+      "entry_va": "0x007F6E34",
+      "handler_va": "0x00443120",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "BeenTakenOver",
+      "table": "gameplay",
+      "entry_va": "0x007F6E40",
+      "handler_va": "0x00443190",
+      "prepare_va": "0x00443160"
+    },
+    {
+      "kind": "condition",
+      "name": "OnSpeederBike",
+      "table": "gameplay",
+      "entry_va": "0x007F6E4C",
+      "handler_va": "0x00443200",
+      "prepare_va": "0x004431D0"
+    },
+    {
+      "kind": "condition",
+      "name": "UnderPlayerControl",
+      "table": "gameplay",
+      "entry_va": "0x007F6E58",
+      "handler_va": "0x00443280",
+      "prepare_va": "0x00443250"
+    },
+    {
+      "kind": "condition",
+      "name": "CharacterExists",
+      "table": "gameplay",
+      "entry_va": "0x007F6E64",
+      "handler_va": "0x004432D0",
+      "prepare_va": "0x004432A0"
+    },
+    {
+      "kind": "condition",
+      "name": "CharacterTypeExists",
+      "table": "gameplay",
+      "entry_va": "0x007F6E70",
+      "handler_va": "0x00443340",
+      "prepare_va": "0x004432E0"
+    },
+    {
+      "kind": "condition",
+      "name": "GotLocatorInSet",
+      "table": "gameplay",
+      "entry_va": "0x007F6E7C",
+      "handler_va": "0x00443430",
+      "prepare_va": "0x00443410"
+    },
+    {
+      "kind": "condition",
+      "name": "GotOpponentLOS",
+      "table": "gameplay",
+      "entry_va": "0x007F6E88",
+      "handler_va": "0x00443490",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "EmptyTakeOver",
+      "table": "gameplay",
+      "entry_va": "0x007F6E94",
+      "handler_va": "0x00443500",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "HasTakeOverTarget",
+      "table": "gameplay",
+      "entry_va": "0x007F6EA0",
+      "handler_va": "0x004435E0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "TakeOverRange",
+      "table": "gameplay",
+      "entry_va": "0x007F6EAC",
+      "handler_va": "0x00443610",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "TakeOverTargetInTriggerArea",
+      "table": "gameplay",
+      "entry_va": "0x007F6EB8",
+      "handler_va": "0x00442F10",
+      "prepare_va": "0x00442EF0"
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerInMyTriggerArea",
+      "table": "gameplay",
+      "entry_va": "0x007F6EC4",
+      "handler_va": "0x00442F90",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "GotVictim",
+      "table": "gameplay",
+      "entry_va": "0x007F6ED0",
+      "handler_va": "0x00443650",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "IsVisible",
+      "table": "gameplay",
+      "entry_va": "0x007F6EDC",
+      "handler_va": "0x00440AD0",
+      "prepare_va": "0x00440AC0"
+    },
+    {
+      "kind": "condition",
+      "name": "MySet",
+      "table": "gameplay",
+      "entry_va": "0x007F6EE8",
+      "handler_va": "0x00440B30",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "ScreenWipe",
+      "table": "gameplay",
+      "entry_va": "0x007F6EF4",
+      "handler_va": "0x00443680",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "IAmPlayer2",
+      "table": "gameplay",
+      "entry_va": "0x007F6F00",
+      "handler_va": "0x00440FA0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "HeadTurnRestricted",
+      "table": "gameplay",
+      "entry_va": "0x007F6F0C",
+      "handler_va": "0x004436A0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "ShopActive",
+      "table": "gameplay",
+      "entry_va": "0x007F6F18",
+      "handler_va": "0x004436D0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "Side",
+      "table": "gameplay",
+      "entry_va": "0x007F6F24",
+      "handler_va": "0x00443770",
+      "prepare_va": "0x004436E0"
+    },
+    {
+      "kind": "condition",
+      "name": "NearestPartyRange",
+      "table": "gameplay",
+      "entry_va": "0x007F6F30",
+      "handler_va": "0x004437D0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "NearestPartyXZRange",
+      "table": "gameplay",
+      "entry_va": "0x007F6F3C",
+      "handler_va": "0x00443890",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentToPlayerRange",
+      "table": "gameplay",
+      "entry_va": "0x007F6F48",
+      "handler_va": "0x00443950",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentPathPosRange",
+      "table": "gameplay",
+      "entry_va": "0x007F6F54",
+      "handler_va": "0x004439B0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "GizmoOutput0",
+      "table": "gameplay",
+      "entry_va": "0x007F6F60",
+      "handler_va": "0x00443A30",
+      "prepare_va": "0x00443A00"
+    },
+    {
+      "kind": "condition",
+      "name": "GizmoOutput1",
+      "table": "gameplay",
+      "entry_va": "0x007F6F6C",
+      "handler_va": "0x00443A70",
+      "prepare_va": "0x00443A00"
+    },
+    {
+      "kind": "condition",
+      "name": "GizmoOutput2",
+      "table": "gameplay",
+      "entry_va": "0x007F6F78",
+      "handler_va": "0x00443AB0",
+      "prepare_va": "0x00443A00"
+    },
+    {
+      "kind": "condition",
+      "name": "GizmoOutput3",
+      "table": "gameplay",
+      "entry_va": "0x007F6F84",
+      "handler_va": "0x00443AF0",
+      "prepare_va": "0x00443A00"
+    },
+    {
+      "kind": "condition",
+      "name": "GizmoVisibility",
+      "table": "gameplay",
+      "entry_va": "0x007F6F90",
+      "handler_va": "0x00443B60",
+      "prepare_va": "0x00443B30"
+    },
+    {
+      "kind": "condition",
+      "name": "AngleAboutMyLocatorToPlayer",
+      "table": "gameplay",
+      "entry_va": "0x007F6F9C",
+      "handler_va": "0x00443C20",
+      "prepare_va": "0x00443BF0"
+    },
+    {
+      "kind": "condition",
+      "name": "AnimSpeedMul",
+      "table": "gameplay",
+      "entry_va": "0x007F6FA8",
+      "handler_va": "0x00443D00",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PickupBeenTurnedOn",
+      "table": "gameplay",
+      "entry_va": "0x007F6FB4",
+      "handler_va": "0x00443D50",
+      "prepare_va": "0x00443D30"
+    },
+    {
+      "kind": "condition",
+      "name": "FlowBoxComplete",
+      "table": "gameplay",
+      "entry_va": "0x007F6FC0",
+      "handler_va": "0x00443BC0",
+      "prepare_va": "0x00443B90"
+    },
+    {
+      "kind": "condition",
+      "name": "CanHearRadio",
+      "table": "gameplay",
+      "entry_va": "0x007F6FCC",
+      "handler_va": "0x00443D70",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "BeingTowed",
+      "table": "gameplay",
+      "entry_va": "0x007F6FD8",
+      "handler_va": "0x00443D80",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "RaceLap",
+      "table": "gameplay",
+      "entry_va": "0x007F6FE4",
+      "handler_va": "0x00443DB0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "MusicOn",
+      "table": "gameplay",
+      "entry_va": "0x007F6FF0",
+      "handler_va": "0x00443DC0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "CharacterLoaded",
+      "table": "gameplay",
+      "entry_va": "0x007F6FFC",
+      "handler_va": "0x00443DF0",
+      "prepare_va": "0x00443DD0"
+    },
+    {
+      "kind": "condition",
+      "name": "AreaComplete",
+      "table": "gameplay",
+      "entry_va": "0x007F7008",
+      "handler_va": "0x00443E30",
+      "prepare_va": "0x00443E10"
+    },
+    {
+      "kind": "condition",
+      "name": "ShouldAttackOpponent",
+      "table": "gameplay",
+      "entry_va": "0x007F7014",
+      "handler_va": "0x00443E50",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "InSwamp",
+      "table": "gameplay",
+      "entry_va": "0x007F7020",
+      "handler_va": "0x00443EC0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "InSameTriggerAreaAsNearestPlayer",
+      "table": "gameplay",
+      "entry_va": "0x007F702C",
+      "handler_va": "0x00443EF0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "NetworkGameOnGoing",
+      "table": "gameplay",
+      "entry_va": "0x007F7038",
+      "handler_va": "0x00443FB0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "InHubArea",
+      "table": "gameplay",
+      "entry_va": "0x007F7044",
+      "handler_va": "0x00491B70",
+      "prepare_va": "0x00491B30"
+    },
+    {
+      "kind": "condition",
+      "name": "PreviousResult",
+      "table": "core",
+      "entry_va": "0x00801768",
+      "handler_va": null,
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "AlwaysTrue",
+      "table": "core",
+      "entry_va": "0x00801774",
+      "handler_va": "0x005149F0",
+      "prepare_va": "0x005149B0"
+    },
+    {
+      "kind": "condition",
+      "name": "LocatorRange",
+      "table": "core",
+      "entry_va": "0x00801780",
+      "handler_va": "0x00514A00",
+      "prepare_va": "0x0052D070"
+    },
+    {
+      "kind": "condition",
+      "name": "LocatorRangeXZ",
+      "table": "core",
+      "entry_va": "0x0080178C",
+      "handler_va": "0x00514A50",
+      "prepare_va": "0x0052D070"
+    },
+    {
+      "kind": "condition",
+      "name": "LocatorRangeY",
+      "table": "core",
+      "entry_va": "0x00801798",
+      "handler_va": "0x00514AA0",
+      "prepare_va": "0x0052D070"
+    },
+    {
+      "kind": "condition",
+      "name": "Timer",
+      "table": "core",
+      "entry_va": "0x008017A4",
+      "handler_va": "0x00514990",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "Random",
+      "table": "core",
+      "entry_va": "0x008017B0",
+      "handler_va": "0x005149A0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "GotLocator",
+      "table": "core",
+      "entry_va": "0x008017BC",
+      "handler_va": "0x00514AE0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "GotLocatorSet",
+      "table": "core",
+      "entry_va": "0x008017C8",
+      "handler_va": "0x00514B00",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "CurrentLocatorIs",
+      "table": "core",
+      "entry_va": "0x008017D4",
+      "handler_va": "0x00514BB0",
+      "prepare_va": "0x0052D090"
+    },
+    {
+      "kind": "condition",
+      "name": "InTriggerArea",
+      "table": "core",
+      "entry_va": "0x008017E0",
+      "handler_va": "0x00514BD0",
+      "prepare_va": "0x0052D0B0"
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerRange",
+      "table": "core",
+      "entry_va": "0x008017EC",
+      "handler_va": "0x00514C30",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "NearestPlayerRange",
+      "table": "core",
+      "entry_va": "0x008017F8",
+      "handler_va": "0x00514C80",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "NearestPlayerXZRange",
+      "table": "core",
+      "entry_va": "0x00801804",
+      "handler_va": "0x00514D50",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "InLevelNode",
+      "table": "core",
+      "entry_va": "0x00801810",
+      "handler_va": "0x00514E20",
+      "prepare_va": "0x0052D0D0"
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerInLevelNode",
+      "table": "core",
+      "entry_va": "0x0080181C",
+      "handler_va": "0x00514E70",
+      "prepare_va": "0x0052D100"
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerInLevelNode",
+      "table": "core",
+      "entry_va": "0x00801828",
+      "handler_va": "0x00514EC0",
+      "prepare_va": "0x0052D100"
+    },
+    {
+      "kind": "condition",
+      "name": "NodeRange",
+      "table": "core",
+      "entry_va": "0x00801834",
+      "handler_va": "0x00514F50",
+      "prepare_va": "0x0052D130"
+    },
+    {
+      "kind": "condition",
+      "name": "GotTriggerArea",
+      "table": "core",
+      "entry_va": "0x00801840",
+      "handler_va": "0x00514F90",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerInTriggerArea",
+      "table": "core",
+      "entry_va": "0x0080184C",
+      "handler_va": "0x00514FB0",
+      "prepare_va": "0x0052D160"
+    },
+    {
+      "kind": "condition",
+      "name": "Player2InTriggerArea",
+      "table": "core",
+      "entry_va": "0x00801858",
+      "handler_va": "0x00515010",
+      "prepare_va": "0x0052D160"
+    },
+    {
+      "kind": "condition",
+      "name": "EitherPlayerInTriggerArea",
+      "table": "core",
+      "entry_va": "0x00801864",
+      "handler_va": "0x00515070",
+      "prepare_va": "0x0052D160"
+    },
+    {
+      "kind": "condition",
+      "name": "BaddyInTriggerArea",
+      "table": "core",
+      "entry_va": "0x00801870",
+      "handler_va": "0x00515100",
+      "prepare_va": "0x0052D180"
+    },
+    {
+      "kind": "condition",
+      "name": "GoodyInTriggerArea",
+      "table": "core",
+      "entry_va": "0x0080187C",
+      "handler_va": "0x00515130",
+      "prepare_va": "0x0052D1A0"
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentInTriggerArea",
+      "table": "core",
+      "entry_va": "0x00801888",
+      "handler_va": "0x00515160",
+      "prepare_va": "0x0052D1C0"
+    },
+    {
+      "kind": "condition",
+      "name": "GotOpponent",
+      "table": "core",
+      "entry_va": "0x00801894",
+      "handler_va": "0x005151C0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentIsAThreat",
+      "table": "core",
+      "entry_va": "0x008018A0",
+      "handler_va": "0x005151E0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentOnSamePath",
+      "table": "core",
+      "entry_va": "0x008018AC",
+      "handler_va": "0x00515210",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentRange",
+      "table": "core",
+      "entry_va": "0x008018B8",
+      "handler_va": "0x00515250",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "NearestOpponentRange",
+      "table": "core",
+      "entry_va": "0x008018C4",
+      "handler_va": "0x00515270",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "YawToOpponent",
+      "table": "core",
+      "entry_va": "0x008018D0",
+      "handler_va": "0x00515290",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentBelow",
+      "table": "core",
+      "entry_va": "0x008018DC",
+      "handler_va": "0x00515320",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OriginRange",
+      "table": "core",
+      "entry_va": "0x008018E8",
+      "handler_va": "0x00515360",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentToOrigin",
+      "table": "core",
+      "entry_va": "0x008018F4",
+      "handler_va": "0x005153C0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerToOrigin",
+      "table": "core",
+      "entry_va": "0x00801900",
+      "handler_va": "0x00515450",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentToLocator",
+      "table": "core",
+      "entry_va": "0x0080190C",
+      "handler_va": "0x005154E0",
+      "prepare_va": "0x0052D1E0"
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentToLocatorXZ",
+      "table": "core",
+      "entry_va": "0x00801918",
+      "handler_va": "0x00515530",
+      "prepare_va": "0x0052D1E0"
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentToLocatorY",
+      "table": "core",
+      "entry_va": "0x00801924",
+      "handler_va": "0x00515580",
+      "prepare_va": "0x0052D1E0"
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerToLocator",
+      "table": "core",
+      "entry_va": "0x00801930",
+      "handler_va": "0x005155C0",
+      "prepare_va": "0x0052D200"
+    },
+    {
+      "kind": "condition",
+      "name": "NearestPlayerToLocator",
+      "table": "core",
+      "entry_va": "0x0080193C",
+      "handler_va": "0x00515620",
+      "prepare_va": "0x0052D200"
+    },
+    {
+      "kind": "condition",
+      "name": "OnPath",
+      "table": "core",
+      "entry_va": "0x00801948",
+      "handler_va": "0x00514B20",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PlayerOnPath",
+      "table": "core",
+      "entry_va": "0x00801954",
+      "handler_va": "0x00514B40",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "OpponentOnPath",
+      "table": "core",
+      "entry_va": "0x00801960",
+      "handler_va": "0x00514B60",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "TimeOffPath",
+      "table": "core",
+      "entry_va": "0x0080196C",
+      "handler_va": "0x00514B90",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "PathBlocked",
+      "table": "core",
+      "entry_va": "0x00801978",
+      "handler_va": "0x005156F0",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "InterruptID",
+      "table": "core",
+      "entry_va": "0x00801984",
+      "handler_va": "0x00515710",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "IAm",
+      "table": "core",
+      "entry_va": "0x00801990",
+      "handler_va": "0x00515750",
+      "prepare_va": "0x00515730"
+    },
+    {
+      "kind": "condition",
+      "name": "StuckTime",
+      "table": "core",
+      "entry_va": "0x0080199C",
+      "handler_va": "0x00515790",
+      "prepare_va": null
+    },
+    {
+      "kind": "condition",
+      "name": "Param",
+      "table": "core",
+      "entry_va": "0x008019A8",
+      "handler_va": "0x005157B0",
+      "prepare_va": null
+    },
+    {
+      "kind": "action",
+      "name": "Activate",
+      "table": "gameplay",
+      "entry_va": "0x007F7060",
+      "handler_va": "0x004442F0"
+    },
+    {
+      "kind": "action",
+      "name": "DeActivate",
+      "table": "gameplay",
+      "entry_va": "0x007F706C",
+      "handler_va": "0x00444490"
+    },
+    {
+      "kind": "action",
+      "name": "GoToLevelPath",
+      "table": "gameplay",
+      "entry_va": "0x007F7078",
+      "handler_va": "0x0044E2F0"
+    },
+    {
+      "kind": "action",
+      "name": "SetPath",
+      "table": "gameplay",
+      "entry_va": "0x007F7084",
+      "handler_va": "0x0044E160"
+    },
+    {
+      "kind": "action",
+      "name": "GoToOriginalPath",
+      "table": "gameplay",
+      "entry_va": "0x007F7090",
+      "handler_va": "0x0044E580"
+    },
+    {
+      "kind": "action",
+      "name": "SnapToLocator",
+      "table": "gameplay",
+      "entry_va": "0x007F709C",
+      "handler_va": "0x00446060"
+    },
+    {
+      "kind": "action",
+      "name": "SetLocator",
+      "table": "gameplay",
+      "entry_va": "0x007F70A8",
+      "handler_va": "0x00445CF0"
+    },
+    {
+      "kind": "action",
+      "name": "SetLocatorSet",
+      "table": "gameplay",
+      "entry_va": "0x007F70B4",
+      "handler_va": "0x00445FE0"
+    },
+    {
+      "kind": "action",
+      "name": "SnapToOrigin",
+      "table": "gameplay",
+      "entry_va": "0x007F70C0",
+      "handler_va": "0x00447030"
+    },
+    {
+      "kind": "action",
+      "name": "BigJumpToLocator",
+      "table": "gameplay",
+      "entry_va": "0x007F70CC",
+      "handler_va": "0x00446450"
+    },
+    {
+      "kind": "action",
+      "name": "BigJump",
+      "table": "gameplay",
+      "entry_va": "0x007F70D8",
+      "handler_va": "0x00446710"
+    },
+    {
+      "kind": "action",
+      "name": "SetDoomedEscapeLocator",
+      "table": "gameplay",
+      "entry_va": "0x007F70E4",
+      "handler_va": "0x00446B30"
+    },
+    {
+      "kind": "action",
+      "name": "SnapToPosition",
+      "table": "gameplay",
+      "entry_va": "0x007F70F0",
+      "handler_va": "0x00446D90"
+    },
+    {
+      "kind": "action",
+      "name": "SnapToSockPosition",
+      "table": "gameplay",
+      "entry_va": "0x007F70FC",
+      "handler_va": "0x00447230"
+    },
+    {
+      "kind": "action",
+      "name": "SetAnimation",
+      "table": "gameplay",
+      "entry_va": "0x007F7108",
+      "handler_va": "0x0044E860"
+    },
+    {
+      "kind": "action",
+      "name": "AnimTimeRandom",
+      "table": "gameplay",
+      "entry_va": "0x007F7114",
+      "handler_va": "0x0044E8C0"
+    },
+    {
+      "kind": "action",
+      "name": "CanOpenDoors",
+      "table": "gameplay",
+      "entry_va": "0x007F7120",
+      "handler_va": "0x0044EDE0"
+    },
+    {
+      "kind": "action",
+      "name": "CanShootOffScreen",
+      "table": "gameplay",
+      "entry_va": "0x007F712C",
+      "handler_va": "0x0044EE70"
+    },
+    {
+      "kind": "action",
+      "name": "KeepWeaponOut",
+      "table": "gameplay",
+      "entry_va": "0x007F7138",
+      "handler_va": "0x0044EF00"
+    },
+    {
+      "kind": "action",
+      "name": "SnapWeaponOut",
+      "table": "gameplay",
+      "entry_va": "0x007F7144",
+      "handler_va": "0x0044EFC0"
+    },
+    {
+      "kind": "action",
+      "name": "ResetContext",
+      "table": "gameplay",
+      "entry_va": "0x007F7150",
+      "handler_va": "0x0044F100"
+    },
+    {
+      "kind": "action",
+      "name": "PrefersPlayers",
+      "table": "gameplay",
+      "entry_va": "0x007F715C",
+      "handler_va": "0x0044F1B0"
+    },
+    {
+      "kind": "action",
+      "name": "SetBoltsDontGetDeflectedBack",
+      "table": "gameplay",
+      "entry_va": "0x007F7168",
+      "handler_va": "0x0044F230"
+    },
+    {
+      "kind": "action",
+      "name": "CanShootObstructions",
+      "table": "gameplay",
+      "entry_va": "0x007F7174",
+      "handler_va": "0x0044F2A0"
+    },
+    {
+      "kind": "action",
+      "name": "UseBigJumpToJump",
+      "table": "gameplay",
+      "entry_va": "0x007F7180",
+      "handler_va": "0x0044F320"
+    },
+    {
+      "kind": "action",
+      "name": "SetTaggable",
+      "table": "gameplay",
+      "entry_va": "0x007F718C",
+      "handler_va": "0x0044F930"
+    },
+    {
+      "kind": "action",
+      "name": "CatchUpForbidden",
+      "table": "gameplay",
+      "entry_va": "0x007F7198",
+      "handler_va": "0x0044F860"
+    },
+    {
+      "kind": "action",
+      "name": "CannotDropIn",
+      "table": "gameplay",
+      "entry_va": "0x007F71A4",
+      "handler_va": "0x0044FA90"
+    },
+    {
+      "kind": "action",
+      "name": "CanAttack",
+      "table": "gameplay",
+      "entry_va": "0x007F71B0",
+      "handler_va": "0x0044FC50"
+    },
+    {
+      "kind": "action",
+      "name": "NotWithParty",
+      "table": "gameplay",
+      "entry_va": "0x007F71BC",
+      "handler_va": "0x0044FB90"
+    },
+    {
+      "kind": "action",
+      "name": "TakeDamage",
+      "table": "gameplay",
+      "entry_va": "0x007F71C8",
+      "handler_va": "0x0044FD10"
+    },
+    {
+      "kind": "action",
+      "name": "TagCharacter",
+      "table": "gameplay",
+      "entry_va": "0x007F71D4",
+      "handler_va": "0x0044FF40"
+    },
+    {
+      "kind": "action",
+      "name": "CanHitForceObjects",
+      "table": "gameplay",
+      "entry_va": "0x007F71E0",
+      "handler_va": "0x0044F580"
+    },
+    {
+      "kind": "action",
+      "name": "AlwaysBackFlip",
+      "table": "gameplay",
+      "entry_va": "0x007F71EC",
+      "handler_va": "0x0044F5F0"
+    },
+    {
+      "kind": "action",
+      "name": "PlayerSpeederHack",
+      "table": "gameplay",
+      "entry_va": "0x007F71F8",
+      "handler_va": "0x0044F670"
+    },
+    {
+      "kind": "action",
+      "name": "SetAnimSpeedMul",
+      "table": "gameplay",
+      "entry_va": "0x007F7204",
+      "handler_va": "0x0044F6E0"
+    },
+    {
+      "kind": "action",
+      "name": "SetSide",
+      "table": "gameplay",
+      "entry_va": "0x007F7210",
+      "handler_va": "0x00444940"
+    },
+    {
+      "kind": "action",
+      "name": "SetStateArea",
+      "table": "gameplay",
+      "entry_va": "0x007F721C",
+      "handler_va": "0x00444F20"
+    },
+    {
+      "kind": "action",
+      "name": "SetOpponent",
+      "table": "gameplay",
+      "entry_va": "0x007F7228",
+      "handler_va": "0x004477C0"
+    },
+    {
+      "kind": "action",
+      "name": "AttackOpponent",
+      "table": "gameplay",
+      "entry_va": "0x007F7234",
+      "handler_va": "0x00447AC0"
+    },
+    {
+      "kind": "action",
+      "name": "EngageOpponent",
+      "table": "gameplay",
+      "entry_va": "0x007F7240",
+      "handler_va": "0x00447F00"
+    },
+    {
+      "kind": "action",
+      "name": "ShootAtOpponent",
+      "table": "gameplay",
+      "entry_va": "0x007F724C",
+      "handler_va": "0x00448830"
+    },
+    {
+      "kind": "action",
+      "name": "EngageObject",
+      "table": "gameplay",
+      "entry_va": "0x007F7258",
+      "handler_va": "0x00448BF0"
+    },
+    {
+      "kind": "action",
+      "name": "GrabVictim",
+      "table": "gameplay",
+      "entry_va": "0x007F7264",
+      "handler_va": "0x00448ED0"
+    },
+    {
+      "kind": "action",
+      "name": "EatVictim",
+      "table": "gameplay",
+      "entry_va": "0x007F7270",
+      "handler_va": "0x00448F80"
+    },
+    {
+      "kind": "action",
+      "name": "ReleaseVictim",
+      "table": "gameplay",
+      "entry_va": "0x007F727C",
+      "handler_va": "0x00448FB0"
+    },
+    {
+      "kind": "action",
+      "name": "CanDefend",
+      "table": "gameplay",
+      "entry_va": "0x007F7288",
+      "handler_va": "0x004445C0"
+    },
+    {
+      "kind": "action",
+      "name": "DontAimAt",
+      "table": "gameplay",
+      "entry_va": "0x007F7294",
+      "handler_va": "0x00444630"
+    },
+    {
+      "kind": "action",
+      "name": "CanUseWeapon",
+      "table": "gameplay",
+      "entry_va": "0x007F72A0",
+      "handler_va": "0x00444850"
+    },
+    {
+      "kind": "action",
+      "name": "SetBoss",
+      "table": "gameplay",
+      "entry_va": "0x007F72AC",
+      "handler_va": "0x004448C0"
+    },
+    {
+      "kind": "action",
+      "name": "UpdateSockPos",
+      "table": "gameplay",
+      "entry_va": "0x007F72B8",
+      "handler_va": "0x004451B0"
+    },
+    {
+      "kind": "action",
+      "name": "UseForce",
+      "table": "gameplay",
+      "entry_va": "0x007F72C4",
+      "handler_va": "0x00450030"
+    },
+    {
+      "kind": "action",
+      "name": "TriggerBlowUp",
+      "table": "gameplay",
+      "entry_va": "0x007F72D0",
+      "handler_va": "0x004502B0"
+    },
+    {
+      "kind": "action",
+      "name": "ForcePush",
+      "table": "gameplay",
+      "entry_va": "0x007F72DC",
+      "handler_va": "0x00450340"
+    },
+    {
+      "kind": "action",
+      "name": "DeflectPlayersPart",
+      "table": "gameplay",
+      "entry_va": "0x007F72E8",
+      "handler_va": "0x00450550"
+    },
+    {
+      "kind": "action",
+      "name": "Kill",
+      "table": "gameplay",
+      "entry_va": "0x007F72F4",
+      "handler_va": "0x00445230"
+    },
+    {
+      "kind": "action",
+      "name": "Explode",
+      "table": "gameplay",
+      "entry_va": "0x007F7300",
+      "handler_va": "0x00445710"
+    },
+    {
+      "kind": "action",
+      "name": "SetScriptState",
+      "table": "gameplay",
+      "entry_va": "0x007F730C",
+      "handler_va": "0x00445740"
+    },
+    {
+      "kind": "action",
+      "name": "SetAIOverrideControl",
+      "table": "gameplay",
+      "entry_va": "0x007F7318",
+      "handler_va": "0x00445910"
+    },
+    {
+      "kind": "action",
+      "name": "SetLastSafePathPos",
+      "table": "gameplay",
+      "entry_va": "0x007F7324",
+      "handler_va": "0x00445AB0"
+    },
+    {
+      "kind": "action",
+      "name": "SetDontMove",
+      "table": "gameplay",
+      "entry_va": "0x007F7330",
+      "handler_va": "0x00445B70"
+    },
+    {
+      "kind": "action",
+      "name": "DontSetStoppedFlag",
+      "table": "gameplay",
+      "entry_va": "0x007F733C",
+      "handler_va": "0x00445C30"
+    },
+    {
+      "kind": "action",
+      "name": "PressSpecialButton",
+      "table": "gameplay",
+      "entry_va": "0x007F7348",
+      "handler_va": "0x004492E0"
+    },
+    {
+      "kind": "action",
+      "name": "PressTagButton",
+      "table": "gameplay",
+      "entry_va": "0x007F7354",
+      "handler_va": "0x00449390"
+    },
+    {
+      "kind": "action",
+      "name": "PressActionButton",
+      "table": "gameplay",
+      "entry_va": "0x007F7360",
+      "handler_va": "0x004493D0"
+    },
+    {
+      "kind": "action",
+      "name": "UseWeapon",
+      "table": "gameplay",
+      "entry_va": "0x007F736C",
+      "handler_va": "0x00449410"
+    },
+    {
+      "kind": "action",
+      "name": "SetInvulnerable",
+      "table": "gameplay",
+      "entry_va": "0x007F7378",
+      "handler_va": "0x00449440"
+    },
+    {
+      "kind": "action",
+      "name": "DontPush",
+      "table": "gameplay",
+      "entry_va": "0x007F7384",
+      "handler_va": "0x004497B0"
+    },
+    {
+      "kind": "action",
+      "name": "DontAvoidCharacter",
+      "table": "gameplay",
+      "entry_va": "0x007F7390",
+      "handler_va": "0x00449680"
+    },
+    {
+      "kind": "action",
+      "name": "PressJumpButton",
+      "table": "gameplay",
+      "entry_va": "0x007F739C",
+      "handler_va": "0x00449970"
+    },
+    {
+      "kind": "action",
+      "name": "AddToSet",
+      "table": "gameplay",
+      "entry_va": "0x007F73A8",
+      "handler_va": "0x004499B0"
+    },
+    {
+      "kind": "action",
+      "name": "SetSpline",
+      "table": "gameplay",
+      "entry_va": "0x007F73B4",
+      "handler_va": "0x00449AC0"
+    },
+    {
+      "kind": "action",
+      "name": "SetControlSystem",
+      "table": "gameplay",
+      "entry_va": "0x007F73C0",
+      "handler_va": "0x00449A50"
+    },
+    {
+      "kind": "action",
+      "name": "SetZeroAcceleration",
+      "table": "gameplay",
+      "entry_va": "0x007F73CC",
+      "handler_va": "0x00449BB0"
+    },
+    {
+      "kind": "action",
+      "name": "FollowDirection",
+      "table": "gameplay",
+      "entry_va": "0x007F73D8",
+      "handler_va": "0x00448FE0"
+    },
+    {
+      "kind": "action",
+      "name": "BreakFormation",
+      "table": "gameplay",
+      "entry_va": "0x007F73E4",
+      "handler_va": "0x00449C90"
+    },
+    {
+      "kind": "action",
+      "name": "FormationMove",
+      "table": "gameplay",
+      "entry_va": "0x007F73F0",
+      "handler_va": "0x00449CC0"
+    },
+    {
+      "kind": "action",
+      "name": "CreateCreatures",
+      "table": "gameplay",
+      "entry_va": "0x007F73FC",
+      "handler_va": "0x00456C10"
+    },
+    {
+      "kind": "action",
+      "name": "SelectRandomSpline",
+      "table": "gameplay",
+      "entry_va": "0x007F7408",
+      "handler_va": "0x00449F70"
+    },
+    {
+      "kind": "action",
+      "name": "CreateSplineCreatures",
+      "table": "gameplay",
+      "entry_va": "0x007F7414",
+      "handler_va": "0x0044A190"
+    },
+    {
+      "kind": "action",
+      "name": "Launch",
+      "table": "gameplay",
+      "entry_va": "0x007F7420",
+      "handler_va": "0x00449F40"
+    },
+    {
+      "kind": "action",
+      "name": "SetCurrentSpeed",
+      "table": "gameplay",
+      "entry_va": "0x007F742C",
+      "handler_va": "0x0044AAC0"
+    },
+    {
+      "kind": "action",
+      "name": "SetRunSpeed",
+      "table": "gameplay",
+      "entry_va": "0x007F7438",
+      "handler_va": "0x0044AC40"
+    },
+    {
+      "kind": "action",
+      "name": "SetWalkSpeed",
+      "table": "gameplay",
+      "entry_va": "0x007F7444",
+      "handler_va": "0x0044B0E0"
+    },
+    {
+      "kind": "action",
+      "name": "SetHitPoints",
+      "table": "gameplay",
+      "entry_va": "0x007F7450",
+      "handler_va": "0x0044B150"
+    },
+    {
+      "kind": "action",
+      "name": "SetShieldHitPoints",
+      "table": "gameplay",
+      "entry_va": "0x007F745C",
+      "handler_va": "0x0044B290"
+    },
+    {
+      "kind": "action",
+      "name": "SetMessage",
+      "table": "gameplay",
+      "entry_va": "0x007F7468",
+      "handler_va": "0x0044B360"
+    },
+    {
+      "kind": "action",
+      "name": "CopyMessage",
+      "table": "gameplay",
+      "entry_va": "0x007F7474",
+      "handler_va": "0x0044B680"
+    },
+    {
+      "kind": "action",
+      "name": "SetScriptParam",
+      "table": "gameplay",
+      "entry_va": "0x007F7480",
+      "handler_va": "0x0044B4B0"
+    },
+    {
+      "kind": "action",
+      "name": "AddPart",
+      "table": "gameplay",
+      "entry_va": "0x007F748C",
+      "handler_va": "0x0044B740"
+    },
+    {
+      "kind": "action",
+      "name": "AddPartDebris",
+      "table": "gameplay",
+      "entry_va": "0x007F7498",
+      "handler_va": "0x0044B950"
+    },
+    {
+      "kind": "action",
+      "name": "LaunchGuidedMissile",
+      "table": "gameplay",
+      "entry_va": "0x007F74A4",
+      "handler_va": "0x0044BED0"
+    },
+    {
+      "kind": "action",
+      "name": "SetHoverPhase",
+      "table": "gameplay",
+      "entry_va": "0x007F74B0",
+      "handler_va": "0x0044C1D0"
+    },
+    {
+      "kind": "action",
+      "name": "UseCurrentSpeed",
+      "table": "gameplay",
+      "entry_va": "0x007F74BC",
+      "handler_va": "0x0044C2A0"
+    },
+    {
+      "kind": "action",
+      "name": "SetMaxMovementRange",
+      "table": "gameplay",
+      "entry_va": "0x007F74C8",
+      "handler_va": "0x0044C3F0"
+    },
+    {
+      "kind": "action",
+      "name": "SetDefaultMovementRange",
+      "table": "gameplay",
+      "entry_va": "0x007F74D4",
+      "handler_va": "0x0044C590"
+    },
+    {
+      "kind": "action",
+      "name": "SetGravityHeight",
+      "table": "gameplay",
+      "entry_va": "0x007F74E0",
+      "handler_va": "0x0044C5F0"
+    },
+    {
+      "kind": "action",
+      "name": "ApplyGravity",
+      "table": "gameplay",
+      "entry_va": "0x007F74EC",
+      "handler_va": "0x0044CA00"
+    },
+    {
+      "kind": "action",
+      "name": "IgnoreShoveSystem",
+      "table": "gameplay",
+      "entry_va": "0x007F74F8",
+      "handler_va": "0x0044CA80"
+    },
+    {
+      "kind": "action",
+      "name": "CannotBeSeen",
+      "table": "gameplay",
+      "entry_va": "0x007F7504",
+      "handler_va": "0x0044CCD0"
+    },
+    {
+      "kind": "action",
+      "name": "CannotBeForcedBack",
+      "table": "gameplay",
+      "entry_va": "0x007F7510",
+      "handler_va": "0x0044CAF0"
+    },
+    {
+      "kind": "action",
+      "name": "CanTurn",
+      "table": "gameplay",
+      "entry_va": "0x007F751C",
+      "handler_va": "0x0044CB70"
+    },
+    {
+      "kind": "action",
+      "name": "NoIdleSpeed",
+      "table": "gameplay",
+      "entry_va": "0x007F7528",
+      "handler_va": "0x0044CBF0"
+    },
+    {
+      "kind": "action",
+      "name": "SetVisibility",
+      "table": "gameplay",
+      "entry_va": "0x007F7534",
+      "handler_va": "0x0044CD40"
+    },
+    {
+      "kind": "action",
+      "name": "EnableSock",
+      "table": "gameplay",
+      "entry_va": "0x007F7540",
+      "handler_va": "0x0044CE00"
+    },
+    {
+      "kind": "action",
+      "name": "AddDebris",
+      "table": "gameplay",
+      "entry_va": "0x007F754C",
+      "handler_va": "0x0044CF20"
+    },
+    {
+      "kind": "action",
+      "name": "JudderGameCamera",
+      "table": "gameplay",
+      "entry_va": "0x007F7558",
+      "handler_va": "0x0044D110"
+    },
+    {
+      "kind": "action",
+      "name": "CameraShake",
+      "table": "gameplay",
+      "entry_va": "0x007F7564",
+      "handler_va": "0x0044D210"
+    },
+    {
+      "kind": "action",
+      "name": "ResetGameCamera",
+      "table": "gameplay",
+      "entry_va": "0x007F7570",
+      "handler_va": "0x0044D300"
+    },
+    {
+      "kind": "action",
+      "name": "PlayCutScene",
+      "table": "gameplay",
+      "entry_va": "0x007F757C",
+      "handler_va": "0x0044D320"
+    },
+    {
+      "kind": "action",
+      "name": "SetLevelPath",
+      "table": "gameplay",
+      "entry_va": "0x007F7588",
+      "handler_va": "0x0044D390"
+    },
+    {
+      "kind": "action",
+      "name": "ImmuneToKillTerrain",
+      "table": "gameplay",
+      "entry_va": "0x007F7594",
+      "handler_va": "0x004446A0"
+    },
+    {
+      "kind": "action",
+      "name": "ImmuneToBolts",
+      "table": "gameplay",
+      "entry_va": "0x007F75A0",
+      "handler_va": "0x00444720"
+    },
+    {
+      "kind": "action",
+      "name": "Respawnable",
+      "table": "gameplay",
+      "entry_va": "0x007F75AC",
+      "handler_va": "0x004447A0"
+    },
+    {
+      "kind": "action",
+      "name": "SetPathCnxFlag",
+      "table": "gameplay",
+      "entry_va": "0x007F75B8",
+      "handler_va": "0x004505D0"
+    },
+    {
+      "kind": "action",
+      "name": "SetHint",
+      "table": "gameplay",
+      "entry_va": "0x007F75C4",
+      "handler_va": "0x0044D470"
+    },
+    {
+      "kind": "action",
+      "name": "SetHintComplete",
+      "table": "gameplay",
+      "entry_va": "0x007F75D0",
+      "handler_va": "0x0044D500"
+    },
+    {
+      "kind": "action",
+      "name": "CancelHint",
+      "table": "gameplay",
+      "entry_va": "0x007F75DC",
+      "handler_va": "0x0044D570"
+    },
+    {
+      "kind": "action",
+      "name": "CycleCharacter",
+      "table": "gameplay",
+      "entry_va": "0x007F75E8",
+      "handler_va": "0x0044D5C0"
+    },
+    {
+      "kind": "action",
+      "name": "CnxController",
+      "table": "gameplay",
+      "entry_va": "0x007F75F4",
+      "handler_va": "0x0044D900"
+    },
+    {
+      "kind": "action",
+      "name": "CnxHelper",
+      "table": "gameplay",
+      "entry_va": "0x007F7600",
+      "handler_va": "0x0044DF30"
+    },
+    {
+      "kind": "action",
+      "name": "PlaySfx",
+      "table": "gameplay",
+      "entry_va": "0x007F760C",
+      "handler_va": "0x004507B0"
+    },
+    {
+      "kind": "action",
+      "name": "CameraCut",
+      "table": "gameplay",
+      "entry_va": "0x007F7618",
+      "handler_va": "0x004509D0"
+    },
+    {
+      "kind": "action",
+      "name": "DynamicCameraCut",
+      "table": "gameplay",
+      "entry_va": "0x007F7624",
+      "handler_va": "0x00451140"
+    },
+    {
+      "kind": "action",
+      "name": "EndCameraCut",
+      "table": "gameplay",
+      "entry_va": "0x007F7630",
+      "handler_va": "0x00451C20"
+    },
+    {
+      "kind": "action",
+      "name": "DontRaycastLOS",
+      "table": "gameplay",
+      "entry_va": "0x007F763C",
+      "handler_va": "0x00451CD0"
+    },
+    {
+      "kind": "action",
+      "name": "SetForceBack",
+      "table": "gameplay",
+      "entry_va": "0x007F7648",
+      "handler_va": "0x00451D50"
+    },
+    {
+      "kind": "action",
+      "name": "FaceCamera",
+      "table": "gameplay",
+      "entry_va": "0x007F7654",
+      "handler_va": "0x00451F20"
+    },
+    {
+      "kind": "action",
+      "name": "FaceCharacter",
+      "table": "gameplay",
+      "entry_va": "0x007F7660",
+      "handler_va": "0x004520F0"
+    },
+    {
+      "kind": "action",
+      "name": "SpinOnSpot",
+      "table": "gameplay",
+      "entry_va": "0x007F766C",
+      "handler_va": "0x004521D0"
+    },
+    {
+      "kind": "action",
+      "name": "FollowCharacter",
+      "table": "gameplay",
+      "entry_va": "0x007F7678",
+      "handler_va": "0x00452400"
+    },
+    {
+      "kind": "action",
+      "name": "FollowPlayer",
+      "table": "gameplay",
+      "entry_va": "0x007F7684",
+      "handler_va": "0x00452570"
+    },
+    {
+      "kind": "action",
+      "name": "MoveForward",
+      "table": "gameplay",
+      "entry_va": "0x007F7690",
+      "handler_va": "0x004527E0"
+    },
+    {
+      "kind": "action",
+      "name": "SetFormationCommander",
+      "table": "gameplay",
+      "entry_va": "0x007F769C",
+      "handler_va": "0x00449CF0"
+    },
+    {
+      "kind": "action",
+      "name": "RemoveThrownForceObjects",
+      "table": "gameplay",
+      "entry_va": "0x007F76A8",
+      "handler_va": "0x00449E10"
+    },
+    {
+      "kind": "action",
+      "name": "AlwaysTriggerObstacle",
+      "table": "gameplay",
+      "entry_va": "0x007F76B4",
+      "handler_va": "0x0044E8F0"
+    },
+    {
+      "kind": "action",
+      "name": "CanTriggerObstacle",
+      "table": "gameplay",
+      "entry_va": "0x007F76C0",
+      "handler_va": "0x0044E9B0"
+    },
+    {
+      "kind": "action",
+      "name": "PlayGizObstacle",
+      "table": "gameplay",
+      "entry_va": "0x007F76CC",
+      "handler_va": "0x0044EA70"
+    },
+    {
+      "kind": "action",
+      "name": "PlayObstacle",
+      "table": "gameplay",
+      "entry_va": "0x007F76D8",
+      "handler_va": "0x0044EA70"
+    },
+    {
+      "kind": "action",
+      "name": "PlayGizSpecial",
+      "table": "gameplay",
+      "entry_va": "0x007F76E4",
+      "handler_va": "0x0044EBE0"
+    },
+    {
+      "kind": "action",
+      "name": "SetObstacleToEnd",
+      "table": "gameplay",
+      "entry_va": "0x007F76F0",
+      "handler_va": "0x0044ED70"
+    },
+    {
+      "kind": "action",
+      "name": "HelpWithTriggers",
+      "table": "gameplay",
+      "entry_va": "0x007F76FC",
+      "handler_va": "0x00452A60"
+    },
+    {
+      "kind": "action",
+      "name": "UseTriggerSet",
+      "table": "gameplay",
+      "entry_va": "0x007F7708",
+      "handler_va": "0x00453070"
+    },
+    {
+      "kind": "action",
+      "name": "PullLever",
+      "table": "gameplay",
+      "entry_va": "0x007F7714",
+      "handler_va": "0x00453180"
+    },
+    {
+      "kind": "action",
+      "name": "UsePanel",
+      "table": "gameplay",
+      "entry_va": "0x007F7720",
+      "handler_va": "0x004533C0"
+    },
+    {
+      "kind": "action",
+      "name": "UseTechno",
+      "table": "gameplay",
+      "entry_va": "0x007F772C",
+      "handler_va": "0x004535E0"
+    },
+    {
+      "kind": "action",
+      "name": "ReleaseLocator",
+      "table": "gameplay",
+      "entry_va": "0x007F7738",
+      "handler_va": "0x00453810"
+    },
+    {
+      "kind": "action",
+      "name": "AssignLocator",
+      "table": "gameplay",
+      "entry_va": "0x007F7744",
+      "handler_va": "0x004538A0"
+    },
+    {
+      "kind": "action",
+      "name": "GetLocatorFromSet",
+      "table": "gameplay",
+      "entry_va": "0x007F7750",
+      "handler_va": "0x00453AA0"
+    },
+    {
+      "kind": "action",
+      "name": "MoveAwayFromLastAttacker",
+      "table": "gameplay",
+      "entry_va": "0x007F775C",
+      "handler_va": "0x0044E470"
+    },
+    {
+      "kind": "action",
+      "name": "ProbeDroid",
+      "table": "gameplay",
+      "entry_va": "0x007F7768",
+      "handler_va": "0x00453F30"
+    },
+    {
+      "kind": "action",
+      "name": "AlertCreatures",
+      "table": "gameplay",
+      "entry_va": "0x007F7774",
+      "handler_va": "0x00454150"
+    },
+    {
+      "kind": "action",
+      "name": "SetLastAttacker",
+      "table": "gameplay",
+      "entry_va": "0x007F7780",
+      "handler_va": "0x004541E0"
+    },
+    {
+      "kind": "action",
+      "name": "LinkTurretToController",
+      "table": "gameplay",
+      "entry_va": "0x007F778C",
+      "handler_va": "0x00454310"
+    },
+    {
+      "kind": "action",
+      "name": "TakeOver",
+      "table": "gameplay",
+      "entry_va": "0x007F7798",
+      "handler_va": "0x004543E0"
+    },
+    {
+      "kind": "action",
+      "name": "ReleaseTakeOver",
+      "table": "gameplay",
+      "entry_va": "0x007F77A4",
+      "handler_va": "0x004545D0"
+    },
+    {
+      "kind": "action",
+      "name": "RegisterTakeOverObject",
+      "table": "gameplay",
+      "entry_va": "0x007F77B0",
+      "handler_va": "0x00454670"
+    },
+    {
+      "kind": "action",
+      "name": "SetTakeOverTarget",
+      "table": "gameplay",
+      "entry_va": "0x007F77BC",
+      "handler_va": "0x00443FC0"
+    },
+    {
+      "kind": "action",
+      "name": "ClearTakeOverTarget",
+      "table": "gameplay",
+      "entry_va": "0x007F77C8",
+      "handler_va": "0x004442B0"
+    },
+    {
+      "kind": "action",
+      "name": "AddGameMsgCount",
+      "table": "gameplay",
+      "entry_va": "0x007F77D4",
+      "handler_va": "0x00454700"
+    },
+    {
+      "kind": "action",
+      "name": "AddMiscPickups",
+      "table": "gameplay",
+      "entry_va": "0x007F77E0",
+      "handler_va": "0x00454E30"
+    },
+    {
+      "kind": "action",
+      "name": "SetCanTakeOver",
+      "table": "gameplay",
+      "entry_va": "0x007F77EC",
+      "handler_va": "0x00454960"
+    },
+    {
+      "kind": "action",
+      "name": "CanBeCarried",
+      "table": "gameplay",
+      "entry_va": "0x007F77F8",
+      "handler_va": "0x004549F0"
+    },
+    {
+      "kind": "action",
+      "name": "IgnoreLastSafePathPos",
+      "table": "gameplay",
+      "entry_va": "0x007F7804",
+      "handler_va": "0x00454AD0"
+    },
+    {
+      "kind": "action",
+      "name": "AwkwardShapeOverride",
+      "table": "gameplay",
+      "entry_va": "0x007F7810",
+      "handler_va": "0x00454BB0"
+    },
+    {
+      "kind": "action",
+      "name": "IgnoreSlideTerrain",
+      "table": "gameplay",
+      "entry_va": "0x007F781C",
+      "handler_va": "0x00454C90"
+    },
+    {
+      "kind": "action",
+      "name": "SplineFollowTerrain",
+      "table": "gameplay",
+      "entry_va": "0x007F7828",
+      "handler_va": "0x00454D60"
+    },
+    {
+      "kind": "action",
+      "name": "SetLayer",
+      "table": "gameplay",
+      "entry_va": "0x007F7834",
+      "handler_va": "0x00454F60"
+    },
+    {
+      "kind": "action",
+      "name": "CreateRider",
+      "table": "gameplay",
+      "entry_va": "0x007F7840",
+      "handler_va": "0x004550A0"
+    },
+    {
+      "kind": "action",
+      "name": "AddTorpedoPacket",
+      "table": "gameplay",
+      "entry_va": "0x007F784C",
+      "handler_va": "0x00456590"
+    },
+    {
+      "kind": "action",
+      "name": "SpeederBeingChased",
+      "table": "gameplay",
+      "entry_va": "0x007F7858",
+      "handler_va": "0x004C9290"
+    },
+    {
+      "kind": "action",
+      "name": "ThrowDetonator",
+      "table": "gameplay",
+      "entry_va": "0x007F7864",
+      "handler_va": "0x004551C0"
+    },
+    {
+      "kind": "action",
+      "name": "SetScaleOverride",
+      "table": "gameplay",
+      "entry_va": "0x007F7870",
+      "handler_va": "0x0044C750"
+    },
+    {
+      "kind": "action",
+      "name": "DisableNarrowSocks",
+      "table": "gameplay",
+      "entry_va": "0x007F787C",
+      "handler_va": "0x0044D580"
+    },
+    {
+      "kind": "action",
+      "name": "UseTimeBasedUpdate",
+      "table": "gameplay",
+      "entry_va": "0x007F7888",
+      "handler_va": "0x00455290"
+    },
+    {
+      "kind": "action",
+      "name": "ForceLightning",
+      "table": "gameplay",
+      "entry_va": "0x007F7894",
+      "handler_va": "0x004557E0"
+    },
+    {
+      "kind": "action",
+      "name": "WalkBackwards",
+      "table": "gameplay",
+      "entry_va": "0x007F78A0",
+      "handler_va": "0x00455320"
+    },
+    {
+      "kind": "action",
+      "name": "AddScriptProcessor",
+      "table": "gameplay",
+      "entry_va": "0x007F78AC",
+      "handler_va": "0x004553F0"
+    },
+    {
+      "kind": "action",
+      "name": "SetUseOneAtOnce",
+      "table": "gameplay",
+      "entry_va": "0x007F78B8",
+      "handler_va": "0x004559E0"
+    },
+    {
+      "kind": "action",
+      "name": "SetAO_MaxAttackers",
+      "table": "gameplay",
+      "entry_va": "0x007F78C4",
+      "handler_va": "0x00455AE0"
+    },
+    {
+      "kind": "action",
+      "name": "SetAO_AttackersPerRow",
+      "table": "gameplay",
+      "entry_va": "0x007F78D0",
+      "handler_va": "0x00455B60"
+    },
+    {
+      "kind": "action",
+      "name": "SetAO_RowDist",
+      "table": "gameplay",
+      "entry_va": "0x007F78DC",
+      "handler_va": "0x00455BE0"
+    },
+    {
+      "kind": "action",
+      "name": "SetAO_InitRowDist",
+      "table": "gameplay",
+      "entry_va": "0x007F78E8",
+      "handler_va": "0x00455C50"
+    },
+    {
+      "kind": "action",
+      "name": "SetTechnoComplete",
+      "table": "gameplay",
+      "entry_va": "0x007F78F4",
+      "handler_va": "0x00455CC0"
+    },
+    {
+      "kind": "action",
+      "name": "LetGoOfBalloon",
+      "table": "gameplay",
+      "entry_va": "0x007F7900",
+      "handler_va": "0x00455E30"
+    },
+    {
+      "kind": "action",
+      "name": "DrawBossHitPoints",
+      "table": "gameplay",
+      "entry_va": "0x007F790C",
+      "handler_va": "0x00455E60"
+    },
+    {
+      "kind": "action",
+      "name": "CompleteLevel",
+      "table": "gameplay",
+      "entry_va": "0x007F7918",
+      "handler_va": "0x00455E90"
+    },
+    {
+      "kind": "action",
+      "name": "GoToNewLevel",
+      "table": "gameplay",
+      "entry_va": "0x007F7924",
+      "handler_va": "0x00455FB0"
+    },
+    {
+      "kind": "action",
+      "name": "CircleLocator",
+      "table": "gameplay",
+      "entry_va": "0x007F7930",
+      "handler_va": "0x00456080"
+    },
+    {
+      "kind": "action",
+      "name": "GizmoActivate",
+      "table": "gameplay",
+      "entry_va": "0x007F793C",
+      "handler_va": "0x00456290"
+    },
+    {
+      "kind": "action",
+      "name": "GizmoSetVisibility",
+      "table": "gameplay",
+      "entry_va": "0x007F7948",
+      "handler_va": "0x00456350"
+    },
+    {
+      "kind": "action",
+      "name": "TurnOnPickup",
+      "table": "gameplay",
+      "entry_va": "0x007F7954",
+      "handler_va": "0x00456410"
+    },
+    {
+      "kind": "action",
+      "name": "CanHelpWithTriggers",
+      "table": "gameplay",
+      "entry_va": "0x007F7960",
+      "handler_va": "0x00456490"
+    },
+    {
+      "kind": "action",
+      "name": "CanCollideWithObjects",
+      "table": "gameplay",
+      "entry_va": "0x007F796C",
+      "handler_va": "0x00456510"
+    },
+    {
+      "kind": "action",
+      "name": "SetShootOpponents",
+      "table": "gameplay",
+      "entry_va": "0x007F7978",
+      "handler_va": "0x004567D0"
+    },
+    {
+      "kind": "action",
+      "name": "PartyCanBeUnderCover",
+      "table": "gameplay",
+      "entry_va": "0x007F7984",
+      "handler_va": "0x00456850"
+    },
+    {
+      "kind": "action",
+      "name": "SetLapTime",
+      "table": "gameplay",
+      "entry_va": "0x007F7990",
+      "handler_va": "0x004DB130"
+    },
+    {
+      "kind": "action",
+      "name": "CreatePod",
+      "table": "gameplay",
+      "entry_va": "0x007F799C",
+      "handler_va": "0x004DD810"
+    },
+    {
+      "kind": "action",
+      "name": "MushroomCollapse",
+      "table": "gameplay",
+      "entry_va": "0x007F79A8",
+      "handler_va": "0x004DAB50"
+    },
+    {
+      "kind": "action",
+      "name": "BoulderSection",
+      "table": "gameplay",
+      "entry_va": "0x007F79B4",
+      "handler_va": "0x004E3A00"
+    },
+    {
+      "kind": "action",
+      "name": "RaceOpponent",
+      "table": "gameplay",
+      "entry_va": "0x007F79C0",
+      "handler_va": "0x004569B0"
+    },
+    {
+      "kind": "action",
+      "name": "Sebulba",
+      "table": "gameplay",
+      "entry_va": "0x007F79CC",
+      "handler_va": "0x004DB280"
+    },
+    {
+      "kind": "action",
+      "name": "IgnoreTurnAroundSpline",
+      "table": "gameplay",
+      "entry_va": "0x007F79D8",
+      "handler_va": "0x0044F3A0"
+    },
+    {
+      "kind": "action",
+      "name": "CanMoveWhenDeactivated",
+      "table": "gameplay",
+      "entry_va": "0x007F79E4",
+      "handler_va": "0x0044F420"
+    },
+    {
+      "kind": "action",
+      "name": "DontAttack",
+      "table": "gameplay",
+      "entry_va": "0x007F79F0",
+      "handler_va": "0x0044F490"
+    },
+    {
+      "kind": "action",
+      "name": "CanPullLevers",
+      "table": "gameplay",
+      "entry_va": "0x007F79FC",
+      "handler_va": "0x0044F500"
+    },
+    {
+      "kind": "action",
+      "name": "NewSebulba",
+      "table": "gameplay",
+      "entry_va": "0x007F7A08",
+      "handler_va": "0x004DCA80"
+    },
+    {
+      "kind": "action",
+      "name": "Idle",
+      "table": "core",
+      "entry_va": "0x008019C0",
+      "handler_va": "0x005159A0"
+    },
+    {
+      "kind": "action",
+      "name": "SetState",
+      "table": "core",
+      "entry_va": "0x008019CC",
+      "handler_va": "0x005157D0"
+    },
+    {
+      "kind": "action",
+      "name": "ResetTimer",
+      "table": "core",
+      "entry_va": "0x008019D8",
+      "handler_va": "0x00515890"
+    },
+    {
+      "kind": "action",
+      "name": "RetreatFromNearestOpponent",
+      "table": "core",
+      "entry_va": "0x008019E4",
+      "handler_va": "0x00535E90"
+    },
+    {
+      "kind": "action",
+      "name": "RetreatFromOpponent",
+      "table": "core",
+      "entry_va": "0x008019F0",
+      "handler_va": "0x00535D60"
+    },
+    {
+      "kind": "action",
+      "name": "MoveAwayFromPlayer",
+      "table": "core",
+      "entry_va": "0x008019FC",
+      "handler_va": "0x00535AA0"
+    },
+    {
+      "kind": "action",
+      "name": "MoveAwayFromPlayer2",
+      "table": "core",
+      "entry_va": "0x00801A08",
+      "handler_va": "0x00535C00"
+    },
+    {
+      "kind": "action",
+      "name": "SetCircleDirection",
+      "table": "core",
+      "entry_va": "0x00801A14",
+      "handler_va": "0x00515BA0"
+    },
+    {
+      "kind": "action",
+      "name": "Circle",
+      "table": "core",
+      "entry_va": "0x00801A20",
+      "handler_va": "0x005350E0"
+    },
+    {
+      "kind": "action",
+      "name": "CircleOpponent",
+      "table": "core",
+      "entry_va": "0x00801A2C",
+      "handler_va": "0x005356B0"
+    },
+    {
+      "kind": "action",
+      "name": "CirclePlayer",
+      "table": "core",
+      "entry_va": "0x00801A38",
+      "handler_va": "0x00535420"
+    },
+    {
+      "kind": "action",
+      "name": "FollowPlayer",
+      "table": "core",
+      "entry_va": "0x00801A44",
+      "handler_va": "0x00535000"
+    },
+    {
+      "kind": "action",
+      "name": "MoveAwayFromOpponent",
+      "table": "core",
+      "entry_va": "0x00801A50",
+      "handler_va": "0x00535940"
+    },
+    {
+      "kind": "action",
+      "name": "FollowOpponent",
+      "table": "core",
+      "entry_va": "0x00801A5C",
+      "handler_va": "0x00534F20"
+    },
+    {
+      "kind": "action",
+      "name": "FacePlayer",
+      "table": "core",
+      "entry_va": "0x00801A68",
+      "handler_va": "0x00515CA0"
+    },
+    {
+      "kind": "action",
+      "name": "FaceOpponent",
+      "table": "core",
+      "entry_va": "0x00801A74",
+      "handler_va": "0x00515E70"
+    },
+    {
+      "kind": "action",
+      "name": "FaceLocator",
+      "table": "core",
+      "entry_va": "0x00801A80",
+      "handler_va": "0x0052D220"
+    },
+    {
+      "kind": "action",
+      "name": "IgnoreWallSplines",
+      "table": "core",
+      "entry_va": "0x00801A8C",
+      "handler_va": "0x005160B0"
+    },
+    {
+      "kind": "action",
+      "name": "CheckWallSplines",
+      "table": "core",
+      "entry_va": "0x00801A98",
+      "handler_va": "0x00516120"
+    },
+    {
+      "kind": "action",
+      "name": "NoTerrain",
+      "table": "core",
+      "entry_va": "0x00801AA4",
+      "handler_va": "0x005161A0"
+    },
+    {
+      "kind": "action",
+      "name": "FlatTerrain",
+      "table": "core",
+      "entry_va": "0x00801AB0",
+      "handler_va": "0x005162A0"
+    },
+    {
+      "kind": "action",
+      "name": "ShadowTerrain",
+      "table": "core",
+      "entry_va": "0x00801ABC",
+      "handler_va": "0x00516320"
+    },
+    {
+      "kind": "action",
+      "name": "DontUseShadowTerrain",
+      "table": "core",
+      "entry_va": "0x00801AC8",
+      "handler_va": "0x005163A0"
+    },
+    {
+      "kind": "action",
+      "name": "DontPush",
+      "table": "core",
+      "entry_va": "0x00801AD4",
+      "handler_va": "0x00516420"
+    },
+    {
+      "kind": "action",
+      "name": "CanSeeBehind",
+      "table": "core",
+      "entry_va": "0x00801AE0",
+      "handler_va": "0x005164A0"
+    },
+    {
+      "kind": "action",
+      "name": "RequiresLOS",
+      "table": "core",
+      "entry_va": "0x00801AEC",
+      "handler_va": "0x00516520"
+    },
+    {
+      "kind": "action",
+      "name": "SetFullPathSearch",
+      "table": "core",
+      "entry_va": "0x00801AF8",
+      "handler_va": "0x00516590"
+    },
+    {
+      "kind": "action",
+      "name": "SetViewDistance",
+      "table": "core",
+      "entry_va": "0x00801B04",
+      "handler_va": "0x00516610"
+    },
+    {
+      "kind": "action",
+      "name": "SetMaxViewHeight",
+      "table": "core",
+      "entry_va": "0x00801B10",
+      "handler_va": "0x00516790"
+    },
+    {
+      "kind": "action",
+      "name": "SetMinViewHeight",
+      "table": "core",
+      "entry_va": "0x00801B1C",
+      "handler_va": "0x005166D0"
+    },
+    {
+      "kind": "action",
+      "name": "SetHearDistance",
+      "table": "core",
+      "entry_va": "0x00801B28",
+      "handler_va": "0x00516850"
+    },
+    {
+      "kind": "action",
+      "name": "SetMoveRadius",
+      "table": "core",
+      "entry_va": "0x00801B34",
+      "handler_va": "0x00516910"
+    },
+    {
+      "kind": "action",
+      "name": "GoToNode",
+      "table": "core",
+      "entry_va": "0x00801B40",
+      "handler_va": "0x00535FC0"
+    },
+    {
+      "kind": "action",
+      "name": "GoToNodeRandom",
+      "table": "core",
+      "entry_va": "0x00801B4C",
+      "handler_va": "0x00536190"
+    },
+    {
+      "kind": "action",
+      "name": "GoToOrigin",
+      "table": "core",
+      "entry_va": "0x00801B58",
+      "handler_va": "0x00536330"
+    },
+    {
+      "kind": "action",
+      "name": "GoToLocator",
+      "table": "core",
+      "entry_va": "0x00801B64",
+      "handler_va": "0x00536700"
+    },
+    {
+      "kind": "action",
+      "name": "SetLocator",
+      "table": "core",
+      "entry_va": "0x00801B70",
+      "handler_va": "0x0052D310"
+    },
+    {
+      "kind": "action",
+      "name": "SetRespawnLocator",
+      "table": "core",
+      "entry_va": "0x00801B7C",
+      "handler_va": "0x0052D510"
+    },
+    {
+      "kind": "action",
+      "name": "FollowPath",
+      "table": "core",
+      "entry_va": "0x00801B88",
+      "handler_va": "0x00536DC0"
+    },
+    {
+      "kind": "action",
+      "name": "MoveAwayFromNode",
+      "table": "core",
+      "entry_va": "0x00801B94",
+      "handler_va": "0x00536FC0"
+    },
+    {
+      "kind": "action",
+      "name": "OverrideAnimation",
+      "table": "core",
+      "entry_va": "0x00801BA0",
+      "handler_va": "0x00516980"
+    },
+    {
+      "kind": "action",
+      "name": "BlockPath",
+      "table": "core",
+      "entry_va": "0x00801BAC",
+      "handler_va": "0x0052D6B0"
+    },
+    {
+      "kind": "action",
+      "name": "PathConnectionObstacle",
+      "table": "core",
+      "entry_va": "0x00801BB8",
+      "handler_va": "0x0052D8F0"
+    },
+    {
+      "kind": "action",
+      "name": "PathConnectionMaxLength",
+      "table": "core",
+      "entry_va": "0x00801BC4",
+      "handler_va": "0x0052D7C0"
+    },
+    {
+      "kind": "action",
+      "name": "NoLosCheck",
+      "table": "core",
+      "entry_va": "0x00801BD0",
+      "handler_va": "0x00516220"
+    },
+    {
+      "kind": "action",
+      "name": "ResetToOrigin",
+      "table": "core",
+      "entry_va": "0x00801BDC",
+      "handler_va": "0x00516AC0"
+    },
+    {
+      "kind": "action",
+      "name": "SetInterrupt",
+      "table": "core",
+      "entry_va": "0x00801BE8",
+      "handler_va": "0x0052D9C0"
+    },
+    {
+      "kind": "action",
+      "name": "ClearInterrupt",
+      "table": "core",
+      "entry_va": "0x00801BF4",
+      "handler_va": "0x0052DB30"
+    },
+    {
+      "kind": "action",
+      "name": "SetIgnoreAntinodes",
+      "table": "core",
+      "entry_va": "0x00801C00",
+      "handler_va": "0x00516B40"
+    },
+    {
+      "kind": "action",
+      "name": "NoShadows",
+      "table": "core",
+      "entry_va": "0x00801C0C",
+      "handler_va": "0x00516BF0"
+    },
+    {
+      "kind": "action",
+      "name": "SetParam",
+      "table": "core",
+      "entry_va": "0x00801C18",
+      "handler_va": "0x00516C70"
+    },
+    {
+      "kind": "action",
+      "name": "SetReturnToState",
+      "table": "core",
+      "entry_va": "0x00801C24",
+      "handler_va": "0x00516E30"
+    },
+    {
+      "kind": "action",
+      "name": "ReturnToState",
+      "table": "core",
+      "entry_va": "0x00801C30",
+      "handler_va": "0x00516EE0"
+    },
+    {
+      "kind": "action",
+      "name": "NotifyStateChange",
+      "table": "core",
+      "entry_va": "0x00801C3C",
+      "handler_va": "0x0052DBF0"
+    }
+  ]
+}

@@ -108,7 +108,11 @@ Place the decrement in a state reached once for the intended event. A repeated
 transition can decrement more than once, and an equality-to-zero test can then
 miss completion. Decide whether the intended logic permits a `<= 0` guard;
 do not hide accidental duplicate events by changing the comparison alone.
-Message lifetime and persistence across loads remain unverified.
+Message lifetime and persistence across loads remain unverified. The
+[checked message semantics](VALUES_AND_MESSAGES.md#message-assignment-and-counters)
+include assignment, increment/decrement and parameter-valued writes. A query
+with no bound record also returns zero, so establish a successful nonzero
+write/read test before using zero as completion.
 
 ## Spawn at a named locator
 

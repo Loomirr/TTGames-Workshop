@@ -6,3 +6,8 @@ embedded textures, corrected native palette colors, face alpha and linked normal
 
 This reader is specific to LSW1. LSW2 and The Complete Saga are different layouts
 and are not substitutes for LSW1 research samples.
+
+The [LSW1/TCS script comparison](../tcs/scripting/LEGACY_COMPARISON.md) separately
+checks original PC command bindings and inherited script text. It includes
+native lookup and isolated handler emulation, not gameplay validation or a
+complete LSW1 scripting guide.

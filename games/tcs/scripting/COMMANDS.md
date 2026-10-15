@@ -2,10 +2,17 @@
 
 [Guide index](README.md) · [AI language](AI_LANGUAGE.md)
 
-This is a reference to observed usage and a bounded native core, not an
-exhaustive list of all gameplay commands. Registration proves that a name has
-a handler in the analyzed build; it does not prove the handler works with every
-actor, nor establish its arguments. See [evidence](RESEARCH.md).
+This page explains observed usage and selected native handlers, followed by the
+core registration inventory. The [gameplay inventory](GAMEPLAY_COMMANDS.md)
+and [full JSON index](COMMAND_INDEX.json) cover both layers: 480 table entries,
+or 476 distinct kind/name pairs (218 conditions and 258 actions). Registration
+establishes a binding, not its argument signature or suitability for every actor.
+See [evidence](RESEARCH.md) and [execution order](EXECUTION.md).
+
+The [unresolved-name audit](UNRESOLVED_NAMES.md) checks the additional gameplay
+tables and explains silent handling of unrecognized names. In particular,
+frequent use of `SetDefensive` in packaged scripts does not establish a native
+binding in the analyzed PC build.
 
 ## Common conditions
 
@@ -20,7 +27,7 @@ domains and edge cases need individual handler checks before extending them.
 | `PlayerRange` | Numeric distance threshold in following/combat decisions | `SCRIPTS/JEDI.SCP` |
 | `ShouldAttackOpponent` | Gate attack input | `SCRIPTS/JEDI.SCP` |
 | `Timer` | Numeric time-related condition, often compared with zero | `SCRIPTS/JEDI.SCP` |
-| `PreviousResult` | Feedback used after an operation; do not generalize result codes | `SCRIPTS/PATROL.SCP` |
+| `PreviousResult` | Reuses the previous evaluated condition's numeric result | `SCRIPTS/PATROL.SCP` |
 | `GotTriggerArea` | Select trigger-dependent behaviour | `SCRIPTS/PATROL.SCP` |
 | `OpponentInTriggerArea` | Restrict engagement by trigger membership | `SCRIPTS/PATROL.SCP` |
 | `BeenAlerted` | Enter an alerted combat branch | `SCRIPTS/PATROL.SCP` |
@@ -77,6 +84,30 @@ These details come from the build identified in [research evidence](RESEARCH.md)
 They supplement the asset examples without claiming every scheduler path has
 been traced.
 
+### `CanDefend`
+
+The gameplay action at `0x004445C0` changes a defence capability flag on the
+current actor during the action's setup call. Its native argument handling was
+also executed in isolation:
+
+```text
+CanDefend
+CanDefend "TRUE"
+CanDefend "FALSE"
+```
+
+The first two forms enable the flag; the third disables it. The handler scans
+for an argument equal to `false`, case-insensitively. It is not a general
+boolean parser: `"0"` does **not** disable it, and `"FALSE" "TRUE"` still disables
+it. With no actor context it makes no change. Setting the flag does not prove
+that every actor has suitable defensive animations or will choose to defend.
+
+`SCRIPTS/GAMORREANGUARD.SCP` enables defence normally and disables it for its
+dancing behaviour; `SCRIPTS/MISSIONTARGET.SCP` also uses the disabling form.
+This is a supported defence-related action, but **not a proven replacement
+for `SetDefensive`**. The [LSW1 comparison](LEGACY_COMPARISON.md) verifies that
+older handler's flag update; full combat equivalence remains unresolved.
+
 ### `SetState`
 
 The handler at `0x005157D0` uses its first argument as a state name and resolves
@@ -88,6 +119,8 @@ simple state-name form unless that behaviour is specifically understood.
 A missing target enters the native diagnostic path. It is not a request to
 create a new state or load a different script. Define every target and avoid
 assuming that a target in a referenced script is automatically in scope.
+The inspected build's diagnostic functions are empty stubs; do not expect an
+error message merely because this code takes a diagnostic branch.
 
 ### `ResetTimer`
 
@@ -124,6 +157,12 @@ frames under every pause or update condition.
 
 ## Additional level-logic vocabulary
 
+The [values and messages guide](VALUES_AND_MESSAGES.md) documents native checks
+for `SetMessage` assignment/increment/decrement, `Message` reads, `SetParam`
+name/value pairs and `SetReturnToState` / `ReturnToState`. It also explains why
+an action completing or a message returning zero is not proof of a successful
+write or binding.
+
 Negotiations A `AI/LEVEL2.SCP` uses `CreateCreatures` with `locator` or
 `locator_set`, `type`, `script`, `max_range_to_player` and `addtoset` options.
 It also uses the standalone `off_screen` flag and group-size options. These
@@ -141,6 +180,11 @@ in the analyzed executable: **49 conditions and 54 actions**. These are core
 table counts, **not the game's total command counts or script limits**. The
 action resolver also checks a caller-provided table before the core table, and scripts
 contain many gameplay-specific names outside this list.
+
+The [gameplay inventory](GAMEPLAY_COMMANDS.md) supplies those additional entries.
+Four kind/name pairs occur in both layers; gameplay takes precedence. A null
+direct condition handler is also not the same as a missing registration:
+`PreviousResult` is a registered special condition. See [lookup and preparation](EXECUTION.md#registration-preparation-and-evaluation-are-different-stages).
 
 These names are an index for further research. Unexplained names below do not
 constitute documented, tested authoring APIs. No argument signatures are inferred

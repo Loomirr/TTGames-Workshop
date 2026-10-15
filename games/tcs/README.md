@@ -6,7 +6,9 @@ The [TCS scripting guide](scripting/README.md) covers text AI scripts (`.SCP`),
 their native command interface, and the related character and level text files.
 It includes original examples, an evidence-labelled command reference, native
 character/animation authoring, stock saber colors, portrait loading, capacity
-findings and a mod-author debugging workflow. It is research documentation, not a script
+findings, native execution rules, message/parameter examples and a mod-author
+debugging workflow. A separate LSW1 comparison identifies inherited commands
+whose earlier bindings are absent in TCS. It is research documentation, not a script
 compiler or a claim of complete language coverage.
 
 ## Binary assets and tools

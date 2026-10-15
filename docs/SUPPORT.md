@@ -1,10 +1,14 @@
 # Support and validation
 
 The [TCS PC scripting reference](../games/tcs/scripting/README.md) adds
-documentation of observed SCP syntax, selected native parser paths, character
-and animation definitions, stock colors, portraits and original engine limits.
+documentation of observed SCP syntax, native command tables and execution paths,
+character and animation definitions, stock colors, portraits and original engine limits.
 Its recipes use native interfaces only. New examples have not been executed
-in-game; it adds no script compiler or new importer support. See its
+in-game. Native emulation checks cover command lookup, selected parsing and
+scheduling, macros, parameter/message handlers and unknown-condition failures.
+The LSW1 comparison separately verifies sixteen earlier command bindings. These
+checks do not validate complete levels; the guide adds no script compiler or
+new importer support. See its
 [evidence and limitations](../games/tcs/scripting/RESEARCH.md).
 
 Character 0.5.16 / CU3 0.1.25 add LB1/TCS raw model inspection and a separate
