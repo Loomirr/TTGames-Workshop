@@ -50,9 +50,10 @@ The reader was derived from original LSW1 PC data. It does not use an LSW2 or Co
 
 ## Build the extension ZIP
 
-From the repository directory:
+From the repository directory, enter the extension folder first:
 
 ```text
+cd formats/hgp/lsw1
 blender --factory-startup --command extension build
 ```
 

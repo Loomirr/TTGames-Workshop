@@ -17,6 +17,11 @@ game does not mean support for every TT game that uses the same extension.
 This pass fixes original LSW1 import feedback and adds reviewed classic archive/model
 coverage. See [validation and remaining gaps](docs/GITHUB_HGP_REVIEW_2026-10-15.md).
 
+Want to help, including with an AI coding session? Start with
+[contribution instructions](CONTRIBUTING.md) and the
+[copy-paste AI task prompts](docs/AI_CONTRIBUTING.md). A repository link alone
+does not specify a task or provide access to your local game files.
+
 ## Game and file support
 
 This lists the file families covered by Workshop, not every extension shipped
@@ -119,6 +124,11 @@ contains tool code only and keeps its external dependencies separate. This repo 
 format tools and importers, rather than character projects.
 
 ## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests and PR expectations.
+[AGENTS.md](AGENTS.md) gives repository instructions for coding sessions; the
+[AI contribution guide](docs/AI_CONTRIBUTING.md) includes prompts for both
+execution-capable agents and chat-only reviews.
 
 Keep original inputs intact and make edited copies. Include the exact game,
 platform, file version and what was checked when adding support. Preserve
