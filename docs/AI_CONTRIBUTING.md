@@ -5,7 +5,7 @@ session an observable problem, permission to work on the code, and a definition
 of success. Some sessions can browse a link but cannot clone a repository, edit
 files, run Python or launch Blender. Establish those capabilities first.
 
-No special model or secret prompt is required. Instructions files are not
+No particular model or prompt is required. Instruction files are not
 necessarily loaded by every client, so explicitly ask the session to read
 [AGENTS.md](../AGENTS.md) and [CONTRIBUTING.md](../CONTRIBUTING.md).
 
@@ -47,11 +47,11 @@ post comments, install addons, or change my game unless I separately authorize
 those actions. Do not include extracted assets, scenes or private reports.
 ```
 
-The last paragraph is a safe starting point for a new contributor. They can
-explicitly authorize a branch, commit, PR or addon installation when ready.
-Their session's direct instructions take precedence over this example prompt.
+The example leaves publication and installation for explicit authorization.
+Adapt it to the intended contribution workflow. Direct session instructions
+take precedence over this example prompt.
 
-## If your friend does not know what to work on yet
+## Choosing a task
 
 ```text
 Review the open issues and PRs in https://github.com/Loomirr/TTGames-Workshop
@@ -63,7 +63,7 @@ Do not change source or post to GitHub yet. Tell me whether you can actually
 edit a checkout and run tests, or only review code in this session.
 ```
 
-Once they select a task, use the implementation prompt above. Broad requests
+After selecting a task, use the implementation prompt above. Broad requests
 like "improve every game" are a long-term direction, not a useful first test.
 A good first task might improve a reproduced rejection diagnostic or correct
 one proven layout, with tests that keep other layouts and malformed files safe.
@@ -101,7 +101,7 @@ session should inspect the full diff and preserve newer work before applying it.
 - For visuals: preview mode, clip/frame, and whether the scene is a fresh import.
 - Which inputs and runtimes are available locally, without publishing game assets.
 
-Private machine paths may be useful inside your own session, but remove them
+Keep machine-specific input paths in private working sessions and remove them
 from public reports. A screenshot helps establish a symptom; it does not by
 itself prove a byte layout, material meaning, bone mapping or animation owner.
 
