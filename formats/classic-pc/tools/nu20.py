@@ -142,7 +142,7 @@ class NU20:
         magic, neg_size, self.version, _ = unpack("<4siIi", d, 0)
         if magic != b"NU20" or neg_size >= 0:
             raise ValueError(f"{path}: not an NU20-first file ({magic!r}, {neg_size})")
-        if self.version not in (1, 2, 4):
+        if self.version not in (1, 2, 3, 4):
             raise ValueError(f"Unsupported classic PC NU20 version {self.version}")
         self.nu20_size = -neg_size
         span(d, 0, self.nu20_size, "NU20 metadata")

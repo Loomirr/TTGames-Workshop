@@ -20,6 +20,18 @@ class ClassicModels(unittest.TestCase):
             p.write_bytes(struct.pack('<4siIi',b'NU20',-4096,4,-1)+bytes(16))
             with self.assertRaisesRegex(ValueError,'metadata'):NU20(p)
 
+    def test_container_version_gate(self):
+        # Version 3 (LB1 and LIJ1 PC) passes the gate and fails later on the truncated fixture;
+        # unobserved versions are still refused at the gate.
+        with tempfile.TemporaryDirectory() as td:
+            p=Path(td)/'file.ghg'
+            for version in (1,2,3,4):
+                p.write_bytes(struct.pack('<4siIi',b'NU20',-4096,version,-1)+bytes(16))
+                with self.assertRaisesRegex(ValueError,'metadata'):NU20(p)
+            for version in (0,5,99):
+                p.write_bytes(struct.pack('<4siIi',b'NU20',-4096,version,-1)+bytes(16))
+                with self.assertRaisesRegex(ValueError,'version'):NU20(p)
+
     def test_pointer_and_count_limits(self):
         n=NU20.__new__(NU20);n.nu20_size=16;n.d=struct.pack('<i',-100)+bytes(20)
         with self.assertRaises(ValueError):n.ptr(0)
