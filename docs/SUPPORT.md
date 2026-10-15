@@ -149,6 +149,12 @@ shader fidelity. See [shading and quality checks](SHADING_AND_QUALITY.md).
 - LSW1 HGP: original PC character reader; ten headers in the prior local sample
   remain unsupported. Version 0.1.3 corrects palette color-space handling;
   color/material-role checks cover 1,827 records in 139 readable files.
+- LSW2 HGP 0.1.0: separate reader/writer and Blender import/export for all 257
+  LSW2 PC models (four LSW1 leftovers refused). Unchanged files write back
+  byte-identical, also through Blender import and export; edits, duplicates,
+  deletes and bone splits are checked by decoded round trips. Facial morphs are
+  kept but not decoded; no bones, materials or textures can be added. No
+  in-game validation yet.
 - LIJ1 prototype 0.1.2: all 757 supplied GHG/GSC files process, producing 11,182
   DDS resources / 92,820 face-mip images, nine explicitly raw-only allocations,
   and 90 empty-container manifests. All 2,898 prior DDS outputs are unchanged.

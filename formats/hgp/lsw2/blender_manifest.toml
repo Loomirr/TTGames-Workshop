@@ -1,0 +1,17 @@
+schema_version = "1.0.0"
+
+id = "io_lsw2_hgp"
+version = "0.1.0"
+name = "LEGO Star Wars II Model (.hgp)"
+tagline = "Import and export LEGO Star Wars II (2006, PC) models"
+maintainer = "Gibby"
+type = "add-on"
+tags = ["Import-Export"]
+blender_version_min = "4.2.0"
+license = ["SPDX:MIT"]
+
+[permissions]
+files = "Read and write .hgp files; unpack their textures to a temp file"
+
+[build]
+paths_exclude_pattern = [".gitignore", "__pycache__/", "*.pyc", "*.hgp", "*.blend", "*.zip", "tests/"]
