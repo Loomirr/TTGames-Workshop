@@ -1,6 +1,6 @@
 # PC character compatibility
 
-Current source and package: **0.5.18**. The [October 15 validation report](../../docs/COMPATIBILITY_2026-10-15.md)
+Current source and package: **0.5.19**. The [October 15 validation report](../../docs/COMPATIBILITY_2026-10-15.md)
 records the current recursive roster audit, original Blender checks and native
 edited-export checks. Older counts below use different audit coverage and should
 not be compared directly with the current recursive checks.

@@ -1,6 +1,9 @@
 # TT Cutscene Importer
 
-The current build fixes LMSH1 Arnim Zola's missing torso attachment. It resolves
+This update includes reviewed classic NU20 version-3 inspection and LSW2 DAT
+index support. [Review and validation](../../docs/GITHUB_HGP_REVIEW_2026-10-15.md).
+
+An earlier update fixed LMSH1 Arnim Zola's missing torso attachment. It resolves
 the same-directory armour model when its declared rig-family model is absent,
 and reads the observed skinned MESH 161 / UMTL 168 layout. His screen texture
 and highest-detail armour import; the older glass shader uses approximate
@@ -19,12 +22,12 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.27** (experimental).
+Current source and packaged build: **0.1.28** (experimental).
 
 Drag a single `.cu3` or `.cu2` into the **3D Viewport in Object Mode** to open
 its import options. Confirm the game/assets folder before importing. CU2 drops
 use the existing static reference inspector; they do not become playable scenes.
-Version 0.1.27 also shares the character reader's verified accessory/material
+Version 0.1.28 also shares the character reader's verified accessory/material
 fixes. See [current checks and limits](../../docs/COMPATIBILITY_2026-10-15.md).
 
 Version 0.1.26 adds a separate **File > Import > LEGO CU2 references (classic
@@ -111,7 +114,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.27 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.27.zip)
+Download the [0.1.28 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.28.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

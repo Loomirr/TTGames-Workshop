@@ -32,8 +32,8 @@ framing: a readable header or completed command is not proof of complete coverag
 | CU2 | 516, 517, 519, 520 | Read-only camera/actor/object inspection; embedded 4INA/6INA/8INA scalar tracks |
 | AN3 | 4INA, 6INA, 8INA and observed unrelocated 5INA | Nine-channel scalar inspection; no skeleton ownership or Blender pose conversion |
 | GIZ | File version 1; checked section layouts | Section inventory, pickup versions 4/5/7 and empty v6, selected fixed-size records |
-| NU20 GHG/GSC | Observed PC container versions 1, 2, 4; separate payloads | Raw geometry, native rig/bind records, embedded DDS, UVs and normals; unsupported strides/draws are reported |
-| DAT | Separate shared archive reader | LB1 -2, TCS -3, LB2/SW3 -4; see [archive profiles](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md) |
+| NU20 GHG/GSC | Observed PC container versions 1, 2, 3, 4; separate payloads | Raw geometry, native rig/bind records, embedded DDS, UVs and normals; unsupported strides/draws are reported |
+| DAT | Separate shared archive reader | LSW2 -1 ([notes](../../games/lsw2/README.md)), LB1 -2, TCS -3, LB2/SW3 -4; see [archive profiles](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md) |
 | AN3 playback, native/glTF export | Not enabled | Ownership, conversion and writing remain unverified |
 
 CU2 uses a companion script's `fpsec`, then the header rate, otherwise an
@@ -93,3 +93,12 @@ python formats/classic-pc/tests/test_models.py
 ```
 
 See [the review and outstanding work](../../docs/GITHUB_REVIEW_2026-10-09.md).
+
+PR [#7](https://github.com/Loomirr/TTGames-Workshop/pull/7) from
+**Gibby / stryderjoe**, reviewed at
+`9bd83fd986948afac972535b9baecc7e957b0fdf`, adds the explicit LSW2 DAT -1
+index profile. Its original-file census is contributor-reported.
+PR [#8](https://github.com/Loomirr/TTGames-Workshop/pull/8), reviewed at
+`059434b9c992216dfe5ddd5f5acaeb2adaf4af18`, adds NU20 container version 3.
+Existing payload, bounds and finite-value checks remain in effect. These
+changes do not enable full character assembly or animation playback.

@@ -5,6 +5,7 @@ create output, infer a different game's compression mode, or import Blender.
 """
 from pathlib import Path
 import os
+import re
 import struct
 from .archive_paths import validate_paths
 from .cu3 import FormatError
@@ -36,7 +37,7 @@ def read_pak(path, *, max_packed=MAX_PACKED):
 
 
 def parse_pak(data, *, max_packed=MAX_PACKED, max_decoded=MAX_DECODED,
-              max_total=MAX_TOTAL):
+              max_total=MAX_TOTAL, cubemap_basenames=False):
     if (not isinstance(max_packed, int) or not 24 <= max_packed <= MAX_PACKED or
             not isinstance(max_decoded, int) or not 0 <= max_decoded <= MAX_DECODED or
             not isinstance(max_total, int) or not 0 <= max_total <= MAX_TOTAL):
@@ -82,6 +83,20 @@ def parse_pak(data, *, max_packed=MAX_PACKED, max_decoded=MAX_DECODED,
             raise FormatError('PAK cumulative packed/decoded size exceeds configured limit')
         entries.append(dict(name=name, offset=offset, size=size, decoded_size=decoded,
                             kind=kind, crc=checksum, compressed=compressed))
+    # Some LB2 cubemap banks retain an exporter's absolute Windows temp path.
+    # Only an explicit extraction option may discard that prefix. Never use
+    # this for animation lookup, and validate collisions after remapping.
+    if cubemap_basenames:
+        for entry in entries:
+            original = entry['name']
+            normalized = original.replace('\\', '/')
+            if re.fullmatch(r'[A-Za-z]:/[^:]+', normalized):
+                parts = normalized.split('/')[1:]
+                validate_paths(['/'.join(parts)])
+                if not parts[-1].lower().endswith('.cmi'):
+                    raise FormatError('Absolute PAK name is not a cubemap CMI member')
+                entry['source_name'] = original
+                entry['name'] = parts[-1]
     try:
         paths = validate_paths(entry['name'] for entry in entries)
     except ValueError as error:

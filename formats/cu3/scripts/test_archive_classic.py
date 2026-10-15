@@ -19,6 +19,14 @@ def classic(layout):
     return raw
 
 
+def lsw2():
+    # -1 (LSW2 PC): no hash table or trailer, plain byte offsets, stored entries only.
+    raw=classic(-1);del raw[-16:]
+    struct.pack_into('<4I',raw,8,0x800,4,4,0)
+    struct.pack_into('<4I',raw,24,0x1000,8,8,0)
+    return raw
+
+
 class ClassicArchives(unittest.TestCase):
     def test_cli_index_is_read_only_and_refuses_output_reuse(self):
         from archive_index_classic import main
@@ -70,6 +78,44 @@ class ClassicArchives(unittest.TestCase):
             with self.assertRaises(ValueError):_parse_index(raw[:-2],1024,layout=layout)
             struct.pack_into('<I',raw,8,1000)
             with self.assertRaisesRegex(ValueError,'extent'):_parse_index(raw,1024,layout=layout)
+
+    def test_lsw2_plain_offsets_without_hash_table(self):
+        result=_parse_index(lsw2(),0x2000,layout=-1)
+        self.assertEqual([(r['path'],r['offset'],r['size']) for r in result],
+                         [('chars/one.cd',0x800,4),('cut/TWO.TEX',0x1000,8)])
+
+    def test_lsw2_layout_is_never_inferred(self):
+        with self.assertRaisesRegex(ValueError,'version'):_parse_index(lsw2(),0x2000,layout=-2)
+        raw=classic(-2);struct.pack_into('<i',raw,0,-1)
+        with self.assertRaisesRegex(ValueError,'trailer'):_parse_index(raw,1024,layout=-1)
+        with self.assertRaisesRegex(ValueError,'trailer'):_parse_index(lsw2()+bytes(8),0x2000,layout=-1)
+
+    def test_lsw2_compressed_or_flagged_entries_refused(self):
+        for flags in (2,0x100):
+            raw=lsw2();struct.pack_into('<I',raw,36,flags)
+            with self.assertRaisesRegex(ValueError,'only stored'):_parse_index(raw,0x2000,layout=-1)
+
+    def test_lsw2_overlap_bounds_and_ordinals_rejected(self):
+        raw=lsw2();struct.pack_into('<I',raw,24,0x802)
+        with self.assertRaisesRegex(ValueError,'Overlapping'):_parse_index(raw,0x2000,layout=-1)
+        with self.assertRaisesRegex(ValueError,'extent'):_parse_index(lsw2(),0x1004,layout=-1)
+        raw=lsw2();struct.pack_into('<h',raw,44+4*8,0)
+        with self.assertRaisesRegex(ValueError,'ordinal'):_parse_index(raw,0x2000,layout=-1)
+        raw=lsw2();struct.pack_into('<h',raw,44+3*8+2,3)
+        with self.assertRaisesRegex(ValueError,'Cyclic'):_parse_index(raw,0x2000,layout=-1)
+
+    def test_cli_lsw2_profile(self):
+        from archive_index_classic import main
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);source=root/'game.dat';output=root/'report.json'
+            index=lsw2()
+            original=struct.pack('<II',0x2000,len(index))+bytes(0x2000-8)+index
+            source.write_bytes(original)
+            with contextlib.redirect_stdout(io.StringIO()):
+                main([str(source),str(output),'--game','LSW2'])
+            report=json.loads(output.read_text())
+            self.assertEqual((report['layout'],len(report['entries'])),(-1,2))
+            self.assertEqual(source.read_bytes(),original)
 
     def test_hash_and_tree_corruption_remain_rejected(self):
         for layout in (-2,-3,-4):

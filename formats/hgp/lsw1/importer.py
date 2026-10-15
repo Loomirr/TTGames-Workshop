@@ -108,7 +108,7 @@ def make_materials(h, label, load_textures):
 
 def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textures=True,
                      custom_normals=True,detail='AUTO',correct_preview_pose=True,variant_layers=()):
-    h=HGP(path);parts=h.meshes(lod=detail);label=h.path.stem.replace('_',' ').title()
+    h=HGP(path);parts=h.meshes(lod=detail);label=h.path.stem
     # Optional scene-builder variants retain the same native skeleton/weights.
     seen={(p['geometry'],p['primitive'],p['rigid_bone']) for p in parts}
     for layer in variant_layers:
@@ -144,6 +144,9 @@ def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textu
         bpy.ops.object.mode_set(mode='EDIT')
         for native,world in zip(h.bones,worlds):
             bone=data.edit_bones.new(native['name']);names.append(bone.name)
+            # Blender's stick follows the converted bind frame's +Y axis.
+            # Opposing native axes (e.g. Watto's wings) are intentional here;
+            # aiming tails toward children would change the native rest frame.
             bone.head=world.translation;bone.tail=bone.head+world.to_3x3()@Vector((0,.028,0))
             bone.matrix=world;bone.length=.028
             if native['parent']>=0:bone.parent=data.edit_bones[names[native['parent']]]

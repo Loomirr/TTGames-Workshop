@@ -10,9 +10,9 @@ from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.1.9'
+VERSION = '0.1.10'
 DEFAULT_TOOL_VERSION = '0.1.1'
-TOOL_VERSIONS = {'3DS BTGA to DDS / PNG': '0.1.2', 'Face targets: decode': '0.1.4',
+TOOL_VERSIONS = {'PC DAT index': '0.1.2', '3DS BTGA to DDS / PNG': '0.1.2', 'Face targets: decode': '0.1.4',
                  'Face targets: write edited copy': '0.1.3', 'DCSV archive index': '0.1.7',
                  'TFA archive index': '0.1.6', 'CU3 dependency report': '0.1.6',
                  'LMSH1 AN4 decode': '0.1.2', 'LMSH1 decoded animation to BVH': '0.1.2'}
@@ -59,7 +59,7 @@ TOOLS = {
         [('Archive file', 'file', None, ''), ('New index JSON', 'outfile', None, '')]),
     'PC DAT index': (
         'formats/cu3/scripts/archive_index_classic.py',
-        'Verified early PC DAT paths/file spans: LB1, TCS, LB2, Star Wars III, LMSH1, Hobbit, Movie 1 and LB3. No extraction or model import.',
+        'Verified early PC DAT paths/file spans: LSW2, LB1, TCS, LB2, Star Wars III, LMSH1, Hobbit, Movie 1 and LB3. No extraction or model import.',
         [('DAT file', 'file', None, ''), ('New index JSON', 'outfile', None, ''),
          ('Game', 'classic_game', '--game', 'LB1')]),
 }
@@ -112,7 +112,7 @@ def build_command(name, values):
                 raise ValueError('FPS must be between 0 and 1000')
         elif kind == 'game' and value not in ('LB3', 'LMSH1'):
             raise ValueError('Choose LB3 or LMSH1')
-        elif kind == 'classic_game' and value not in ('LB1','TCS','LB2','SW3','LMSH1','HOBBIT','MOVIE1','LB3'):
+        elif kind == 'classic_game' and value not in ('LSW2','LB1','TCS','LB2','SW3','LMSH1','HOBBIT','MOVIE1','LB3'):
             raise ValueError('Choose a supported PC DAT game profile')
         if flag:
             command.append(flag)
@@ -204,7 +204,7 @@ class Workshop:
             variable = tk.StringVar(value=value)
             self.values.append(variable)
             widget = (ttk.Combobox(self.form, textvariable=variable,
-                                  values=('LB1','TCS','LB2','SW3','LMSH1','HOBBIT','MOVIE1','LB3') if kind=='classic_game' else ('LB3','LMSH1'), state='readonly')
+                                  values=('LSW2','LB1','TCS','LB2','SW3','LMSH1','HOBBIT','MOVIE1','LB3') if kind=='classic_game' else ('LB3','LMSH1'), state='readonly')
                       if kind in ('game','classic_game') else ttk.Entry(self.form, textvariable=variable))
             widget.grid(row=row, column=1, sticky='ew', pady=5)
             if kind in ('file', 'dir', 'source', 'outdir', 'outfile', 'cache'):
