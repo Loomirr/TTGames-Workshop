@@ -4,21 +4,18 @@
 
 ## What this documentation validates
 
-This pass inspected installed text assets and performed read-only native code
-analysis. It did not launch the game, install a mod, compile the example scripts,
-or validate new examples in gameplay. Markdown/link checks are documentation
-checks, not language execution tests.
+The reference combines script examples with native parser and handler analysis.
+New tutorial examples have not been compiled or tested in gameplay. Link and
+formatting checks do not validate script execution.
 
-The inspected asset tree is modded. A recursive search found 905 `.SCP` files:
-43 under `SCRIPTS` and 862 under `LEVELS`. Additional levels, backups and old
-scripts are included. These are inventory counts for the inspected corpus,
-**not a clean retail census, active script count or engine limit**. The guide
-uses identifiable examples rather than treating every token in that corpus as
-a supported command.
+The source map identifies the files used for each observation. A command
+appearing in a file does not by itself establish that the native parser accepts
+it or that a particular level loads that script. The guide makes no claim to
+an exhaustive inventory of retail scripts or supported commands.
 
 ## Source map
 
-Paths below are relative to a user-supplied extracted game tree. No game files
+Paths below are relative to the extracted game directory. No game files
 or proprietary decompiled implementation are distributed with these notes.
 
 | Evidence | What was inspected |
@@ -51,7 +48,7 @@ identification and analysis. This is a research index, not patch instructions.
 
 | Address | Checked finding |
 | --- | --- |
-| `0x00512F00` | Action-name resolver checks a supplied table, then the core table, stepping by 12 bytes |
+| `0x00512F00` | Action-name resolver checks a caller-provided table, then the core table, stepping by 12 bytes |
 | `0x004F8B10` | String comparison used by that lookup folds ASCII letter case |
 | `0x0052B3F0` | Condition parser recognizes comparisons, named parameter operands and `OnMacro` |
 | `0x0052C000` | Reference parser reads script/return names, nested conditions and Global/Level flags |
@@ -73,11 +70,10 @@ Native evidence does not establish GPU appearance, performance, successful
 script binding or save persistence. In particular, a table's handler pointer
 is not an argument signature. No decompiler-generated engine source is included.
 
-The color/material, inheritance and capacity chapters also consolidate earlier
-native research. Only findings about the original engine and original structures
-are carried forward. Reported but unresolved behaviour, such as special hilt
-tints, remains explicitly unresolved. Numbers in the capacity table are not
-new limits implemented or newly gameplay-tested by this documentation pass.
+The color/material, inheritance and capacity chapters describe original engine
+behaviour and structures. Unresolved behaviour, such as special hilt tints,
+is labelled explicitly. Capacity figures are native analysis findings, not
+results of an exhaustive gameplay stress test.
 
 ## A controlled authoring workflow
 

@@ -9,7 +9,7 @@ actor, nor establish its arguments. See [evidence](RESEARCH.md).
 
 ## Common conditions
 
-The roles below describe their use in supplied scripts. Arguments, result
+The roles below describe their use in the referenced scripts. Arguments, result
 domains and edge cases need individual handler checks before extending them.
 
 | Query | Observed role / usage | Evidence example, game-relative |
@@ -139,7 +139,7 @@ save persistence. See [recipes](RECIPES.md) for original examples.
 The following inventory is extracted from the two null-terminated core tables
 in the analyzed executable: **49 conditions and 54 actions**. These are core
 table counts, **not the game's total command counts or script limits**. The
-action resolver also checks a supplied table before the core table, and scripts
+action resolver also checks a caller-provided table before the core table, and scripts
 contain many gameplay-specific names outside this list.
 
 These names are an index for further research. Unexplained names below do not

@@ -60,7 +60,7 @@ Battle Droid uses bare `droid`, `baddie` and `blaster` flags; Vader uses `jedi`,
 | Audio | `sfx_die`, `sfx_hurt`, `sfx_misc` | Resolve actual sound resources; a string alone adds no sound |
 
 Evidence: the stock-named Qui-Gon, Obi-Wan, Mace Windu, Darth Vader and Battle
-Droid definitions in the inspected tree. The table is an observed vocabulary,
+Droid definitions listed in the [source map](RESEARCH.md#source-map). The table is an observed vocabulary,
 not a promise that every property is applicable to every category or model.
 
 ## Categories are not independent ability checkboxes
@@ -89,7 +89,7 @@ substitution as a broad behaviour change, not a clean independent capability.
 ## `txt_file` and animation collection
 
 Stock variants use redirects such as `txt_file="battledroid"` or
-`txt_file="clone"`. Some supplied files use the whitespace form instead of
+`txt_file="clone"`. Some referenced definitions use the whitespace form instead of
 `=`. Preserve a known working form for the target parser.
 
 The native loader follows `txt_file` before collecting animations. A later

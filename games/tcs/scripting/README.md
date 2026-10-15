@@ -43,9 +43,9 @@ Sharing a text extension does not make their commands interchangeable.
 
 - **Native:** checked in the analyzed PC executable's parser or registration
   tables. This establishes the stated code fact, not that every use works in-game.
-- **Observed:** found in supplied installed scripts or definitions. The tree
-  contains mods, backups and possibly unused content; an occurrence alone does
-  not prove the engine accepts it or the game loads that file.
+- **Observed:** present in a referenced script or character definition. Syntax
+  examples show how a construct is written; parser support and runtime behaviour
+  require separate verification.
 - **Example:** newly written teaching material using observed syntax. Examples
   have not been gameplay-tested and are not drop-in level replacements.
 - **Open:** a question that needs further parser/runtime tracing or a controlled
@@ -53,5 +53,5 @@ Sharing a text extension does not make their commands interchangeable.
 
 This guide covers the unmodified native PC game. It documents existing text
 interfaces and their engine constraints; it introduces no new directives.
-Source assets and decompiler output remain private; the guide contains
-descriptions, identifiers and small original examples rather than game scripts.
+The guide contains descriptions, identifiers and small original examples.
+Game assets and decompiled engine source are not distributed with it.

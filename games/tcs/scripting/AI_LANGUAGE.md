@@ -34,11 +34,11 @@ state Base {
 }
 ```
 
-`Base` is a common starting state in supplied files. It is a convention worth
+`Base` is a common starting state in the referenced scripts. It is a convention worth
 preserving, not evidence that it is the first state entered in every loading
 context: scripts also contain states such as `InActive` and `Activate`.
 Braces may appear on the declaration line or the next line. Empty condition
-and action blocks occur in supplied scripts.
+and action blocks occur in the referenced scripts.
 
 Keep state names unique and match transition targets exactly. State names,
 script names and scene object names belong to different namespaces; sharing a
@@ -67,11 +67,11 @@ last example. Each query defines its own accepted argument and result meaning.
 **Native:** the condition parser recognizes `=`, `==`, `<`, `>`, `<=`, `>=`
 and `!=`; `=` and `==` select the same comparison kind. Prefer `==` in new
 examples to make comparisons visually distinct from configuration assignments.
-Numeric comparisons include fractional values in supplied scripts.
+Numeric comparisons include fractional values in the referenced scripts.
 
 ### Conjunctions
 
-Supplied scripts chain tests by ending a line with `and`:
+The referenced scripts chain tests by ending a line with `and`:
 
 ```text
 if GotOpponent == 1 and
@@ -86,7 +86,7 @@ open in this guide.
 
 ### Result and timer queries
 
-`PreviousResult` is used after native operations in supplied scripts. Treat it
+`PreviousResult` is used after native operations in the referenced scripts. Treat it
 as operation-dependent feedback; this guide does not establish a universal
 success code for every action.
 
@@ -109,11 +109,11 @@ SetMessage "name=WorkshopSignal" "value=1"
 ```
 
 The contents of a quoted string are interpreted by that action's native
-handler. Supplied actions use `key=value`, `key value` and standalone flags.
+handler. Observed action arguments use `key=value`, `key value` and standalone flags.
 These are not proven interchangeable. For example, `SetState "Waiting"`
 does not establish that `SetState "state=Waiting"` is accepted.
 
-**Native:** action lookup checks a supplied registration table, then a core
+**Native:** action lookup checks a caller-provided registration table, then a core
 table. Core entries are 12 bytes in the analyzed 32-bit build. The lookup's
 comparison routine folds ASCII letter case. That establishes case-insensitive
 action-name lookup on this path, not universal case insensitivity for filenames,
@@ -237,7 +237,7 @@ cycling back to the trigger while the player remains inside it.
 
 ## Comments and text conventions
 
-Supplied files contain `//` line comments, semicolon comments and `/* ... */`
+The referenced files contain `//` line comments, semicolon comments and `/* ... */`
 blocks. Their presence is asset evidence; full tokenizer edge cases have not
 been exhaustively checked. Prefer simple ASCII identifiers, plain quotes and
 the surrounding file's encoding/line endings. Do not assume Unicode names,

@@ -5,8 +5,8 @@
 ## Loading and binding
 
 Shared behaviours are present under `SCRIPTS/`; area behaviours are present
-under the area's `AI/` directory. The inspected tree also contains `AI.PAK` and
-other packaged text resources. Finding a loose file does not prove that it is
+under the area's `AI/` directory. Packaged resources such as `AI.PAK` can also
+participate in loading. Finding a loose file does not prove that it is
 the resource used by a particular installation or loading path.
 
 Before editing, identify the actor or level processor that uses the script,
@@ -18,11 +18,11 @@ character property without confirming its parser support.
 Area files named `LEVEL.SCP`, `LEVEL1.SCP`, `PARTY.SCP` and named actor scripts
 are observed. Their names alone do not prove automatic discovery rules or the
 number of supported level processors. `ReferenceScript` explicitly selects a
-script and source; `AddScriptProcessor` and `CreateCreatures` occur in the wider
-installed corpus with `script=` options. Their complete signatures, lifetime
+script and source; level scripts also use `AddScriptProcessor` and
+`CreateCreatures` with `script=` options. Their complete signatures, lifetime
 and loading order remain outside the verified core reference.
 
-Do not generalize archive-versus-loose precedence from one modded install.
+Verify archive-versus-loose precedence for the resource and loading path being edited.
 Keep extraction/packaging changes separate from script changes so a failed
 load can be diagnosed without also changing gameplay logic.
 

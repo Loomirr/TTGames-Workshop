@@ -123,7 +123,7 @@ Before using it, supply a valid registered character, an appropriate script
 binding/source and an actual locator in the area. `locator` is not an XYZ
 position string. `type` is not the localized display name.
 
-Supplied mission scripts also use `locator_set`, `max_range_to_player`,
+Negotiations A `AI/LEVEL2.SCP` also uses `locator_set`, `max_range_to_player`,
 `addtoset`, `off_screen`, `mingroupsize` and `maxgroupsize`. Preserve their
 observed quoted option form. Their complete defaults, selection rules and
 failure behaviour are not established here; begin with a single known locator
