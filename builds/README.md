@@ -1,15 +1,17 @@
 # Download builds
 
-Character 0.5.17 adds classic PC raw model inspection; CU3 0.1.26 adds a separate CU2 reference importer. These are incomplete inspection modes, not complete classic character or cutscene assembly. [Checks and remaining gaps](../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
+The current Blender builds add viewport file drops and verified accessory/material
+fixes. Native export remains constrained to supported edits.
+[Validation and remaining gaps](../docs/COMPATIBILITY_2026-10-15.md).
 
 These packages are built from our tools in this repository. Click a package
 below, then use GitHub's **Download raw file** button to save the ZIP.
 
 | Tool | Package | Use |
 | --- | --- | --- |
-| Character and animation importer 0.5.17 | [Blender addon ZIP](blender/TT_Character_Importer_0.5.17.zip) | LMSH1/LB3/Hobbit/Avengers, raw LB1/TCS inspection, plus static LEGO Fortnite Paks/export-library browsing; [instructions](../formats/character/README.md) |
-| Original LSW1 HGP importer 0.1.3 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.3.zip) | Native character meshes/rigs, corrected palette colors, textures, alpha and normals |
-| CU3 importer 0.1.26 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.26.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages, with shared older-accessory fixes; TFA/DCSV reference inspection; separate classic CU2 static references |
+| Character and animation importer 0.5.18 | [Blender addon ZIP](blender/TT_Character_Importer_0.5.18.zip) | LMSH1/LB3/Hobbit/Avengers, raw LB1/TCS inspection, plus static LEGO Fortnite Paks/export-library browsing; [instructions](../formats/character/README.md) |
+| Original LSW1 HGP importer 0.1.4 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.4.zip) | Native character meshes/rigs, corrected palette colors, textures, alpha and normals |
+| CU3 importer 0.1.27 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.27.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages, with shared older-accessory fixes; TFA/DCSV reference inspection; separate classic CU2 static references |
 | LIJ1 Xbox 360 prototype extractor 0.1.2 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip) | GHG/GSC/TEX/FNT/DDS inputs; cubemaps, BC5, float and legacy textures |
 | Classic PC inspectors 0.1.1 | [Python CLI ZIP](python/Classic_PC_Inspectors-0.1.1.zip) | Reviewed NU20/CU2/AN3/GIZ CLI readers; [coverage and limits](../formats/classic-pc/README.md). Raw classic inspection also available in the Blender addons. |
 
@@ -31,11 +33,11 @@ users do not need the toolbox, Blender, or a full repository checkout.
 | 3DS BTGA texture converter 0.1.2 | [ZIP](python/BTGA_Texture_Converter_GUI-0.1.2.zip) |
 | LMSH1 AN4 decoder | [ZIP](python/LMSH1_AN4_Decoder_GUI-0.1.2.zip) |
 | LMSH1 experimental BVH exporter | [ZIP](python/LMSH1_BVH_Exporter_GUI-0.1.2.zip) |
-| CU3 dependency checker 0.1.5 | [ZIP](python/CU3_Dependency_Checker_GUI-0.1.5.zip) |
+| CU3 dependency checker 0.1.6 | [ZIP](python/CU3_Dependency_Checker_GUI-0.1.6.zip) |
 | Face target decoder 0.1.4 (no extraction log needed; optional CLI summary) | [ZIP](python/Face_Target_Decoder_GUI-0.1.4.zip) |
 | Face target writer 0.1.3 | [ZIP](python/Face_Target_Writer_GUI-0.1.3.zip) |
-| TFA archive index 0.1.5 | [ZIP](python/TFA_Archive_Index_GUI-0.1.5.zip) |
-| DCSV archive index 0.1.6 | [ZIP](python/DCSV_Archive_Index_GUI-0.1.6.zip) |
+| TFA archive index 0.1.6 | [ZIP](python/TFA_Archive_Index_GUI-0.1.6.zip) |
+| DCSV archive index 0.1.7 | [ZIP](python/DCSV_Archive_Index_GUI-0.1.7.zip) |
 | PC DAT index 0.1.1 (eight explicit game profiles) | [ZIP](python/PC_DAT_Index_GUI-0.1.1.zip) |
 | CU3 name editor | [ZIP](python/CU3_Name_Editor_GUI-0.1.1.zip) |
 
@@ -44,12 +46,12 @@ To rebuild these packages: `python tools/package_individual_guis.py`.
 
 The Python GUI downloads are small source distributions, not self-contained
 Windows EXEs. See each ZIP's README for its inputs, format limits and requirements.
-The optional [combined toolbox 0.1.8](python/TTGames_Workshop_GUI-0.1.8.zip) is a separate
+The optional [combined toolbox 0.1.9](python/TTGames_Workshop_GUI-0.1.9.zip) is a separate
 tool. The individual downloads above open directly to their own functions.
 
 For the Blender ZIPs, open Preferences and **Install from Disk**, select the ZIP
-and enable the importer. LSW1 requires Blender 4.2+; CU3 declares 4.4+. Both
-were checked in Blender 5.2.2. Read the component docs for input requirements.
+and enable the importer. LSW1 requires Blender 4.2+; Character and CU3 require
+4.4+. All three were checked in Blender 5.2.2. Read the component docs for input requirements.
 
 Character 0.5.15 and CU3 0.1.24 repair the complete-character regressions
 identified after the previous isolated-file checks. These include missing
@@ -66,8 +68,8 @@ sidebar exposes import and preview quality settings; see
 [usage and limits](../docs/SHADING_AND_QUALITY.md).
 Standalone facial clip linking remains a character-addon feature. Face GUI
 0.1.4 decoder and 0.1.3 writer packages include the current shared mesh readers without expanding target
-layouts. Dependency GUI 0.1.5, TFA index GUI 0.1.5, DCSV index GUI 0.1.6 and
-toolbox 0.1.8 include the updated bounded archive/identity readers used by their backends.
+layouts. Dependency GUI 0.1.6, TFA index GUI 0.1.6, DCSV index GUI 0.1.7 and
+toolbox 0.1.9 include the updated bounded archive/identity readers used by their backends.
 BTGA 0.1.2 retains its strict raw PICA payload-length checks. GUI backend import
 checks are separate from interactive Tk window validation.
 

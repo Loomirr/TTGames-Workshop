@@ -210,6 +210,8 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
         rig['tt_character_report'] = write_report('TT Character report / ' + path.stem, report)
         rig['tt_native_source_provenance'] = provenance.dumps()
         context.view_layer.update()
+        from .export_inventory import bind_inventory
+        bind_inventory(rig, import_issues=report['issues'])
         return rig, report
     except Exception:
         rollback(before)

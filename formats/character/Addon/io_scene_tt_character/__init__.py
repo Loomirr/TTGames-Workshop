@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 5, 17), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 5, 18), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -196,6 +196,8 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
         self.mesh_detail = context.scene.tt_mesh_detail
         self.layers = context.scene.tt_costume_layers
         self.attachments = context.scene.tt_import_attachments
+        if self.filepath:
+            return context.window_manager.invoke_props_dialog(self, width=500)
         return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
@@ -246,9 +248,14 @@ class IMPORT_ANIM_OT_tt_an4(bpy.types.Operator, ImportHelper):
     def poll(cls, context):
         return find_rig(context.object) is not None and context.mode == 'OBJECT'
 
+    def invoke(self, context, event):
+        if self.filepath:
+            return context.window_manager.invoke_props_dialog(self, width=500)
+        return ImportHelper.invoke(self, context, event)
+
     def execute(self, context):
         rig = find_rig(context.object)
-        paths = [Path(self.directory) / f.name for f in self.files] if self.files else [Path(self.filepath)]
+        paths = [Path(self.directory or str(Path(self.filepath).parent)) / f.name for f in self.files] if self.files else [Path(self.filepath)]
         report = import_animations(context, rig, paths, self.actor, self.fps)
         imported = report['imported']
         if not imported and report['issues']:
@@ -424,7 +431,9 @@ class TTCHAR_OT_export_sources(bpy.types.Operator):
         except (ValueError, OSError, KeyError, RuntimeError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
-        self.report({'WARNING'}, f'{len(report["files"])} loose files exported. Existing vertex/face edits only; see TT_Source_Export.json for limits.')
+        notice = (' Older import: reimport to check missing meshes/attachments.'
+                  if not report.get('assembly_inventory', {}).get('checked') else '')
+        self.report({'WARNING'}, f'{len(report["files"])} loose files exported. Existing vertex/face edits only; see TT_Source_Export.json for limits.' + notice)
         return {'FINISHED'}
 
 
@@ -650,7 +659,30 @@ class TTCHAR_OT_fortnite_extract(bpy.types.Operator):
         return {'FINISHED'}
 
 
-CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools, TTCHAR_PT_settings, TTCHAR_OT_apply_preview, TTCHAR_OT_restore_settings, TTCHAR_OT_fortnite_extract)
+class TTCHAR_FH_model(bpy.types.FileHandler):
+    bl_idname = 'TTCHAR_FH_model'
+    bl_label = 'TT Character / Model'
+    bl_import_operator = 'import_scene.tt_character'
+    bl_file_extensions = '.cd;.ghg;.gsc'
+
+    @classmethod
+    def poll_drop(cls, context):
+        return context.area is not None and context.area.type == 'VIEW_3D' and context.mode == 'OBJECT'
+
+
+class TTCHAR_FH_an4(bpy.types.FileHandler):
+    bl_idname = 'TTCHAR_FH_an4'
+    bl_label = 'TT Character Animation'
+    bl_import_operator = 'import_anim.tt_an4'
+    bl_file_extensions = '.an4'
+
+    @classmethod
+    def poll_drop(cls, context):
+        return (context.area is not None and context.area.type == 'VIEW_3D'
+                and IMPORT_ANIM_OT_tt_an4.poll(context))
+
+
+CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools, TTCHAR_PT_settings, TTCHAR_OT_apply_preview, TTCHAR_OT_restore_settings, TTCHAR_OT_fortnite_extract, TTCHAR_FH_model, TTCHAR_FH_an4)
 
 
 def register():

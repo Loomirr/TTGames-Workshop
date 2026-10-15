@@ -1,7 +1,7 @@
 bl_info = {
     'name': 'LEGO CU3 Cutscene Importer (Experimental)',
     'author': 'Loomirr',
-    'version': (0, 1, 26),
+    'version': (0, 1, 27),
     'blender': (4, 4, 0),
     'location': 'File > Import > LEGO CU3 cutscene',
     'description': 'Assemble supported cutscene actors, attachments, materials and cameras from native companion assets',
@@ -82,6 +82,11 @@ class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
             if self.mode == 'SELECTED':
                 layout.prop(self, 'copy_rig')
         if self.mode not in ('ASSEMBLE','DEPENDENCIES'):layout.prop(self, 'cameras')
+
+    def invoke(self, context, event):
+        if self.filepath:
+            return context.window_manager.invoke_props_dialog(self, width=520)
+        return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
         try:
@@ -184,6 +189,11 @@ class IMPORT_SCENE_OT_lego_cu2(bpy.types.Operator, ImportHelper):
         self.layout.label(text='Source placements, names and shot markers.')
         self.layout.label(text='No animated cameras, actors or stage assembly yet.')
 
+    def invoke(self, context, event):
+        if self.filepath:
+            return context.window_manager.invoke_props_dialog(self, width=520)
+        return ImportHelper.invoke(self, context, event)
+
     def execute(self,context):
         from ._classic.blender_inspect import inspect_cutscene
         try:
@@ -192,6 +202,28 @@ class IMPORT_SCENE_OT_lego_cu2(bpy.types.Operator, ImportHelper):
             self.report({'ERROR'},str(error));return {'CANCELLED'}
         self.report({'WARNING'},'CU2 reference scene created; full playback and companion assembly are not implemented. See CU2 report.')
         return {'FINISHED'}
+
+
+class TTCU3_FH_cutscene(bpy.types.FileHandler):
+    bl_idname = 'TTCU3_FH_cutscene'
+    bl_label = 'TT CU3 Cutscene'
+    bl_import_operator = 'import_scene.lego_cu3'
+    bl_file_extensions = '.cu3'
+
+    @classmethod
+    def poll_drop(cls, context):
+        return context.area is not None and context.area.type == 'VIEW_3D' and context.mode == 'OBJECT'
+
+
+class TTCU2_FH_cutscene(bpy.types.FileHandler):
+    bl_idname = 'TTCU2_FH_cutscene'
+    bl_label = 'TT CU2 References'
+    bl_import_operator = 'import_scene.lego_cu2_references'
+    bl_file_extensions = '.cu2'
+
+    @classmethod
+    def poll_drop(cls, context):
+        return TTCU3_FH_cutscene.poll_drop(context)
 
 
 def menu_import(self, context):
@@ -204,6 +236,8 @@ def register():
     bpy.utils.register_class(TT_CU3_Preferences)
     bpy.utils.register_class(IMPORT_SCENE_OT_lego_cu3)
     bpy.utils.register_class(IMPORT_SCENE_OT_lego_cu2)
+    bpy.utils.register_class(TTCU3_FH_cutscene)
+    bpy.utils.register_class(TTCU2_FH_cutscene)
     bpy.types.TOPBAR_MT_file_import.append(menu_import)
     face_edit_ui.register()
     face_preview_ui.register()
@@ -216,6 +250,8 @@ def unregister():
     face_preview_ui.unregister()
     face_edit_ui.unregister()
     bpy.types.TOPBAR_MT_file_import.remove(menu_import)
+    bpy.utils.unregister_class(TTCU2_FH_cutscene)
+    bpy.utils.unregister_class(TTCU3_FH_cutscene)
     bpy.utils.unregister_class(IMPORT_SCENE_OT_lego_cu3)
     bpy.utils.unregister_class(IMPORT_SCENE_OT_lego_cu2)
     bpy.utils.unregister_class(TT_CU3_Preferences)

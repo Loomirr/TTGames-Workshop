@@ -6,12 +6,13 @@ and reads the observed skinned MESH 161 / UMTL 168 layout. His screen texture
 and highest-detail armour import; the older glass shader uses approximate
 transparency. Native refraction and screen animation are not verified.
 
-Character 0.5.17 adds classic PC raw model inspection; CU3 0.1.26 adds a separate CU2 reference importer. These are incomplete inspection modes, not complete classic character or cutscene assembly. [Checks and remaining gaps](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
+Classic PC raw model inspection and CU2 reference import remain separate,
+incomplete inspection modes. [Classic checks and gaps](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
 
 The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.17**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.18**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
@@ -22,7 +23,7 @@ GHG/GSC draws and native rigs, not fully assembled characters. Rigid attachments
 can be hidden as unresolved, variants can overlap, shaders are approximate and
 AN3 playback/native export are unavailable. See [classic instructions](../classic-pc/README.md#blender-inspection).
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.17.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.18.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -82,6 +83,20 @@ to apply the changes and create a fresh preview scene. See the
 [face accuracy checks and remaining limits](../../docs/FACE_ACCURACY_0.5.3.md).
 
 ## Import a character
+
+Drag a single `.cd`, `.ghg` or model `.gsc` into the **3D Viewport in Object
+Mode**. The options dialog lets you confirm the game and asset folder before
+importing. Prefer the character's CD for its costume and attachments. A raw
+model still needs its companions for a complete character.
+
+To drop one or more `.an4` files, first select an imported native character or
+its rig, then drop them into the viewport and confirm the options. Unsupported
+animation layouts still produce a report. File > Import and the sidebar browser
+remain available. Dropping a file does not expand that profile's format support.
+
+Version **0.5.18** also extends verified accessory/material layouts and checks
+the imported assembly before native export. See the [current validation report](../../docs/COMPATIBILITY_2026-10-15.md)
+for original-file checks and unresolved visual problems.
 
 Version 0.5.7 adds shared-source conflict rejection, verified staged output,
 strict resource identity, bounded archive/DDS reads and raw skin-weight
@@ -253,9 +268,14 @@ accessories, DISP 16, UMTL 163 and TXTS 0, restoring attachments such as
 Magneto's helmet. It fixes the two-byte UMTL 174 prefix mismatch that rejected
 other accessories. Texture IDs, UVs and render footers are decoded, but the
 older shader Boolean meanings remain unresolved and shading is approximate.
-Skinned or morph-bearing MESH 161 files are rejected. The new 161 writer check
-covers a constructed UV edit; actual helmet validation covers byte-identical
-no-op export/reimport, not edited-file gameplay.
+The later Zola update also reads the verified skinned MESH 161 layout;
+morph-bearing MESH 161 remains rejected. The static 161 writer check covers a
+constructed UV edit; actual helmet validation covers byte-identical no-op
+export/reimport, not edited-file gameplay.
+
+See [native export checks](EXPORT_VALIDATION.md) for the current assembly guards,
+Windows long-path correction and 24 original edited-export/reimport checks across
+LMSH1, LB3, Hobbit and Avengers.
 
 Material node changes, painted/replaced Blender images and edited loaded clips
 now stop a source-bundle export instead of being silently copied as originals.

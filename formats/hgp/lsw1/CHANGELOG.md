@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Drop HGP files into the 3D Viewport in Object Mode and review import options.
+- Keep multi-file import and highest-detail defaults.
+- Add a packaged original-file import check and shared Blender handler checks.
+
 ## 0.1.3
 
 - Convert native display RGB palette colors into scene-linear material inputs,

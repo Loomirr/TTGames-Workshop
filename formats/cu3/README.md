@@ -6,7 +6,8 @@ and reads the observed skinned MESH 161 / UMTL 168 layout. His screen texture
 and highest-detail armour import; the older glass shader uses approximate
 transparency. Native refraction and screen animation are not verified.
 
-Character 0.5.17 adds classic PC raw model inspection; CU3 0.1.26 adds a separate CU2 reference importer. These are incomplete inspection modes, not complete classic character or cutscene assembly. [Checks and remaining gaps](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
+Classic PC raw model inspection and CU2 reference import remain separate,
+incomplete inspection modes. [Classic checks and gaps](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
 
 The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
 
@@ -18,7 +19,13 @@ reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
 
-Current source and packaged build: **0.1.26** (experimental).
+Current source and packaged build: **0.1.27** (experimental).
+
+Drag a single `.cu3` or `.cu2` into the **3D Viewport in Object Mode** to open
+its import options. Confirm the game/assets folder before importing. CU2 drops
+use the existing static reference inspector; they do not become playable scenes.
+Version 0.1.27 also shares the character reader's verified accessory/material
+fixes. See [current checks and limits](../../docs/COMPATIBILITY_2026-10-15.md).
 
 Version 0.1.26 adds a separate **File > Import > LEGO CU2 references (classic
 PC; inspection only)** entry. It creates static actor/object and camera-reference
@@ -104,7 +111,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.24 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.26.zip)
+Download the [0.1.27 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.27.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

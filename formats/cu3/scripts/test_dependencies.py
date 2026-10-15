@@ -56,6 +56,15 @@ class DependencyTests(unittest.TestCase):
         with self.assertRaises(MissingResource):
             ResourceResolver(AssetIndex(self.root),'LMSH1').resolve('Shell')
 
+    def test_lb3_generic_face_uses_owned_companion(self):
+        self.file('chars/face/Face_Generic_Male.CD')
+        self.file('chars/face/Face_Generic_Male_DX11.GHG')
+        self.file('elsewhere/Face_Generic_Male_DX11.GHG',b'wrong')
+        self.definitions['face_generic_male']=definition('FACE')
+        resolver=self.resolver()
+        self.assertEqual(resolver.resolve('chars/face/Face_Generic_Male')['logical_model'],
+                         'chars/face/Face_Generic_Male_DX11.GHG')
+
     def test_marvel_companion_does_not_replace_shared_model(self):
         self.file('Shell.CD');self.file('Shell_NXG.GHG');self.file('GenericRig_NXG.GHG')
         self.definitions['shell']=definition('GenericRig')

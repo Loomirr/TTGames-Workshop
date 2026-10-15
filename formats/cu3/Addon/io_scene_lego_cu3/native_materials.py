@@ -26,7 +26,7 @@ def costume_slot(entry):
     """Authored material-role ID, not its display-table index or a name guess."""
     name = entry['name'].split(':', 1)[0].upper()
     if name.endswith('_DX11'):name=name[:-5]
-    modern=entry.get('table_version') in (229,232,234,235)
+    modern=entry.get('table_version') in (228,229,232,234,235)
     if not modern and not name.endswith('_GAME'):
         return None
     value = entry['render_flags'].get('special_id', 0)
@@ -78,6 +78,44 @@ def surface_normal_binding(entry, mesh_version):
 
 def shader_prefix(data, start, version, *, limit=None):
     r = _MaterialReader(data, start, limit)
+    if version == 228:
+        # Avengers faces/accessories: seventeen UV pairs, eighteen texture
+        # IDs at 0x1aa, then a seventeen-byte format array. Do not reuse 229's
+        # shifted texture boundary or infer the opaque Boolean flags.
+        r.span(start, 0x1aa)
+        fields = dict(version=r.get('I',start),shaderType=r.get('I',start+4),
+                      lightingModel=r.get('I',start+8),numUVSets=r.get('I',start+0x88),
+                      numBones=r.get('B',start+0x99),
+                      uvSets=[r.get('2I',start+0x9a+i*8) for i in range(17)],
+                      shaderVersion=r.get('I',start+0x181),GPUVendor=r.get('I',start+0x185),
+                      colourSpace=r.get('I',start+0x189),
+                      opaqueShaderFlags=list(data[start+0x122:start+0x181]),
+                      vertAlbedo=None,canAlphaBlend=None,ignoreVertexOpacity=None)
+        if (fields['version'] != 2 or fields['shaderVersion'] != 4
+                or fields['numUVSets'] > 17 or fields['numBones'] > 4
+                or any(a not in (0,1) or b not in (*range(16),0xffffffff)
+                       for a,b in fields['uvSets'])):
+            raise FormatError('Unverified UMTL 228 shader prefix')
+        return fields,start+0x1aa
+    if version == 172:
+        # Older LMSH1 attachments have a one-byte-shorter flag block than
+        # UMTL 174. Keep that block opaque instead of shifting later flags.
+        r.span(start,405)
+        names = ('version shaderType lightingModel substanceMode roughnessMode fresnelAlphaMode '
+                 'blendMode alphaTest alphaFadeSource surfaceMapMethod surfaceMapFormat0 '
+                 'surfaceMapFormat1 surfaceMapFormat2 surfaceMapFormatVTFN occlusion refraction reflection').split()
+        fields = {name:r.get('I',start+i*4) for i,name in enumerate(names)}
+        fields.update(numUVSets=r.get('I',start+104),numBones=r.get('B',start+121),
+                      uvSets=[r.get('2I',start+122+i*8) for i in range(16)],
+                      opaqueShaderFlags=list(data[start+250:start+328]),
+                      shaderVersion=r.get('I',start+328),GPUVendor=r.get('I',start+332),
+                      colourSpace=r.get('I',start+336),
+                      vertAlbedo=None,canAlphaBlend=None,ignoreVertexOpacity=None)
+        if (fields['version']!=2 or fields['shaderVersion']!=4 or fields['numUVSets']>16
+                or fields['numBones']>4 or any(a not in (0,1) or b not in (*range(16),0xffffffff)
+                                               for a,b in fields['uvSets'])):
+            raise FormatError('Unverified UMTL 172 shader prefix')
+        return fields,start+405
     if version == 168:
         # LMSH1 armour: bounded older prefix, 18 IDs at +399. The word
         # at +395 precedes the IDs; treating it as an ID shifts every texture.
@@ -241,7 +279,7 @@ def read_materials_bytes(data):
     if marker < 0:
         raise FormatError('Native material table missing')
     version, count = r.get('2I', marker+4)
-    if version not in (163, 168, 174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 229, 232, 234, 235) or count > 65536:
+    if version not in (163, 168, 172, 174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 228, 229, 232, 234, 235) or count > 65536:
         raise FormatError(f'Unverified native material table version/count: {version}/{count}')
     start = marker+12
     if version < 190:
@@ -270,57 +308,73 @@ def read_materials_bytes(data):
     for offset in range(0x300, min(0x600, records_end-start-2)):
         length = r.get('H', start+offset)
         raw = data[start+offset+2:min(start+offset+2+length, records_end)]
-        if 5 <= length < 256 and len(raw)==length and raw.endswith(b'\0') and all(32 <= c <= 126 for c in raw[:-1]):
+        if 2 <= length < 256 and len(raw)==length and raw.endswith(b'\0') and all(32 <= c <= 126 for c in raw[:-1]):
             lengths.append(offset)
-    if len(lengths) != 1:
+    if not lengths or len(lengths) > 32:
         raise FormatError('Ambiguous native material name layout')
-    name_offset = lengths[0]
-    entries = []
-    cursor = start
-    while cursor < records_end:
-        candidate = data.find(b'\0\0\0\2', cursor, records_end)
-        if candidate < 0:
-            break
-        cursor = candidate+4
-        if candidate+name_offset+2 > records_end:
-            continue
-        length = r.get('H', candidate+name_offset)
-        end = candidate+name_offset+2+length
-        raw = data[candidate+name_offset+2:end]
-        if not 1 <= length < 512 or end > records_end or not raw.endswith(b'\0') or any(c<32 or c>126 for c in raw[:-1]):
-            continue
-        fields, texture_at = shader_prefix(data, candidate, version, limit=candidate+name_offset)
-        modern = version in (229, 232, 234, 235)
-        slots = 17 if version == 229 else 18
-        ids = list(r.get(f'{slots}i', texture_at))
-        if any(i < -1 or i > 65536 for i in ids):
-            continue
-        if texture_at+slots*4 > candidate+name_offset:
-            raise FormatError('Overlapping native material fields')
-        formats = []
-        texture_end = texture_at+slots*4
-        if modern:
-            format_count = r.get('I', texture_at+slots*4)
-            if format_count != 17:
-                raise FormatError('Native material texture-format count differs from slots')
-            formats = list(r.get(f'{format_count}B', texture_at+slots*4+4))
-            texture_end += 4+format_count
-            if texture_end > candidate+name_offset:
-                raise FormatError('Overlapping native material texture-format/name fields')
-            if fields['version'] != 2 or fields['shaderVersion'] != 4 or fields['numUVSets'] > 17:
-                raise FormatError('Unverified modern shader prefix values')
-        entries.append({'index':len(entries), 'offset':candidate, 'table_version':version, 'name':raw[:-1].decode('ascii'),
-                        'texture_ids':ids, 'texture_formats':formats, 'fields':fields,
-                        'prefix_end':texture_at, 'texture_end':texture_end,
-                        'name_offset':candidate+name_offset, 'name_end':end})
-        cursor = end
-    if len(entries) != count or entries[0]['offset'] != start:
-        raise FormatError('Native material record count disagrees with table')
-    flags = read_render_flags(data, entries, version, table_end=limit)
-    for entry, footer in zip(entries, flags):
-        entry['render_flags'] = footer['flags']
-        entry['footer_offset'] = footer['offset']
-        entry['end_offset'] = footer['end']
+
+    def decode_records(name_offset):
+        entries = []
+        cursor = start
+        while cursor < records_end:
+            candidate = data.find(b'\0\0\0\2', cursor, records_end)
+            if candidate < 0:
+                break
+            cursor = candidate+4
+            if candidate+name_offset+2 > records_end:
+                continue
+            length = r.get('H', candidate+name_offset)
+            end = candidate+name_offset+2+length
+            raw = data[candidate+name_offset+2:end]
+            if not 1 <= length < 512 or end > records_end or not raw.endswith(b'\0') or any(c<32 or c>126 for c in raw[:-1]):
+                continue
+            fields, texture_at = shader_prefix(data, candidate, version, limit=candidate+name_offset)
+            modern = version in (228, 229, 232, 234, 235)
+            slots = 17 if version == 229 else 18
+            ids = list(r.get(f'{slots}i', texture_at))
+            if any(i < -1 or i > 65536 for i in ids):
+                continue
+            if texture_at+slots*4 > candidate+name_offset:
+                raise FormatError('Overlapping native material fields')
+            formats = []
+            texture_end = texture_at+slots*4
+            if modern:
+                format_count = r.get('I', texture_at+slots*4)
+                if format_count != 17:
+                    raise FormatError('Native material texture-format count differs from slots')
+                formats = list(r.get(f'{format_count}B', texture_at+slots*4+4))
+                texture_end += 4+format_count
+                if texture_end > candidate+name_offset:
+                    raise FormatError('Overlapping native material texture-format/name fields')
+                if fields['version'] != 2 or fields['shaderVersion'] != 4 or fields['numUVSets'] > 17:
+                    raise FormatError('Unverified modern shader prefix values')
+            entries.append({'index':len(entries), 'offset':candidate, 'table_version':version, 'name':raw[:-1].decode('ascii'),
+                            'texture_ids':ids, 'texture_formats':formats, 'fields':fields,
+                            'prefix_end':texture_at, 'texture_end':texture_end,
+                            'name_offset':candidate+name_offset, 'name_end':end})
+            cursor = end
+        if len(entries) != count or not entries or entries[0]['offset'] != start:
+            raise FormatError('Native material record count disagrees with table')
+        flags = read_render_flags(data, entries, version, table_end=limit)
+        for entry, footer in zip(entries, flags):
+            entry['render_flags'] = footer['flags']
+            entry['footer_offset'] = footer['offset']
+            entry['end_offset'] = footer['end']
+        return entries
+
+    # A short printable sequence in an opaque field is not enough to identify
+    # a name. Require one candidate that validates the complete declared table,
+    # including every record's shader, texture, footer and variant bounds.
+    if len(lengths) == 1:
+        entries = decode_records(lengths[0])
+    else:
+        candidates = []
+        for offset in lengths:
+            try:candidates.append(decode_records(offset))
+            except (FormatError, ValueError, struct.error):continue
+        if len(candidates) != 1:
+            raise FormatError('Ambiguous native material name layout after full-table validation')
+        entries = candidates[0]
     return {'version':version, 'materials':entries,
             'table_offset':marker, 'table_end':limit+4,
             'layout_validation':'Bounded prefix/name/texture/footer spans; name placement remains inferred from the table'}

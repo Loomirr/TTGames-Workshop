@@ -5,51 +5,21 @@ from pathlib import Path
 import bpy
 from mathutils import Vector
 from .cu3 import FormatError
-from .native_mesh import read_mesh
-from .native_display import read_display, model_bindings
-from .native_materials import read_materials
-from .native_layers import selected_layer_metadata
-from .skeleton import read_skeleton
+from .native_model import load_model as decode_model, selected_draws
 from .morph import add_shape_keys
 from .blender_import import C, row_matrix, create_rig
 from .material_preview import attach_vertex_albedo, attach_vertex_opacity
 from .face_edit_blender import bind_source
 from .mesh_edit_blender import bind_vertices
 from .material_edit_guard import bind_materials
-from .model_validation import validate_model, validate_draw, matrix
+from .model_validation import validate_draw, matrix
 from .geometry_normals import normal_preservation_status, apply_authored_normals
 
 
 def load_model(path, *, skeleton_identity=None):
-    def stage(label, reader):
-        try:return reader()
-        except (FormatError, ValueError) as error:
-            raise FormatError(f'{Path(path).name} [{label}]: {error}') from error
-    model = stage('mesh decoding', lambda: read_mesh(path))
-    model['display'] = stage('display decoding', lambda: read_display(path, len(model['parts'])))
-    model['skeleton'] = stage('skeleton decoding', lambda: read_skeleton(
-        path, display=model['display'], mesh=model, identity=skeleton_identity)) if path.suffix.lower()=='.ghg' else None
-    model['materials'] = stage('material decoding', lambda: read_materials(path)['materials'])
-    model['validation'] = stage('decoded model validation', lambda: validate_model(model))
+    model = decode_model(path, skeleton_identity=skeleton_identity)
     model['validation']['blender_capabilities'] = dict(normal_preservation=normal_preservation_status())
-    if hashlib.sha256(Path(path).read_bytes()).hexdigest()!=model['source_sha256']:
-        raise FormatError('Native model changed during decoding: '+str(path))
     return model
-
-
-def selected_draws(model, definition=None, *, layer_mode='authored', highest_detail=True):
-    skeleton = model['skeleton']
-    if skeleton is None:
-        return [(special, binding, None) for special in model['display']['specials']
-                for binding in model_bindings(model['display'], special, highest_detail=highest_detail)]
-    draws = []
-    for metadata in selected_layer_metadata(skeleton, model['display'], definition, layer_mode=layer_mode):
-        special = model['display']['specials'][metadata['special']]
-        if special['unsupported_commands']:
-            raise FormatError('Layer uses unsupported display commands')
-        for binding in model_bindings(model['display'], special, highest_detail=highest_detail):
-            draws.append((special, binding, metadata))
-    return draws
 
 
 def create_model(model, name, collection, definition=None, material_factory=None, *, layer_mode='authored', highest_detail=True):

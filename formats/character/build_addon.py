@@ -34,6 +34,7 @@ def main():
         archive.write(ROOT / 'formats/character/README.md', prefix + 'README.md')
         archive.write(ROOT / 'formats/fortnite/README.md', prefix + 'FORTNITE.md')
         archive.write(ROOT / 'formats/character/COMPATIBILITY.md', prefix + 'COMPATIBILITY.md')
+        archive.write(ROOT / 'formats/character/EXPORT_VALIDATION.md', prefix + 'EXPORT_VALIDATION.md')
         archive.write(ROOT / 'formats/character/RESEARCH_0.2.md', prefix + 'RESEARCH_0.2.md')
         archive.write(ROOT / 'docs/LICENSING.md', prefix + 'LICENSING.md')
     manifest_path = ROOT / 'builds/manifest.json'

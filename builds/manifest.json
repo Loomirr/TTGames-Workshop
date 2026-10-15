@@ -1,19 +1,19 @@
 {
   "packages": [
     {
-      "path": "blender/TT_Character_Importer_0.5.17.zip",
-      "bytes": 229936,
-      "sha256": "ed57c58f65e33bbd14729aa885aa48a1fdb7b8971dbfc47f52e524317db189ba"
+      "path": "blender/TT_Character_Importer_0.5.18.zip",
+      "bytes": 237971,
+      "sha256": "1af34bbd66754d49de080941a0700052404f1dbddae3b64acc5c48fc4411062c"
     },
     {
-      "path": "blender/TT_Cutscene_Importer_0.1.26.zip",
-      "bytes": 194228,
-      "sha256": "83e0dcfccdfefcf7012d8ae549f6f7c8929f78fa4e956432eeca8a925762e302"
+      "path": "blender/TT_Cutscene_Importer_0.1.27.zip",
+      "bytes": 197632,
+      "sha256": "e05f4974801f1b195c00751e72de0faa14b31e0972dfeb51dec59af778d367be"
     },
     {
-      "path": "blender/lsw1_hgp_importer-0.1.3.zip",
-      "bytes": 26091,
-      "sha256": "6466cc3864b2a5ed3c1447951264112c4dabe929a4edd83fbd269f043fd5a583"
+      "path": "blender/lsw1_hgp_importer-0.1.4.zip",
+      "bytes": 26351,
+      "sha256": "9a79409a83408d1c0c50a7d9d08c906151ab569dd92158db55fc8fc0b5e34a12"
     },
     {
       "path": "python/BTGA_Texture_Converter_GUI-0.1.2.zip",
@@ -21,9 +21,9 @@
       "sha256": "1a72060ba46cb4ed25557dd8c00993f2d41a77e1e890309d63ac79658762df14"
     },
     {
-      "path": "python/CU3_Dependency_Checker_GUI-0.1.5.zip",
-      "bytes": 52462,
-      "sha256": "c1ad399b496d41fa094c0e92f38b7409f9677aa78cd295d8879e2df36286107f"
+      "path": "python/CU3_Dependency_Checker_GUI-0.1.6.zip",
+      "bytes": 54119,
+      "sha256": "5f7ffd9ea1ad83c9dce15d3d85726f6e35e0a75c15e6faabbedbf02f30cdeb56"
     },
     {
       "path": "python/CU3_Name_Editor_GUI-0.1.1.zip",
@@ -36,9 +36,9 @@
       "sha256": "cd8c9be86a37c6c60ef91b7f55e8f0588569edfb007750ffae30330254b3100e"
     },
     {
-      "path": "python/DCSV_Archive_Index_GUI-0.1.6.zip",
-      "bytes": 17362,
-      "sha256": "1fb5ffc9e1d900f850650fd9cdee27d13a347495a320a5815948e8854dd82471"
+      "path": "python/DCSV_Archive_Index_GUI-0.1.7.zip",
+      "bytes": 18388,
+      "sha256": "0fdbd8e1c866b6cebd87e22b33edb3a44c3b8fccdc93643579e12d46a1f8e3ac"
     },
     {
       "path": "python/Face_Target_Decoder_GUI-0.1.4.zip",
@@ -66,14 +66,14 @@
       "sha256": "cf79b9d1d692c2a252f525ef547a9ab7b72b8d0d50aad08ef149772815362971"
     },
     {
-      "path": "python/TFA_Archive_Index_GUI-0.1.5.zip",
-      "bytes": 17319,
-      "sha256": "0a0c60a19ae7641c233450629076f3a955f6a961d72141d0ef2ac93810ba9775"
+      "path": "python/TFA_Archive_Index_GUI-0.1.6.zip",
+      "bytes": 18344,
+      "sha256": "0c75824686df3524dfc939c0cd566ab6fced3062239c571490c87444c2c5db6b"
     },
     {
-      "path": "python/TTGames_Workshop_GUI-0.1.8.zip",
-      "bytes": 275389,
-      "sha256": "248ba43717ab96008d8757c1778bc9b69dc384977ff9ff3b8444a002ffcc41a1"
+      "path": "python/TTGames_Workshop_GUI-0.1.9.zip",
+      "bytes": 280100,
+      "sha256": "9e40d65c567728579833fcd1ac9030e9f904f66a17bb0902217a9952cdf2fd3a"
     },
     {
       "path": "windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip",

@@ -1,7 +1,7 @@
 """Independent synthetic regressions for original-observed CC8 ROTV framing.
 
 No game bytes are included. The fixtures test grammar and refusal behavior;
-the separate original-index pass establishes the supported (-8, 1) layout.
+the separate original-index passes establish the supported (-8, 1/2) layouts.
 """
 from pathlib import Path
 import hashlib
@@ -114,9 +114,15 @@ class ROTVFramingTests(unittest.TestCase):
                 data, _ = fixture(prefix, override=False)
                 self.assertEqual(len(cc.parse_index(data, archive_limit=128)), 3)
 
-    def test_other_cc_version_cannot_reuse_observed_extension(self):
+    def test_tfa_v2_name_records_use_the_same_verified_rotv_framing(self):
         data, _ = fixture(version=2)
-        self.assert_rejected(data)
+        rows = cc.parse_index(data, archive_limit=128, expected_layout=(-8, 2))
+        self.assertEqual([row['path'] for row in rows], PATHS)
+        self.assertEqual(rows[2]['rotv_records'], [table[2].hex() for table in RECORDS])
+        report = cc.diagnose_index(data, archive_limit=128)
+        self.assertEqual(report['suffix']['grammar'], 'tfa_pc_cc8_v2_rotv_16x2')
+        self.assertEqual(report['layout']['name_record_bytes'], 12)
+        self.assert_rejected(declared(data + b'\0'), 'size')
 
     def test_tags_and_big_endian_counts_are_required_for_both_tables(self):
         data, start = fixture()

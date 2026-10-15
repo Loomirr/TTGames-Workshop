@@ -114,10 +114,16 @@ def model_bindings(display, special, *, highest_detail=True):
     ranges = special.get('lod_ranges', [])
     if not highest_detail or not ranges or special.get('locator_only'):
         return special['parts']
-    if (display['version'] not in (16, 21, 24, 32)
+    # Observed Avengers DISP 32 accessories retain four ordered LOD clips
+    # even when their nearest two (or all four) distance thresholds are zero.
+    # This only selects the explicit final clip for a highest-detail preview;
+    # it does not attempt to reproduce the engine's distance switching.
+    zero_tail = display['version'] == 32 and len(ranges) == 4
+    if (display['version'] not in (16, 18, 21, 24, 26, 32)
             or len(ranges) > 8 or ranges[-1] != 0
             or any(not math.isfinite(v) or v < 0 for v in ranges)
-            or any(a <= b for a, b in zip(ranges, ranges[1:]))):
+            or any(a <= b and not (zero_tail and a == b == 0)
+                   for a, b in zip(ranges, ranges[1:]))):
         raise FormatError('Unverified native model LOD thresholds')
     first = special['clip']
     if first + len(ranges) > len(display['clips']):

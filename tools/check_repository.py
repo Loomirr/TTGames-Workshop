@@ -41,9 +41,11 @@ def main():
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_fortnite_catalog.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_fortnite_backend.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_source_bundle.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/character/test_character_audit.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/character/test_export_inventory.py')],check=True,cwd=ROOT)
     for name in ['test_bundle_output.py','test_pak_preflight.py','test_archive_cli_bounds.py',
                  'test_identity_ownership.py','test_dds.py','test_preview_capabilities.py',
-                 'test_archive_cc_diagnostics.py','test_archive_cc_rotv.py',
+                 'test_archive_cc_diagnostics.py','test_archive_cc_rotv.py','test_archive_cc12_suffix.py',
                  'test_skeleton_diagnostics.py','test_native_variants.py',
                  'test_material_capabilities.py','test_face_live_groups.py',
                  'test_material_declarations.py','test_material_remaps.py','test_material_parameters.py',

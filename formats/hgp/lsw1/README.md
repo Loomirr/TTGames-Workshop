@@ -4,9 +4,12 @@ Import characters from **LEGO Star Wars: The Video Game (2005), original PC rele
 
 ## Install
 
-Download [lsw1_hgp_importer-0.1.3.zip](../../../builds/blender/lsw1_hgp_importer-0.1.3.zip), or build it using the command below. In Blender, open **Edit > Preferences > Get Extensions**, open the menu in the upper right, and choose **Install from Disk**. Select the ZIP and enable the extension.
+Download [lsw1_hgp_importer-0.1.4.zip](../../../builds/blender/lsw1_hgp_importer-0.1.4.zip), or build it using the command below. In Blender, open **Edit > Preferences > Get Extensions**, open the menu in the upper right, and choose **Install from Disk**. Select the ZIP and enable the extension.
 
-Use **File > Import > LEGO Star Wars 1 Character (.hgp)**. Select one or multiple extracted HGP files.
+Drag one or more extracted `.hgp` files into the **3D Viewport in Object Mode**,
+review the import options and confirm. **File > Import > LEGO Star Wars 1 Character
+(.hgp)** still works. Version **0.1.4** adds the file-drop handler; decoding and
+material behavior are unchanged.
 
 ## Features
 

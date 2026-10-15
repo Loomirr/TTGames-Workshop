@@ -245,7 +245,9 @@ class MeshReader:
                 fmt = f'{typ}f' if typ in (2, 3, 4) else '2e' if typ == 5 else '4e' if typ == 6 else '4B'
                 values = list(r.get(fmt, start + index * stride, '<' if self.dx and typ <= 6 else '>'))
                 if not all(math.isfinite(v) for v in values):
-                    raise FormatError('Non-finite native vertex attribute')
+                    raise FormatError(f'Non-finite native vertex attribute: part {part["index"]}, '
+                                      f'vertex {index}, {FIELDS.get(variable, variable)}, '
+                                      f'type {typ}, offset {start + index * stride:#x}')
                 if self.dx and variable == 2 and typ == 9:
                     values = [values[2], values[1], values[0], values[3]]
                 vertex[FIELDS.get(variable, f'attribute_{variable}')] = values

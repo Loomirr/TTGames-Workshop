@@ -37,6 +37,13 @@ class DisplayTests(unittest.TestCase):
         special['lod_ranges']=[]
         self.assertEqual(model_bindings(display,special),special['parts'])
 
+    def test_lmsh1_older_accessory_lod(self):
+        display = dict(version=18, commands=[(0xb3,0,i) for i in range(3)],
+                       clips=[dict(materials=[0],items=[i]) for i in range(3)])
+        special = dict(clip=0,lod_ranges=[16,9,0],parts=[dict(part=0,material=0)])
+        self.assertEqual(model_bindings(display,special),[dict(part=2,material=0)])
+        self.assertEqual(model_bindings(display,dict(special,clip=2,lod_ranges=[0])),[dict(part=2,material=0)])
+
     def test_unknown_lod_tables_and_commands_fail_closed(self):
         display = dict(version=21,commands=[(0xb3,0,0)]*3,
                        clips=[dict(materials=[0],items=[i]) for i in range(3)])
@@ -46,6 +53,19 @@ class DisplayTests(unittest.TestCase):
         with self.assertRaises(FormatError):model_bindings(display,dict(special,clip=1))
         with self.assertRaises(FormatError):model_bindings(dict(display,version=23),special)
         display['commands'][1]=(0x99,0,1)
+        with self.assertRaises(FormatError):model_bindings(display,special)
+
+    def test_dx11_four_lods_allow_only_duplicate_zero_tail(self):
+        display = dict(version=32,commands=[(0xb3,0,i) for i in range(4)],
+                       clips=[dict(materials=[0],items=[i]) for i in range(4)])
+        special = dict(clip=0,parts=[dict(part=0,material=0)],lod_ranges=[0,0,0,0])
+        for ranges in ([0,0,0,0],[25.1001,25,0,0]):
+            self.assertEqual(model_bindings(display,dict(special,lod_ranges=ranges)),
+                             [dict(part=3,material=0)])
+        for ranges in ([25,25,0,0],[25,0,1,0],[25,0,0]):
+            with self.assertRaises(FormatError):model_bindings(display,dict(special,lod_ranges=ranges))
+        with self.assertRaises(FormatError):model_bindings(dict(display,version=26),special)
+        display['commands'][3]=(0x80,0,3)
         with self.assertRaises(FormatError):model_bindings(display,special)
 
     def test_read_legacy_lod_thresholds_without_changing_stage_bindings(self):
@@ -134,5 +154,16 @@ class DisplayTests(unittest.TestCase):
         self.assertEqual(result['name'],'Mesh')
         self.assertEqual(result['matrix'][12:15],[2,3,4])
         self.assertEqual(result['parts'],[{'part':0,'material':0}])
+
+    def test_hobbit_high_detail_accessory_with_multiple_draws(self):
+        # DISP 26 uses the legacy special/name layout and vector clip arrays.
+        # Dwalin's mohawk has two material draws per level; retain both.
+        display = dict(version=26, commands=[(0xb3,0,i) for i in range(8)],
+                       clips=[dict(materials=[1,0],items=[i+1,i]) for i in range(0,8,2)])
+        special = dict(clip=0,lod_ranges=[25.1001,25,1,0],parts=[dict(part=1,material=1),dict(part=0,material=0)])
+        self.assertEqual(model_bindings(display,special),[dict(part=7,material=1),dict(part=6,material=0)])
+        self.assertEqual(model_bindings(display,special,highest_detail=False),special['parts'])
+        with self.assertRaises(FormatError):
+            model_bindings(display,dict(special,lod_ranges=[25,25,1,0]))
 
 if __name__=='__main__':unittest.main()

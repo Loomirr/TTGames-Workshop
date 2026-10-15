@@ -197,9 +197,10 @@ def _parse_tables(data, archive_limit=None, *, expected_layout=None, trace):
 
 
 def _parse_rotv_suffix(data, rows, trace):
-    """Read the two bounded opaque arrays observed in Avengers PC (-8, 1).
+    """Read bounded opaque arrays observed in Avengers (-8, 1) and TFA (-8, 2).
 
-    Seventeen original indexes establish the framing and file-table order.
+    Seventeen Avengers and nineteen TFA original indexes establish the framing
+    and file-table order, despite their different name-record widths.
     They do not establish a checksum algorithm or codec. These records must
     never be interpreted as offsets, sizes, compression modes or path hashes.
     Other CC versions retain the unknown-suffix refusal.
@@ -208,7 +209,7 @@ def _parse_rotv_suffix(data, rows, trace):
     if start == len(data):
         return
     layout = trace['layout']
-    if (layout['kind'], layout['version']) != (-8, 1):
+    if (layout['kind'], layout['version']) not in ((-8, 1), (-8, 2)):
         return
     end = data.find(b'\0', start, min(len(data), start + MAX_SUFFIX_PREFIX_BYTES + 1))
     if end < 0:
@@ -256,10 +257,72 @@ def _parse_rotv_suffix(data, rows, trace):
     for row, first, second in zip(rows, first_values, second_values):
         row['rotv_records'] = [first, second]
     trace['rotv_suffix'] = dict(
-        grammar='avengers_pc_cc8_v1_rotv_16x2', validated=True,
+        grammar=('avengers_pc_cc8_v1_rotv_16x2' if layout['version'] == 1 else
+                 'tfa_pc_cc8_v2_rotv_16x2'), validated=True,
         directory_prefix=prefix, prefix_bytes=end - start + 1, reserved_bytes=16,
         record_tables=arrays,
         record_semantics='Opaque 16-byte records in file-table order; no checksum algorithm or codec established')
+
+
+def _parse_cc12_suffix(data, rows, trace):
+    """Read the observed DCSV/LMSH2/Ninjago (-12, 2) four-array extension.
+
+    Only framing, file-order storage modes and a duplicate packed-size array
+    are established. The two 16-byte arrays remain opaque. In particular mode
+    6 must not be mislabeled mode 2 merely because the main table sets its
+    compression-presence bit; the payload decoder keeps its own codec gates.
+    """
+    start = trace['tables_end']
+    if start == len(data) or (trace['layout']['kind'], trace['layout']['version']) != (-12, 2):
+        return
+    if data[start:start + 8] != bytes(8):
+        raise ValueError('Unverified nonzero CC12 extension header')
+    prefix_at = start + 8
+    end = data.find(b'\0', prefix_at, min(len(data), prefix_at + MAX_SUFFIX_PREFIX_BYTES + 1))
+    if end < 0:
+        raise ValueError('CC12 directory prefix is unterminated or exceeds its limit')
+    prefix = data[prefix_at:end].decode('ascii')
+    if prefix:
+        prefix = _safe_name(prefix)
+        if not all(row['path'].casefold().startswith(prefix.casefold() + '/') for row in rows):
+            raise ValueError('CC12 directory prefix does not contain every indexed path')
+    at, files = end + 1, len(rows)
+    if len(data) - at != 16 + 4 * 8 + files * (16 + 16 + 1 + 4):
+        raise ValueError('CC12 suffix size disagrees with four file-count arrays')
+    if data[at:at + 16] != bytes(16):
+        raise ValueError('Unverified nonzero CC12 reserved bytes')
+    at += 16
+    arrays, values = [], []
+    for number, width in enumerate((16, 16, 1, 4)):
+        tag, count = struct.unpack_from('>II', data, at)
+        if tag != 0 or count != files:
+            raise ValueError(f'CC12 array {number + 1} tag/count disagrees with the file table')
+        records_at, records_end = at + 8, at + 8 + width * count
+        records = memoryview(data)[records_at:records_end]
+        arrays.append(dict(tag=0, offset=at, records_offset=records_at, end=records_end,
+                           count=count, record_bytes=width,
+                           sha256=hashlib.sha256(records).hexdigest()))
+        values.append(records)
+        at = records_end
+    modes = list(values[2])
+    packed_sizes = struct.unpack('>' + str(files) + 'I', values[3])
+    for row, mode, packed in zip(rows, modes, packed_sizes):
+        if mode not in (0, 2, 6):
+            raise ValueError(f'Unverified CC12 storage mode {mode}')
+        if bool(mode) != bool(row['flags']):
+            raise ValueError('CC12 storage mode disagrees with file-table compression presence')
+        if packed != row['packed_size']:
+            raise ValueError('CC12 duplicate packed size disagrees with the file table')
+    # No entry is changed until the entire extension has been validated.
+    for i, (row, mode) in enumerate(zip(rows, modes)):
+        row['flags'] = mode
+        row['cc12_records'] = [bytes(records[16 * i:16 * (i + 1)]).hex() for records in values[:2]]
+    trace['cc12_suffix'] = dict(
+        grammar='pc_cc12_v2_16_16_1_4', validated=True,
+        directory_prefix=prefix, prefix_bytes=end - prefix_at + 1,
+        extension_header_bytes=8, reserved_bytes=16, record_tables=arrays,
+        record_semantics=('Two opaque 16-byte arrays; per-file storage modes and duplicate packed sizes. '
+                          'Mode 6 is distinguished from mode 2; codec support is checked separately.'))
 
 
 def _diagnostics(data, trace, *, error=None):
@@ -289,12 +352,13 @@ def _diagnostics(data, trace, *, error=None):
     if not suffix_bytes:
         report['phase'] = 'complete'
         return report
-    if 'rotv_suffix' in trace:
+    known_suffix = trace.get('rotv_suffix') or trace.get('cc12_suffix')
+    if known_suffix:
         report['complete_index_validated'] = True
         report['phase'] = 'complete'
         report['suffix'] = dict(offset=start, bytes=suffix_bytes,
                                 sha256=hashlib.sha256(memoryview(data)[start:]).hexdigest(),
-                                **trace['rotv_suffix'])
+                                **known_suffix)
         return report
     report['status'] = 'unsupported_suffix'
     suffix = dict(offset=start, bytes=suffix_bytes,
@@ -338,6 +402,7 @@ def _parse_with_diagnostics(data, archive_limit=None, *, expected_layout=None):
         raise CCIndexError(str(error), _diagnostics(data, trace, error=error)) from error
     try:
         _parse_rotv_suffix(data, rows, trace)
+        _parse_cc12_suffix(data, rows, trace)
     except ValueError as error:
         # The prefix remains valid, but incomplete/malformed extension framing
         # cannot expose entries. Keep this distinct from a corrupt name table.
@@ -359,8 +424,8 @@ def parse_index(data, archive_limit=None, *, expected_layout=None):
 def diagnose_index(data, archive_limit=None, *, expected_layout=None):
     """Inspect known table structure without returning extraction entries.
 
-    Only the observed (-8, 1) ROTV framing is accepted. Other tails remain
-    unsupported; no decoder dispatch or pointer traversal uses these records.
+    Only the observed (-8, 1/2) ROTV and (-12, 2) four-array framing is accepted.
+    Other tails remain unsupported; payload codecs require separate validation.
     """
     try:
         _, report = _parse_with_diagnostics(data, archive_limit, expected_layout=expected_layout)

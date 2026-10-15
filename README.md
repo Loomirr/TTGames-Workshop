@@ -13,9 +13,9 @@ game does not mean support for every TT game that uses the same extension.
 
 ## Start here
 
-**Current candidates:** Character **0.5.17**, CU3 **0.1.26**. This pass adds
-classic PC model inspection, CU2 reference scenes and explicit older DAT layouts.
-See [validation and remaining gaps](docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
+**Current candidates:** Character **0.5.18**, CU3 **0.1.27**, LSW1 HGP **0.1.4**.
+This pass adds viewport file drops, more verified accessory/material layouts and
+stronger native-export checks. See [validation and remaining gaps](docs/COMPATIBILITY_2026-10-15.md).
 
 ## Game and file support
 
@@ -35,14 +35,15 @@ building the complete model/scene. No row means every asset in that game is veri
 | LEGO Batman 3, PC | CD, GHG/model GSC, AN4, CU3, DAT | [Character addon](formats/character/README.md): partial import/playback; [CU3 addon](formats/cu3/README.md): partial v19 scene assembly. Packed and extracted inputs; native shader/scene gaps remain. |
 | LEGO The Hobbit, PC | CD, GHG/model GSC, AN4, DAT | [Character addon](formats/character/README.md): partial import/playback for gated layouts, packed or extracted. Complete cutscene assembly is not enabled. |
 | LEGO Marvel's Avengers, PC | CD, GHG/model GSC, AN4, DAT | [Character addon](formats/character/README.md): partial import/playback, packed or extracted. Observed CC8 archive variant supported; complete cutscene assembly not enabled. |
-| LEGO Star Wars: The Force Awakens, PC | DAT/HDR (CC8), CU3, GHG/AN4 references | [Archive diagnostics](docs/DIAGNOSTIC_TOOLS.md) and [CU3 reference inspection](formats/cu3/README.md). ANI-E playback, full characters and full scenes are not enabled. |
-| LEGO DC Super-Villains, PC | DAT/HDR (CC4), CU3, GHG/AN4 references | [Archive diagnostics](docs/DIAGNOSTIC_TOOLS.md), CU3 inspection and limited [skeleton-transfer research](docs/SKELETON_TRANSFER.md). Not a complete character/scene importer or general native exporter. |
-| LEGO Marvel Super Heroes 2 / LEGO The Lord of the Rings, PC | DAT, GHG/AN4 references | [Version-gated archive/character inspection](formats/character/COMPATIBILITY.md). No complete character importer; unsupported compression/animation layouts remain refused. |
+| LEGO Star Wars: The Force Awakens, PC | DAT/HDR (CC8), CU3, GHG/AN4 references | [Verified archive inspection/extraction](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md) and [CU3 reference inspection](formats/cu3/README.md). ANI-E playback, full characters and full scenes are not enabled. |
+| LEGO DC Super-Villains, PC | DAT/HDR (CC12, four-byte marker), CU3, GHG/AN4 references | [Verified archive inspection/extraction](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md), CU3 inspection and limited [skeleton-transfer research](docs/SKELETON_TRANSFER.md). Not a complete character/scene importer or general native exporter. |
+| LEGO Marvel Super Heroes 2, PC | DAT/HDR (CC12), CD, GHG, AN4 | [Verified archive inspection/extraction](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md) for modes 0/2; ZIPX, later CD and ANI-E playback remain refused. No complete character importer. |
+| LEGO The Lord of the Rings, PC | DAT, CD, GHG, AN4 | [Archive and character inspection](formats/character/COMPATIBILITY.md). Sample MESH 48 / DISP 15 / UMTL 148 / HGOL 10 models remain outside the full character reader. |
 | The LEGO Movie Videogame, PC | DAT parent -5; character/cutscene payloads unverified | [PC DAT index GUI/CLI](docs/COMPATIBILITY_EXPANSION_2026-10-09.md): checked paths and file spans. No character or cutscene assembly yet. |
 | LEGO Batman 2 / LEGO Star Wars III, PC | DAT -4; character/cutscene payloads unverified | [PC DAT index GUI/CLI](docs/COMPATIBILITY_EXPANSION_2026-10-09.md): checked paths and file spans for installed archives. Does not enable Blender character/animation import. |
 | LEGO Jurassic World, PC | DAT parent -7 observed | Diagnostic research only; unresolved hashes and trailing index tables remain refused. |
 | LEGO Star Wars: The Skywalker Saga, PC | Later DAT layouts observed | Diagnostic research only; archive and character layouts remain unverified. |
-| The LEGO Ninjago Movie Videogame / LEGO Dimensions | Selected GHG / AN4 resources | [Skeleton-transfer diagnostics](tools/skeleton_transfer/README.md) and a private native weapon proof. No general game importer/exporter yet. |
+| The LEGO Ninjago Movie Videogame / LEGO Dimensions | Ninjago DAT/HDR (CC12); selected GHG / AN4 resources | [Verified Ninjago archive indexes](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md), [skeleton-transfer diagnostics](tools/skeleton_transfer/README.md) and a private native weapon proof. No general game importer/exporter yet. |
 | LMSH: Universe in Peril, Nintendo 3DS | BTGA, FUSE | [Texture / payload tools](formats/btga/3ds/README.md): PNG/DDS conversion and observed USA FUSE decoding; no full character/animation importer. |
 | LEGO Fortnite | Exported JSON, GLB, PNG; optional Paks bridge | [Static character profile](formats/fortnite/README.md) in the character addon. External Unreal runtime required for Paks extraction; no animation support and incomplete native shaders. |
 

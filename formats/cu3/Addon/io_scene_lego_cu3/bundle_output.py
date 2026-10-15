@@ -27,16 +27,44 @@ from .cu3 import FormatError
 MANIFEST_NAME = 'TT_Source_Export.json'
 
 
+def _ordinary_path(path):
+    """Keep one path spelling for containment comparisons and user reports."""
+    text = str(path)
+    if os.name == 'nt' and text.startswith('\\\\?\\'):
+        tail = text[4:]
+        if tail.upper().startswith('UNC\\'):
+            text = '\\\\' + tail[4:]
+        elif len(tail) >= 3 and tail[1:3] == ':\\' and tail[0].isalpha():
+            text = tail
+        else:
+            raise FormatError('Unsupported Windows device namespace for native export')
+    return Path(text)
+
+
+def _io_path(path):
+    """Use Windows extended paths internally, including the longer stage name.
+
+    Native animation folders can fit in the requested destination but exceed
+    legacy MAX_PATH after the private staging suffix is added. This changes no
+    logical path, ownership check or no-replace publication rule.
+    """
+    path = Path(path)
+    if os.name != 'nt':
+        return path
+    text = os.path.abspath(_ordinary_path(path))
+    return Path('\\\\?\\UNC\\' + text[2:] if text.startswith('\\\\') else '\\\\?\\' + text)
+
+
 def destination_path(destination):
     """Resolve the parent while retaining the leaf, including dangling links."""
-    path = Path(os.path.abspath(Path(destination).expanduser()))
-    return path.parent.resolve() / path.name
+    path = Path(os.path.abspath(_ordinary_path(Path(destination).expanduser())))
+    return _ordinary_path(path.parent.resolve()) / path.name
 
 
 def require_absent(destination):
     # Path.exists() alone misses dangling symlinks. Existing empty folders also
     # belong to the user (or a concurrent exporter) and must never be replaced.
-    if os.path.lexists(destination):
+    if os.path.lexists(_io_path(destination)):
         raise FormatError('Choose a fresh export folder; destination already exists: '
                           + str(destination))
 
@@ -98,7 +126,9 @@ def _plan_payloads(payloads, manifest_name=MANIFEST_NAME, forbidden_suffixes=())
 def _native_publisher():
     """Return a no-replace directory rename and its exact platform contract."""
     if os.name == 'nt':
-        return os.rename, 'Windows os.rename (destination must not exist)'
+        def publish(source, target):
+            return os.rename(_io_path(source), _io_path(target))
+        return publish, 'Windows os.rename (destination must not exist)'
     if sys.platform not in ('linux', 'darwin'):
         raise FormatError('Safe native bundle publication is unsupported on this platform; '
                           'a no-replace directory rename is required')
@@ -224,10 +254,11 @@ class OwnedStage:
         if self.path is not None:
             raise RuntimeError('Native output staging cannot be reused')
         require_absent(self.destination)
-        self.destination.parent.mkdir(parents=True, exist_ok=True)
+        parent = _io_path(self.destination.parent)
+        parent.mkdir(parents=True, exist_ok=True)
         self.path = Path(tempfile.mkdtemp(
             prefix='.' + self.destination.name[:48] + '.tt-stage-',
-            dir=self.destination.parent))
+            dir=parent))
         self.identity = _stage_identity(self.path)
         return self
 

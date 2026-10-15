@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def footer(data,end,version):
-    if not 174 <= version <= 202 and version not in (163,168,229,232,234,235):raise ValueError("Material footer version outside the observed family")
+    if not 174 <= version <= 202 and version not in (163,168,172,228,229,232,234,235):raise ValueError("Material footer version outside the observed family")
     flags='old_alpha old_atst afail aref cull zmode stencilMode noprepass filter utc vtc colour fill only2d stencil_shadows castShadows old_autoStencil colourWriteMask alwaysUpdateRefraction sortLast'.split()
     if version>=190: flags.append('externalFixupTarget')
     flags.append('alphaTestMode')
@@ -12,16 +12,24 @@ def footer(data,end,version):
     if version>=163:tail.remove('sortAfterDeferred')
     if version>=187: tail.append('forceTPageSurfType')
     if version>=191: tail.append('forceTPageAlphaFade')
-    modern = version in (229,232,234,235)
+    modern = version in (228,229,232,234,235)
     if modern:
         flags.remove('only2d');flags.remove('stencil_shadows')
-    size=(76 if modern else len(flags)+20+4+(2 if version<199 else 0)+2+16+8+len(tail)+8)
+    size=((75 if version==228 else 76) if modern else len(flags)+20+4+(2 if version<199 else 0)+2+16+8+len(tail)+8)
     at=end-size; start=at; out={}
     if start<0 or end>len(data):raise ValueError('Material footer outside the input buffer')
     def get(name,fmt):
         nonlocal at
         out[name]=struct.unpack_from('>'+fmt,data,at)[0];at+=struct.calcsize('>'+fmt)
-    for f in flags:get(f,'I' if modern and f=='alphaTestMode' else 'B')
+    for f in flags:
+        if version==228 and f=='alphaTestMode':
+            # The observed 228 footer is one byte shorter here. Its colour
+            # mask and later variant pointers agree across static and face
+            # assets; retain this three-byte interval without guessing its
+            # individual alpha-control fields.
+            out['opaqueAlphaControls']=list(data[at:at+3]);at+=3
+            out[f]=None
+        else:get(f,'I' if modern and f=='alphaTestMode' else 'B')
     for f in ('fx1','fx2','fx3','fx4','localTID'):get(f,'I')
     get('fxid','B');get('special_id','B')
     get('shortPri16bit','H')

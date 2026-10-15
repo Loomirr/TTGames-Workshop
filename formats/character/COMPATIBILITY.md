@@ -1,13 +1,12 @@
 # PC character compatibility
 
-Character 0.5.16 adds classic PC raw model inspection; CU3 0.1.25 adds a separate CU2 reference importer. These are incomplete inspection modes, not complete classic character or cutscene assembly. [Checks and remaining gaps](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
+Current source and package: **0.5.18**. The [October 15 validation report](../../docs/COMPATIBILITY_2026-10-15.md)
+records the current recursive roster audit, original Blender checks and native
+edited-export checks. Older counts below use different audit coverage and should
+not be compared directly with the current recursive checks.
 
-Current source candidate: **0.5.16**. The supplied LMSH1/LB3 shared-body variant
-arrays and the additional Avengers index section now validate. Those original
-records, four shared-code corrections and their tests are documented in the
-[accuracy review](../../docs/CHARACTER_ACCURACY_0.5.9.md). Historical counts and
-original-file successes below do not certify the current candidate or a whole
-roster. LB1 and TCS are now selectable as raw model inspection profiles. They do not have complete character assembly, AN3 playback or native export.
+LB1/TCS remain raw inspection profiles. TFA/DCSV/LMSH2 archive improvements do not
+enable their complete character assembly or animation playback.
 
 ## Historical 0.5.6 coverage
 

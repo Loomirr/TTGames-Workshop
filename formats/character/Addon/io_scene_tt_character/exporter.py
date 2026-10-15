@@ -14,11 +14,13 @@ from ._core.material_edit_guard import check_materials
 from ._core.source_provenance import SourceProvenance
 from ._core.bundle_output import destination_path, publish_bundle, require_absent
 from .source_bundle import canonical_source, group_source_instances, SourceProposals
+from .export_inventory import check_inventory
 
 
 def export_sources(rig, destination, face_edits=True, mesh_edits=True):
     destination = destination_path(destination)
     require_absent(destination)
+    inventory = check_inventory(rig)
     # Source paths reside either in the extracted root or our game cache.
     roots = [Path(rig['tt_character_assets_root']).resolve()]
     from ._core.asset_index import open_assets
@@ -123,6 +125,7 @@ def export_sources(rig, destination, face_edits=True, mesh_edits=True):
     planned = [(records[path]['logical_path'], data) for path, data in sources.items()]
     report = dict(schema='tt.loose-source-export.v1', game=rig['tt_character_game'], files=[], face_patches=patches, vertex_patches=vertex_patches,
         source_instances=instances_report,
+        assembly_inventory=inventory,
         consumed_dependencies=json.loads(provenance.dumps()),
         limitations=['Supported existing positions, UVs, vertex colors, normals, palette-limited skin weights and facial targets are encoded when enabled.',
                      'Topology, new palettes, native bounds, material/image encoding, skeleton edits and animation-bank edits are not encoded.',

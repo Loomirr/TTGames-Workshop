@@ -12,7 +12,7 @@ from .importer import import_character, remove_created_data, snapshot_data
 bl_info = {
     'name': 'LEGO Star Wars 1 Character Importer',
     'author': 'LSW1 Importer Contributors',
-    'version': (0, 1, 3),
+    'version': (0, 1, 4),
     'blender': (4, 2, 0),
     'location': 'File > Import > LEGO Star Wars 1 Character (.hgp)',
     'description': 'Original 2005 LSW1 PC meshes, textures, native skeletons and weights',
@@ -26,7 +26,7 @@ class IMPORT_SCENE_OT_lsw1_hgp(bpy.types.Operator, ImportHelper):
     bl_options = {'UNDO'}
     filename_ext = '.hgp'
 
-    filter_glob: StringProperty(default='*.hgp', options={'HIDDEN'})
+    filter_glob: StringProperty(default='*.hgp;*.HGP', options={'HIDDEN'})
     files: CollectionProperty(type=bpy.types.OperatorFileListElement, options={'HIDDEN', 'SKIP_SAVE'})
     directory: StringProperty(subtype='DIR_PATH', options={'HIDDEN', 'SKIP_SAVE'})
     import_armature: BoolProperty(name='Original Skeleton and Weights', default=True,
@@ -64,6 +64,11 @@ class IMPORT_SCENE_OT_lsw1_hgp(bpy.types.Operator, ImportHelper):
         layout.prop(self,'correct_preview_pose')
         layout.label(text='Original LSW1 PC character files only', icon='INFO')
 
+    def invoke(self, context, event):
+        if self.filepath:
+            return context.window_manager.invoke_props_dialog(self, width=500)
+        return ImportHelper.invoke(self, context, event)
+
     def execute(self, context):
         paths=[Path(self.directory or os.path.dirname(self.filepath))/entry.name for entry in self.files]
         if not paths:paths=[Path(self.filepath)]
@@ -93,15 +98,28 @@ class IMPORT_SCENE_OT_lsw1_hgp(bpy.types.Operator, ImportHelper):
         return {'FINISHED'}
 
 
+class LSW1_FH_hgp(bpy.types.FileHandler):
+    bl_idname = 'LSW1_FH_hgp'
+    bl_label = 'LEGO Star Wars 1 HGP'
+    bl_import_operator = 'import_scene.lsw1_hgp'
+    bl_file_extensions = '.hgp'
+
+    @classmethod
+    def poll_drop(cls, context):
+        return context.area is not None and context.area.type == 'VIEW_3D' and context.mode == 'OBJECT'
+
+
 def menu_import(self, context):
     self.layout.operator(IMPORT_SCENE_OT_lsw1_hgp.bl_idname,text='LEGO Star Wars 1 Character (.hgp)')
 
 
 def register():
     bpy.utils.register_class(IMPORT_SCENE_OT_lsw1_hgp)
+    bpy.utils.register_class(LSW1_FH_hgp)
     bpy.types.TOPBAR_MT_file_import.append(menu_import)
 
 
 def unregister():
     bpy.types.TOPBAR_MT_file_import.remove(menu_import)
+    bpy.utils.unregister_class(LSW1_FH_hgp)
     bpy.utils.unregister_class(IMPORT_SCENE_OT_lsw1_hgp)

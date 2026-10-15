@@ -146,7 +146,7 @@ class CostumeMaterials:
             material['tt_preview_glass_approximation'] = True
             self.report.append({'material':entry['name'], 'issue':'Older glass shader uses a transparent preview; native refraction remains unresolved'})
         slot = costume_slot(entry)
-        if entry.get('table_version') in (163, 168, 174):
+        if entry.get('table_version') in (163, 168, 172, 174):
             self.report.append({'material':entry['name'], 'issue':'Older static shader flag meanings remain unresolved; texture/UV and render footer are decoded, shading is approximate'})
         matched_objects = [(i, o) for i, o in enumerate(definition['objects']) if o['fields'].get('Material')==slot] if definition and slot is not None else []
         matched = [o['fields'] for _, o in matched_objects]
@@ -197,11 +197,24 @@ class CostumeMaterials:
             except (ValueError, RuntimeError, OSError) as error:
                 self.report.append({'material':entry['name'], 'issue':str(error)})
         if not assigned:
-            if entry['fields']['vertAlbedo'] or entry['texture_formats']:
+            # Earlier attachment shaders expose authored vertex colors but
+            # their albedo flags are not decoded. For the observed untextured
+            # MESH169/UMTL174 layout, retain those colors in the inspection
+            # preview instead of replacing them with Blender's default white.
+            # This does not resolve missing atlas textures or native shading.
+            older_vertex_preview = (
+                (model['mesh_version'],entry.get('table_version')) == (169,174)
+                and entry['fields']['vertAlbedo'] is None and entry['texture_ids'][0] < 0
+                and bool(model.get('parts')) and all(
+                    p.get('vertices') and 'color' in p['vertices'][0] for p in model['parts']))
+            if entry['fields']['vertAlbedo'] or entry['texture_formats'] or older_vertex_preview:
                 node = nodes.new('ShaderNodeVertexColor');node.layer_name='SourceColor'
                 links.new(node.outputs['Color'], surface.inputs['Base Color'])
                 assigned = True
-                if not entry['fields']['vertAlbedo']:
+                if older_vertex_preview:
+                    material['tt_preview_vertex_color_fallback'] = True
+                    self.report.append({'material':entry['name'], 'issue':'Older untextured material uses authored vertex colors for inspection; native albedo flags and lighting remain unresolved'})
+                elif not entry['fields']['vertAlbedo']:
                     self.report.append({'material':entry['name'], 'issue':'Modern untextured material uses source vertex colors for inspection; shader color flags remain approximate'})
         if not assigned:
             self.report.append({'material':entry['name'], 'issue':'Native material texture store or constant color remains unresolved'})

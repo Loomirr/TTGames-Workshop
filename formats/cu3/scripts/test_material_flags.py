@@ -17,6 +17,76 @@ def fixture(version,mask=15,variant=0xffffffff):
     return raw+struct.pack('>2I',123,2)
 
 class MaterialFlagTests(unittest.TestCase):
+    def test_short_name_candidates_require_the_complete_material_table(self):
+        def record(name, decoy=False):
+            raw=bytearray(0x3c1)
+            struct.pack_into('>3I',raw,0,2,2,2)
+            for i in range(16):struct.pack_into('>2I',raw,120+i*8,0,0xffffffff)
+            struct.pack_into('>4I',raw,319,4,10,2,4)
+            struct.pack_into('>18i',raw,397,*([-1]*18))
+            if decoy:raw[0x350:0x356]=struct.pack('>H',4)+b'XyZ\0'
+            name=name.encode('ascii')+b'\0'
+            return raw+struct.pack('>H',len(name))+name+fixture(163)
+        def table(second_decoy=False):
+            return (b'LTMU'+struct.pack('>3I',163,2,2)+record('MAT',True)
+                    +record('LongerMaterial',second_decoy)+b'ROTV'+bytes(17)+b'TDML')
+        with patch.object(Path,'read_bytes',return_value=table()):
+            result=read_materials(Path('fixture.GHG'))
+        self.assertEqual([m['name'] for m in result['materials']],['MAT','LongerMaterial'])
+        # Two internally valid placements remain ambiguous; never select one
+        # by length, order or the spelling of a familiar material name.
+        with patch.object(Path,'read_bytes',return_value=table(True)):
+            with self.assertRaisesRegex(ValueError,'Ambiguous.*full-table'):
+                read_materials(Path('fixture.GHG'))
+
+    def test_228_face_and_accessory_prefix_and_footer(self):
+        raw=bytearray(0x40f)
+        struct.pack_into('>3I',raw,0,2,2,2)
+        struct.pack_into('>I',raw,0x88,2);raw[0x99]=4
+        for i in range(17):struct.pack_into('>2I',raw,0x9a+i*8,1 if i==0 else 0,0 if i==0 else 0xffffffff)
+        struct.pack_into('>4I',raw,0x181,4,10,2,4)
+        ids=[-1]*18;ids[0]=2;ids[6]=3
+        struct.pack_into('>18iI',raw,0x1aa,*ids,17)
+        raw[0x1f6:0x207]=bytes([4]*17)
+        name=b'BASIC\0';raw+=struct.pack('>H',len(name))+name
+        flags=bytearray(75);flags[3]=125;flags[15]=15
+        flags[19:22]=bytes((0,0,8))
+        struct.pack_into('>2I',flags,46,0xffffffff,0xffffffff)
+        struct.pack_into('>I',flags,71,2)
+        model=b'LTMU'+struct.pack('>2I',228,1)+raw+flags+b'ROTV'+bytes(17)+b'TDML'
+        with patch.object(Path,'read_bytes',return_value=model):
+            entry=read_materials(Path('fixture.GHG'))['materials'][0]
+        self.assertEqual(entry['texture_ids'],ids)
+        self.assertEqual(len(entry['fields']['uvSets']),17)
+        self.assertEqual(entry['render_flags']['colourWriteMask'],15)
+        self.assertEqual(entry['render_flags']['aref'],125)
+        self.assertEqual(entry['render_flags']['opaqueAlphaControls'],[0,0,8])
+        self.assertIsNone(entry['render_flags']['alphaTestMode'])
+        self.assertEqual(entry['render_flags']['firstVariantIdx'],0xffffffff)
+        for offset,value in ((0x181,3),(0x88,18),(0x9e,17)):
+            bad=bytearray(raw);struct.pack_into('>I',bad,offset,value)
+            with self.assertRaises(ValueError):shader_prefix(bad,0,228)
+        with self.assertRaises(ValueError):shader_prefix(raw,0,228,limit=0x1a9)
+
+    def test_172_attachment_prefix_and_short_material_name(self):
+        raw=bytearray(0x3c9)
+        struct.pack_into('>3I',raw,0,2,2,2)
+        struct.pack_into('>I',raw,104,1)
+        for i in range(16):struct.pack_into('>2I',raw,122+i*8,1 if i==0 else 0,0 if i==0 else 0xffffffff)
+        struct.pack_into('>4I',raw,328,4,10,2,4)
+        struct.pack_into('>18i',raw,405,3,*([-1]*17))
+        raw+=struct.pack('>H',4)+b'MAT\0'
+        model=b'LTMU'+struct.pack('>3I',172,1,1)+raw+fixture(172)+b'ROTV'+bytes(17)+b'TDML'
+        with patch.object(Path,'read_bytes',return_value=model):
+            entry=read_materials(Path('fixture.GHG'))['materials'][0]
+        self.assertEqual(entry['name'],'MAT')
+        self.assertEqual(entry['texture_ids'],[3]+[-1]*17)
+        self.assertEqual(entry['fields']['uvSets'][0],(1,0))
+        self.assertIsNone(entry['fields']['vertAlbedo'])
+        for offset,value in ((328,3),(104,17),(126,17)):
+            bad=bytearray(raw);struct.pack_into('>I',bad,offset,value)
+            with self.assertRaises(ValueError):shader_prefix(bad,0,172)
+
     def normal_entry(self):
         return dict(table_version=176,texture_ids=[-1]*6+[3]+[-1]*11,
             fields=dict(surfaceMapMethod=1,surfaceMapFormat0=5,uvSets=[(0,0xffffffff)]*4+[(1,0)]+[(0,0xffffffff)]*11))
@@ -195,7 +265,7 @@ class MaterialFlagTests(unittest.TestCase):
         self.assertLessEqual(entry['name_end'],entry['footer_offset'])
         self.assertEqual(parsed['table_end'],len(model))
         # Adjacent unverified versions do not inherit this layout from a suffix.
-        for version in (164,172,173,228,230,231,233,236):
+        for version in (164,171,173,230,231,233,236):
             bad=bytearray(model);struct.pack_into('>I',bad,4,version)
             with patch.object(Path,'read_bytes',return_value=bad),self.assertRaisesRegex(ValueError,'version/count'):
                 read_materials(Path('fixture.NXG.GSC'))

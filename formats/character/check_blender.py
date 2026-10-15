@@ -19,7 +19,7 @@ with ZipFile(packages[0]) as archive:
 sys.path.insert(0, str(bundle))
 import io_scene_tt_character as addon
 addon.register()
-from io_scene_tt_character.importer import import_character, import_animations, snapshot, rollback
+from io_scene_tt_character.importer import import_character, import_animations, import_catalog_entry, snapshot, rollback
 from io_scene_tt_character.exporter import export_sources
 from io_scene_tt_character._core.asset_index import open_assets
 from io_scene_tt_character._core.face_preview import face_objects, prepare_render
@@ -32,8 +32,14 @@ for case in json.loads(cases_path.read_text()):
     assert rig.type == 'ARMATURE' and len(rig.data.bones) > 0
     assert report['models']
     assert all(len(o.data.vertices) for o in bpy.context.scene.objects if o.type == 'MESH')
-    actions = import_animations(bpy.context, rig, [Path(p) for p in case.get('animations', [])])
-    if case.get('animations'):
+    if case.get('catalog_action'):
+        entries = [json.loads(item.payload) for item in rig.tt_animation_assets]
+        selected = [entry for entry in entries if (entry['set'],entry['name']) == tuple(case['catalog_action'])]
+        assert len(selected) == 1, 'Expected one declared action'
+        actions = import_catalog_entry(bpy.context, rig, selected[0])
+    else:
+        actions = import_animations(bpy.context, rig, [Path(p) for p in case.get('animations', [])])
+    if case.get('animations') or case.get('catalog_action'):
         assert actions['imported'], actions
         for index in range(len(rig.tt_clips)):
             rig.tt_clip_index = index
@@ -44,6 +50,7 @@ for case in json.loads(cases_path.read_text()):
                 bpy.context.scene.frame_set(frame)
                 assert all(math.isfinite(v) for b in rig.pose.bones for row in b.matrix for v in row)
         rig.tt_clip_index = 0
+        bpy.context.scene.frame_set(case.get('preview_frame', 1))
     meshes = [o for o in bpy.context.scene.objects if o.type == 'MESH' and not o.hide_render]
     roundtrip = None
     if case.get('check_unpacked_roundtrip'):

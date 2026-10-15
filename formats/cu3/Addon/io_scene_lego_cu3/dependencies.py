@@ -116,11 +116,11 @@ class ResourceResolver:
         fields=definition['character']
         reference=fields.get('Override Model File') or fields['Skeleton Name']
         model=self.resolve_model(reference,required=False)
-        # Observed LMSH1 armour CDs name a rig family (ARMOUR_GENERIC),
+        # Observed LMSH1 armour and LB3 face CDs name a rig family,
         # while their compiled geometry is the same-directory CD companion.
         # Never replace an explicit override, an existing model, or search
         # unrelated directories for a similarly named asset.
-        if model is None and self.profile=='LMSH1' and not fields.get('Override Model File'):
+        if model is None and self.profile in ('LMSH1','LB3') and not fields.get('Override Model File'):
             logical=logical_path(self.assets,definition_path)
             if logical:
                 stem=PurePosixPath(logical).with_suffix('').as_posix()

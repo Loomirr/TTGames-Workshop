@@ -53,6 +53,24 @@ class BundleOutputTests(unittest.TestCase):
         self.assertFalse(report['publication']['replaces_existing'])
         self.assertEqual(report['publication']['scope'], 'same-filesystem directory rename')
 
+    @unittest.skipUnless(os.name == 'nt', 'Windows extended-path check')
+    def test_long_native_paths_publish_and_failure_cleans_owned_stage(self):
+        # Deliberately exceed MAX_PATH without exceeding an individual NTFS
+        # component limit. No system long-path policy change is required.
+        logical = '/'.join(['CHARS', 'a' * 100, 'b' * 100, 'ability_' + 'c' * 90 + '.AS'])
+        target = self.destination / logical
+        self.assertGreater(len(str(target)), 260)
+        report = output.publish_bundle(self.destination, [(logical, b'long native path')], self.report)
+        self.assertEqual(output._io_path(target).read_bytes(), b'long native path')
+        self.assertEqual(report['files'][0]['path'], logical)
+        self.assertFalse(str(output.destination_path(output._io_path(self.destination))).startswith('\\\\?\\'))
+        # Removal here only touches this test's freshly created temporary tree.
+        output.shutil.rmtree(output._io_path(self.destination))
+        with mock.patch.object(output, '_verify_stage', side_effect=OSError('injected verification failure')):
+            with self.assertRaisesRegex(OSError, 'injected verification failure'):
+                output.publish_bundle(self.destination, [(logical, b'long native path')], self.report)
+        self.assert_no_output()
+
     def test_existing_file_empty_and_nonempty_directories_are_never_touched(self):
         for kind in ('file', 'empty', 'nonempty'):
             with self.subTest(kind=kind):
