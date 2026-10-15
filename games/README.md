@@ -13,5 +13,6 @@ Each game folder points to the tools and research that apply to that edition.
 - [LEGO Marvel's Avengers, PC](avengers/README.md)
 - [LEGO Fortnite](../formats/fortnite/README.md)
 - [LEGO Star Wars: The Video Game (2005), PC](lsw1/README.md)
+- [LEGO Star Wars II: The Original Trilogy, PC](lsw2/README.md): DAT -1 index; classic AN3/CU2 inspector results; character models undecoded.
 - [LEGO Indiana Jones 1, Xbox 360 prototype](lij1-prototype/README.md)
 - [LEGO Marvel Super Heroes: Universe in Peril, 3DS](lmsh-universe-in-peril/README.md)

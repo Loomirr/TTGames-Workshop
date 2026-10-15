@@ -6,6 +6,7 @@ bind matrices, LOD links, primitive palettes and vertex weights are retained.
 """
 from pathlib import Path
 import struct
+import math
 
 
 class HGP:
@@ -16,9 +17,14 @@ class HGP:
             raise ValueError('This file is too short to be an LSW1 PC character HGP')
         self.body = self.data[0x30:]
         self.header = struct.unpack_from('<12I', self.data)
-        if self.header[0] != 0 or self.header[1] not in (0x14, 0x30):
+        # Observed original PC name-table offsets. 0x28 occurs in WheelBike,
+        # Destroyer and several ships; 0x36 occurs in Wookie and Geonosian.
+        # Their root/joint/material/vertex layouts match the older files.
+        # This is not a gate for other games which also use the HGP extension.
+        if self.header[0] != 0 or self.header[1] not in (0x14, 0x28, 0x30, 0x36):
             raise ValueError('Expected an original LSW1 PC HGP; other LEGO game formats are unsupported')
         self.root = self.header[6]
+        self.require_range(self.root, 0x80, 'root')
         self.count = self.body[self.root + 0x7c]
         if not self.count:
             raise ValueError('This HGP has no supported character skeleton')
@@ -29,29 +35,45 @@ class HGP:
         self.layer_count = self.body[self.root + 0x7e]
         if not 1 <= self.layer_count <= 32:
             raise ValueError('Unsupported HGP layer table')
+        self.require_range(self.joints_at, self.count * 0x60, 'joint table')
+        self.require_range(self.local_at, self.count * 64, 'local bind table')
+        self.require_range(self.inverse_at, self.count * 64, 'inverse bind table')
+        self.require_range(self.lods_at, self.layer_count * 20, 'layer table')
         self.layers = [self.string(self.u32(self.lods_at+i*20)) for i in range(self.layer_count)]
-        # Serialized joint names retain exporter addresses, while the names
-        # themselves begin at body+0x30. Recover their relocation base.
-        self.name_base = self.u32(self.joints_at + 0x4c) - 0x30
+        # Serialized joint names retain exporter addresses. Header word 1 is
+        # the first name's body-relative offset, after optional export metadata
+        # (0x14, 0x28, 0x30 or 0x36 in the validated files), not a fixed 0x30.
+        self.name_base = self.u32(self.joints_at + 0x4c) - self.header[1]
         self.bones = []
         for i in range(self.count):
             at = self.joints_at + i * 0x60
             name_at = self.u32(at + 0x4c) - self.name_base
-            assert 0 <= name_at < self.header[3], (self.path.name, i, name_at)
+            if not 0 <= name_at < self.header[3]:
+                raise ValueError(f'Invalid HGP joint name offset for joint {i}')
             name = self.string(name_at)
             parent = self.u32(at + 0x50) & 255
-            assert parent == 255 or parent < i, (name, parent, i)
+            if parent != 255 and parent >= i:
+                raise ValueError(f'Invalid HGP parent {parent} for joint {i}')
+            local = self.floats(self.local_at + i * 64, 16)
+            inverse = self.floats(self.inverse_at + i * 64, 16)
+            if not all(math.isfinite(value) for value in (*local, *inverse)):
+                raise ValueError(f'Non-finite HGP bind transform for joint {i}')
             self.bones.append(dict(index=i, name=name, parent=-1 if parent == 255 else parent,
-                local=self.floats(self.local_at + i * 64, 16),
-                inverse=self.floats(self.inverse_at + i * 64, 16)))
+                local=local, inverse=inverse))
         self.buffers = []
         vertex_at = self.header[5]
+        self.require_range(vertex_at, 16, 'vertex table header')
+        self.require_range(vertex_at + 16, self.u32(vertex_at) * 12, 'vertex table')
         for i in range(self.u32(vertex_at)):
             at = vertex_at + 16 + i * 12
             size = self.u32(at)
             offset = vertex_at + self.u32(at + 8)
-            assert offset + size <= len(self.body)
+            self.require_range(offset, size, 'vertex buffer')
             self.buffers.append(self.body[offset:offset+size])
+
+    def require_range(self, at, size, label):
+        if at < 0 or size < 0 or at + size > len(self.body):
+            raise ValueError(f'Invalid HGP {label} range')
 
     def u32(self, at): return struct.unpack_from('<I', self.body, at)[0]
     def u16(self, at): return struct.unpack_from('<H', self.body, at)[0]

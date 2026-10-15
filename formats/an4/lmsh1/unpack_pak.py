@@ -20,7 +20,7 @@ from io_scene_lego_cu3.tt_deflate import decompress
 
 
 def unpack(source, destination, quickbms=None, bms=None, *, max_packed=MAX_PACKED,
-           max_decoded=MAX_DECODED, max_total=MAX_TOTAL):
+           max_decoded=MAX_DECODED, max_total=MAX_TOTAL, cubemap_basenames=False):
     """Return a verified manifest after non-replacing bundle publication.
 
     Legacy quickbms/bms arguments remain accepted for old Python callers;
@@ -29,7 +29,7 @@ def unpack(source, destination, quickbms=None, bms=None, *, max_packed=MAX_PACKE
     source, destination = Path(source), Path(destination)
     data = read_pak(source, max_packed=max_packed)
     entries = parse_pak(data, max_packed=max_packed, max_decoded=max_decoded,
-                        max_total=max_total)
+                        max_total=max_total, cubemap_basenames=cubemap_basenames)
     names = [entry['name'] for entry in entries]
     destination, _ = preflight_destination(destination, names + ['pak-manifest.json'], require_absent=True)
     records = []
@@ -55,6 +55,7 @@ def unpack(source, destination, quickbms=None, bms=None, *, max_packed=MAX_PACKE
             if decoded_total > max_total:
                 raise FormatError('PAK cumulative decoded size exceeds configured limit')
             records.append(dict(name=entry['name'], offset=entry['offset'], stored_bytes=entry['size'],
+                                source_name=entry.get('source_name', entry['name']),
                                 extracted_bytes=len(payload),
                                 compression='TT Deflate_v1.0' if entry['compressed'] else None,
                                 kind=entry['kind'], crc=f"{entry['crc']:08x}",
@@ -71,6 +72,8 @@ def main():
     parser.add_argument('destination', type=Path, help='New extraction parent folder')
     parser.add_argument('--quickbms', type=Path, help='Deprecated compatibility argument; no external tool is invoked')
     parser.add_argument('--bms', type=Path, help='Deprecated compatibility argument; no external script is invoked')
+    parser.add_argument('--cubemap-basenames', action='store_true',
+                        help='Explicitly flatten absolute Windows CMI member paths; reject collisions')
     args = parser.parse_args()
     if not args.source.is_file() and not args.source.is_dir():
         parser.error('Source must be a PAK file or existing directory')
@@ -86,7 +89,7 @@ def main():
     output_names = []
     for source, folder in zip(sources, relative):
         raw = read_pak(source)
-        entries = parse_pak(raw)
+        entries = parse_pak(raw, cubemap_basenames=args.cubemap_basenames)
         packed_total += len(raw)
         decoded_total += sum(entry['decoded_size'] for entry in entries)
         if packed_total > MAX_TOTAL or decoded_total > MAX_TOTAL:
@@ -96,7 +99,8 @@ def main():
     preflight_destination(args.destination, output_names, require_absent=True)
     count = 0
     for source, folder in zip(sources, relative):
-        manifest = unpack(source, args.destination / folder, args.quickbms, args.bms)
+        manifest = unpack(source, args.destination / folder, args.quickbms, args.bms,
+                          cubemap_basenames=args.cubemap_basenames)
         count += manifest['count']
         print(f"{source.name}: {manifest['count']} members")
     print(f'Total: {count} members in {len(sources)} PAKs; each folder contains pak-manifest.json')

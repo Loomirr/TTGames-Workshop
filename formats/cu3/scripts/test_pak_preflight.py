@@ -85,6 +85,25 @@ class PakPreflight(unittest.TestCase):
             with self.subTest(names=(first, second)):
                 self.reject_before_decode(pak((first, b'a'), (second, b'b')))
 
+    def test_absolute_cubemap_names_require_explicit_option(self):
+        original = 'C:\\Users\\artist\\AppData\\Local\\Temp\\Reflection.CMI'
+        raw = pak((original, b'cubemap'))
+        with self.assertRaises(ValueError):
+            parse_pak(raw)
+        self.source.write_bytes(raw)
+        report = cli.unpack(self.source, self.destination, cubemap_basenames=True)
+        self.assertEqual((self.destination / 'Reflection.CMI').read_bytes(), b'cubemap')
+        self.assertEqual(report['entries'][0]['source_name'], original)
+
+    def test_cubemap_remapping_still_rejects_unsafe_names_and_collisions(self):
+        for names in [('C:/one/a.CMI', 'D:/two/a.CMI'),
+                      ('C:/one/a.CMI', 'a.cmi'),
+                      ('C:/one/../a.CMI',), ('C:/one/CON.CMI',),
+                      ('C:/one/clip.an4',), ('//server/share/a.CMI',),
+                      ('C:/one/a.CMI:stream',)]:
+            with self.subTest(names=names), self.assertRaises(ValueError):
+                parse_pak(pak(*[(name, b'data') for name in names]), cubemap_basenames=True)
+
     def test_manifest_filename_reserved_before_publication(self):
         self.reject_before_decode(pak(('pak-manifest.JSON', wrapper(b'a'))))
 

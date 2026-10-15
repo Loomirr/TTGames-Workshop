@@ -7,6 +7,8 @@ tools/         Manual repository check tools
 builds/        Our packaged addons and Windows extractor, with install notes
 docs/          Overall support, licensing and local workspace notes
 AGENTS.md      Instructions for AI-assisted work in this repository
+CONTRIBUTING.md Setup, validation and pull request expectations
+.github/       Bug-report and pull-request templates
 local/         Private game assets, scenes, dependencies and historical projects
 ```
 

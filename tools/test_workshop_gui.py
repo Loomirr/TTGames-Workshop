@@ -26,6 +26,12 @@ class ToolboxChecks(unittest.TestCase):
     def command(self, output):
         return gui.build_command('3DS BTGA to DDS / PNG', [str(self.source), str(output)])
 
+    def test_lsw2_index_profile_dispatch(self):
+        command, outputs = gui.build_command('PC DAT index',
+            [str(self.source), str(self.root / 'index.json'), 'LSW2'])
+        self.assertEqual(command[-2:], ['--game', 'LSW2'])
+        self.assertEqual(outputs, [self.root / 'index.json'])
+
     def test_literal_paths_and_existing_output_protection(self):
         out = self.root / 'out & space'
         cmd, paths = self.command(out)

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.5
+
+- Default multiple-file spacing to zero and retain exact filename stems.
+- Recover native joint names from the recorded offset.
+- Read validated 0x28/0x36 original PC layouts, including WheelBike.
+- Validate table bounds and finite bind transforms; verify native bone axes.
+
 ## 0.1.4
 
 - Drop HGP files into the 3D Viewport in Object Mode and review import options.

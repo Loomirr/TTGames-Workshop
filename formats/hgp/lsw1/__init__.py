@@ -12,7 +12,7 @@ from .importer import import_character, remove_created_data, snapshot_data
 bl_info = {
     'name': 'LEGO Star Wars 1 Character Importer',
     'author': 'LSW1 Importer Contributors',
-    'version': (0, 1, 4),
+    'version': (0, 1, 5),
     'blender': (4, 2, 0),
     'location': 'File > Import > LEGO Star Wars 1 Character (.hgp)',
     'description': 'Original 2005 LSW1 PC meshes, textures, native skeletons and weights',
@@ -47,7 +47,7 @@ class IMPORT_SCENE_OT_lsw1_hgp(bpy.types.Operator, ImportHelper):
     placement: EnumProperty(name='Place At', default='CURSOR', items=[
         ('CURSOR', '3D Cursor', 'Place the first character at the 3D cursor'),
         ('ORIGIN', 'World Origin', 'Place the first character at the world origin')])
-    spacing: FloatProperty(name='Multiple Character Spacing', default=0.6, min=0,
+    spacing: FloatProperty(name='Multiple Character Spacing', default=0.0, min=0,
         description='Spacing along X when importing several selected files')
     correct_preview_pose: BoolProperty(name='Face Jango Helmet Forward', default=True,
         description='Correct the known Jango helmet facing with a pose rotation; preserve its native bind data')

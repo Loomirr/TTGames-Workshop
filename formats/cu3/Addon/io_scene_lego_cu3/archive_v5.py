@@ -1,9 +1,11 @@
-"""Read-only index for observed PC DAT layouts -2, -3, -4 and -5.
+"""Read-only index for observed PC DAT layouts -1, -2, -3, -4 and -5.
 
 Name records form a tree through last-child and previous-sibling indices.
 They do not contain the explicit parent field used by the later -6 layout.
 Leaf ordinals are cross-checked against stored path hashes; TCS -3 instead
 requires a unique full-path hash match because its leaf order differs.
+LSW2 -1 stores no hash table or trailer and plain byte offsets. Only stored
+entries were observed; its spans must not overlap in place of a hash check.
 This module only inventories bounded archive ranges; it never extracts files.
 """
 from pathlib import Path
@@ -40,8 +42,9 @@ def _parse_index(data, payload_limit, *, name_tags=False, layout=-5):
             raise ValueError('Truncated DAT index')
         return struct.unpack_from('<' + fmt, data, at)
     version, count = get('iI', 0)
-    if layout not in (-2, -3, -4, -5) or version != layout:
+    if layout not in (-1, -2, -3, -4, -5) or version != layout:
         raise ValueError(f'Unsupported DAT index version {version}; expected {layout}')
+    hashed = layout != -1
     record_size = 12 if layout == -5 else 8
     if not 0 < count < MAX_NAMES:
         raise ValueError('Unsupported DAT file count')
@@ -54,8 +57,9 @@ def _parse_index(data, payload_limit, *, name_tags=False, layout=-5):
     string_length, = get('I', string_length_at)
     strings_at = string_length_at + 4
     hashes_at = strings_at + string_length
-    end = hashes_at + count * 4
-    if string_length < 1 or end + 8 != len(data) or data[end:] != b'\0' * 8:
+    end = hashes_at + count * 4 if hashed else hashes_at
+    trailer = 8 if hashed else 0
+    if string_length < 1 or end + trailer != len(data) or data[end:] != b'\0' * trailer:
         raise ValueError('Unsupported DAT index bounds or trailer')
     strings = data[strings_at:hashes_at]
     nodes = []
@@ -79,8 +83,8 @@ def _parse_index(data, payload_limit, *, name_tags=False, layout=-5):
         elif name or previous or child <= 0:
             raise ValueError('Invalid DAT root name record')
         nodes.append((child, previous, name))
-    hashes = [get('I', hashes_at + i*4)[0] for i in range(count)]
-    if len(set(hashes)) != count:
+    hashes = [get('I', hashes_at + i*4)[0] for i in range(count)] if hashed else []
+    if hashed and len(set(hashes)) != count:
         raise ValueError('Ambiguous duplicate DAT path hashes')
     hash_ordinals = {value: i for i, value in enumerate(hashes)}
     queue, seen, queued, paths = [(0, '', 0)], set(), {0}, [None] * count
@@ -108,7 +112,7 @@ def _parse_index(data, payload_limit, *, name_tags=False, layout=-5):
             ordinal = hash_ordinals.get(_path_hash(path), count) if layout == -3 else -child
             if ordinal >= count or paths[ordinal] is not None:
                 raise ValueError('Invalid or duplicate DAT file ordinal')
-            if _path_hash(path) != hashes[ordinal]:
+            if hashed and _path_hash(path) != hashes[ordinal]:
                 raise ValueError('DAT filename hash does not match its file ordinal')
             paths[ordinal] = path.replace('\\', '/')
     if len(seen) != names_count or any(path is None for path in paths) or len(set(paths)) != count:
@@ -119,7 +123,10 @@ def _parse_index(data, payload_limit, *, name_tags=False, layout=-5):
         high_offset, packed, size, flags = get('4I', 8 + index * 16)
         offset = ((high_offset << 8) + (flags >> 24) if layout == -5 else
                   (high_offset << 8) if layout == -4 else
+                  high_offset if layout == -1 else
                   (high_offset << 8) + ((flags >> 8) & 255))
+        if layout == -1 and flags:
+            raise ValueError(f'Unverified LSW2 DAT flags {flags:#x}; only stored entries were observed')
         flags &= 0xffffff if layout == -5 else 0xff
         if name_tags:
             # LOTR retains opaque tag bits above the storage-mode byte.
@@ -132,6 +139,10 @@ def _parse_index(data, payload_limit, *, name_tags=False, layout=-5):
         if not packed or not size or (flags == 0 and packed != size):
             raise ValueError('Invalid DAT entry sizes')
         result.append(dict(path=path, offset=offset, packed_size=packed, size=size, flags=flags))
+    if not hashed:
+        spans = sorted((entry['offset'], entry['offset'] + entry['packed_size']) for entry in result)
+        if any(stop > start for (_, stop), (start, _) in zip(spans, spans[1:])):
+            raise ValueError('Overlapping DAT entry spans; -1 has no hash table to confirm ordinals')
     return result
 
 

@@ -72,3 +72,12 @@ python ../../cu3/scripts/test_pak_preflight.py
 The decoder is specific to observed versions. Verify output against the native
 rig and retain original inputs. Do not apply this mapping to LOTDK raw Euler
 channels; LOTDK retargeting requires its own rest-pose calibration.
+
+## LB2 cubemap packages
+
+For extracted cubemap PAKs whose CMI names retain absolute Windows export paths,
+use `python unpack_pak.py input.pak new-output --cubemap-basenames`. This explicit
+option flattens only drive-qualified `.CMI` names. It retains the original names
+in the extraction manifest and rejects collisions, traversal and device names.
+Default extraction and animation lookup still reject absolute paths. It does
+not decode CMI images or enable LB2 animation/cutscene layouts.
