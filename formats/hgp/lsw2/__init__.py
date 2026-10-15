@@ -1,4 +1,5 @@
-"""LEGO Star Wars II (2006, PC) model import and export for Blender 4.2 and newer.
+"""LEGO Star Wars II (2006, PC) model import and export for Blender 4.2 and newer, with animations and
+facial shapes.
 
 File > Import / Export > LEGO Star Wars II Model (.hgp), or drag an .hgp into the 3D Viewport.
 By Gibby. MIT licence.
@@ -12,10 +13,10 @@ from . import exporter, hgp, importer
 bl_info = {
     'name': 'LEGO Star Wars II Model (.hgp)',
     'author': 'Gibby',
-    'version': (0, 1, 0),
+    'version': (0, 2, 0),
     'blender': (4, 2, 0),
     'location': 'File > Import / Export > LEGO Star Wars II Model (.hgp)',
-    'description': 'LEGO Star Wars II (2006, PC) character and vehicle models: import, and export onto the original file',
+    'description': 'LEGO Star Wars II (2006, PC) models with animations and facial shapes: import, and export onto the original file',
     'category': 'Import-Export',
 }
 
@@ -30,6 +31,17 @@ class LSW2_OT_import(bpy.types.Operator, ImportHelper):
     filter_glob: StringProperty(default='*.hgp', options={'HIDDEN'})
     directory: StringProperty(subtype='DIR_PATH', options={'HIDDEN', 'SKIP_SAVE'})
     files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={'HIDDEN', 'SKIP_SAVE'})
+    animations: BoolProperty(
+        name='Import Animations', default=True,
+        description='Make an action from every .an3 clip beside the model that is proven to belong to its '
+                    'skeleton (frame 0 reproduces the bind pose)')
+    animation_folder: StringProperty(
+        name='Animation Folder', subtype='DIR_PATH',
+        description='Take clips from this folder instead (they are still checked against the skeleton)')
+    unproven_animations: BoolProperty(
+        name='Also Unproven Clips', default=False,
+        description='Also import clips with the same bone count that could not be proven to belong to this '
+                    'skeleton, bound by bone order (may be wrong; such actions are marked lsw2_unproven)')
     show_all_layers: BoolProperty(
         name='Show All Detail Layers',
         description='Show every detail layer; otherwise only the default layer and the most detailed body')
@@ -40,7 +52,9 @@ class LSW2_OT_import(bpy.types.Operator, ImportHelper):
         done = 0
         for path in paths:
             try:
-                importer.import_hgp(context, path, self.show_all_layers)
+                importer.import_hgp(context, path, self.show_all_layers, self.animations, self.animation_folder,
+                                    report=lambda m: self.report({'INFO'}, m),
+                                    unproven_animations=self.unproven_animations)
                 done += 1
             except hgp.HGPError as e:
                 self.report({'WARNING'}, f'{os.path.basename(path)}: {e}')

@@ -8,7 +8,7 @@ whose layout was actually investigated.
 - [Character importer](character/README.md): independent Blender CD/GHG/model GSC and AN4 workflow, using shared native readers.
 - [LEGO Fortnite](fortnite/README.md): separate Unreal export bridge and static LEGO recipe/GLB/PNG material import.
 - [HGP / original LSW1](hgp/lsw1/README.md): character models and embedded textures.
-- [HGP / LSW2 PC](hgp/lsw2/README.md): character and vehicle model import, and export onto the original file.
+- [HGP / LSW2 PC](hgp/lsw2/README.md): character and vehicle models with facial shapes and animations; export onto the original file.
 - [NU20 / LIJ1 Xbox 360 prototype](nu20/lij1-xbox360/README.md): tiled texture extraction.
 - [AN4 / LMSH1](an4/lmsh1/README.md): observed skeletal animation layouts.
 - [BTGA / Nintendo 3DS](btga/3ds/README.md): PICA texture and FUSE payload decoding.

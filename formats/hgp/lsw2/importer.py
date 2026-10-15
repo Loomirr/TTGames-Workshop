@@ -16,9 +16,10 @@ import re
 import tempfile
 
 import bpy
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 
 from . import hgp
+from .exporter_support import pixel_hash
 
 # game -> Blender basis change (a mirror: swaps Y and Z)
 SWAP = Matrix(((1, 0, 0, 0), (0, 0, 1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))
@@ -78,6 +79,8 @@ def load_textures(model, name):
         img.name = f'{name}_tex{i}'
         img.pack()
         img.filepath_raw = ''
+        img['lsw2_texture'] = i
+        img['lsw2_pixels'] = pixel_hash(img)        # the exporter re-encodes the image only if this changes
         images.append(img)
         os.remove(path)
     try:
@@ -106,18 +109,31 @@ def build_material(name, index, m, images):
         tex = nodes.new('ShaderNodeTexImage')
         tex.image = images[m['texture']]
         tex.location = (-600, 200)
-        # the texture is laid over the plastic colour by its alpha (faces and prints on plain parts)
+        # texture colour times the material colour; texture alpha times the material opacity (decals such
+        # as faces are see-through where their texture is)
         mix = nodes.new('ShaderNodeMix')
         mix.data_type = 'RGBA'
+        mix.blend_type = 'MULTIPLY'
         mix.location = (-300, 200)
+        mix.inputs['Factor'].default_value = 1.0
         mix.inputs['A'].default_value = colour
-        links.new(tex.outputs['Alpha'], mix.inputs['Factor'])
         links.new(tex.outputs['Color'], mix.inputs['B'])
         links.new(mix.outputs['Result'], bsdf.inputs['Base Color'])
+        opacity = nodes.new('ShaderNodeMath')
+        opacity.operation = 'MULTIPLY'
+        opacity.location = (-300, -100)
+        opacity.inputs[1].default_value = max(0.0, min(1.0, m['alpha']))
+        links.new(tex.outputs['Alpha'], opacity.inputs[0])
+        links.new(opacity.outputs['Value'], bsdf.inputs['Alpha'])
+        if hasattr(mat, 'surface_render_method'):
+            mat.surface_render_method = 'DITHERED'
+        elif hasattr(mat, 'blend_method'):
+            mat.blend_method = 'HASHED'
     return mat
 
 
-def import_hgp(context, filepath, show_all_layers=False):
+def import_hgp(context, filepath, show_all_layers=False, animations=True, animation_folder='', report=print,
+               unproven_animations=False):
     with open(filepath, 'rb') as f:
         data = f.read()
     model = hgp.Model(data)
@@ -157,6 +173,7 @@ def import_hgp(context, filepath, show_all_layers=False):
     layer_cols = []
     for layer in model.layers:
         col = bpy.data.collections.new(f'{name} {layer["index"]} {layer["name"]}')
+        col['lsw2_layer'] = layer['index']        # new meshes put here are exported into this layer
         root.children.link(col)
         layer_cols.append(col)
         if layer['index'] not in shown:
@@ -179,6 +196,11 @@ def import_hgp(context, filepath, show_all_layers=False):
             empty.parent_type = 'BONE'
             empty.parent_bone = bone_names[p['bone']]
             empty.matrix_world = arm.matrix_world @ worlds[p['bone']] @ local
+    if animations:
+        from . import anim_import
+        made, refused = anim_import.import_clips(context, arm, model, filepath, animation_folder, report,
+                                                 unproven_animations)
+        arm['lsw2_clips'] = len(made)
     return arm, model
 
 
@@ -205,8 +227,16 @@ def build_part(name, index, part, model, materials, arm, bone_names, worlds):
     obj['lsw2_layer'] = part.layer
     obj['lsw2_slot'] = part.slot
     obj['lsw2_buffer'] = part.buffer
-    if part.morph is not None:
-        obj['lsw2_has_morphs'] = True     # kept on export while the vertices are unchanged
+    if part.shapes:
+        obj['lsw2_morph_ids'] = [sid for sid, _ in part.shapes]
+        basis = obj.shape_key_add(name='Basis', from_mix=False)
+        for k, (sid, deltas) in enumerate(part.shapes):
+            if deltas is None:
+                continue                  # an empty slot in the file: no key; it stays empty on export
+            key = obj.shape_key_add(name=f'morph {k}', from_mix=False)
+            key.value = 0.0                   # new keys start at 1.0 in recent Blender: show the basis
+            for i, d in enumerate(deltas):
+                key.data[i].co = basis.data[i].co + Vector(to_blender_point(d))
     if part.slot == 'rigid':
         obj['lsw2_bone'] = part.bone
         bname = bone_names[part.bone]

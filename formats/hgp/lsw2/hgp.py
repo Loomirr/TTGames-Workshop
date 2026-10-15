@@ -49,8 +49,9 @@ class Part:
         self.uvs = []
         self.weights = []           # skinned: per vertex [(bone index, weight), ...]
         self.strip = []             # triangle-strip indices into this part's vertices
-        self.morph = None           # raw morph block (facial shapes), kept only while the vertices are unchanged
+        self.morph = None           # raw morph block as read (facial shapes)
         self.morph_vertices = None  # vertex count the morph block was made for
+        self.shapes = None          # decoded shapes: [(id, [(dx, dy, dz) per vertex] or None), ...]
         self.raw_skin = []          # skinned: stored (w1, w2, j1, j2, j3); used while weights are unchanged
         self.template = None        # the 232-byte record this part was read from or modelled on
 
@@ -70,6 +71,14 @@ class Part:
 
 class Model:
     def __init__(self, data):
+        try:
+            self._read(data)
+        except HGPError:
+            raise
+        except (struct.error, IndexError, ValueError, KeyError, UnicodeError) as e:
+            raise HGPError(f'Damaged or unsupported model: {e}') from e
+
+    def _read(self, data):
         self.data = bytes(data)
         d = self.data
         if len(d) < 0x98 or d[4:8] != MAGIC:
@@ -290,71 +299,208 @@ class Model:
             if not 0x18 <= size <= self.texture_block - m:
                 raise HGPError(f'Morph block at {m:#x} out of range')
             p.morph, p.morph_vertices = d[m:m + size], count
+            p.shapes = decode_morph(p.morph, count)
         elif u(g + 0x38):
             raise HGPError(f'Unknown morph marker {u(g + 0x38):#x} at {g:#x}')
         p.original = (base, start, n)
         return p
 
-    # -- writing -----------------------------------------------------------------------------------
-    def write(self, parts=None, textures=None):
-        """Bytes of a model file holding `parts` (default: the parts as read) and `textures`.
+    def template_for(self, kind):
+        """A 232-byte record for a new part of `kind`: an original of that kind, or (in the eight
+        models that have none) another record turned into that kind. Rigid and skinned records differ
+        only in the fields the writer sets, plus three that take their plain values here."""
+        same = [p for p in self.parts if p.kind == kind and struct.unpack_from('<I', p.template, 0x44)[0] == 1]
+        same = same or [p for p in self.parts if p.kind == kind] or self.parts
+        rec = bytearray(same[0].template)
+        if same[0].kind != kind:
+            struct.pack_into('<I', rec, 0x2C, 0x8A80006C)
+            struct.pack_into('<I', rec, 0x44, 1)
+            rec[0x4C:0x68] = b'\xff' * 28
+            struct.pack_into('<I', rec, 0x6C, 0)
+            struct.pack_into('<I', rec, 0x68, kind)
+        return bytes(rec)
 
-        A part read from this file is patched in place; a part with offset None is added (its
-        template record and its object, a rigid bone's or a layer chain's, must already exist).
-        Parts of the original that are not passed are unlinked from their chains.
+    def buffer_for(self, kind):
+        """The vertex buffer new parts of `kind` go into: the last one holding that kind, or a new one."""
+        have = [b for b in self.buffer_order if self.buffer_kind.get(b) == kind]
+        return have[-1] if have else max(self.buffer_order, default=-1) + 1
+
+    # -- writing -----------------------------------------------------------------------------------
+    def write(self, parts=None, textures=None, bones=None, materials=None):
+        """Bytes of a model file holding `parts`, `textures`, `bones` and `materials` (each defaulting
+        to what was read).
+
+        - A part read from this file is patched in place; a part with offset None is added, modelled on
+          its `template` record. Parts of the original that are not passed are unlinked.
+        - `bones`: the original bones, unchanged and in order, then any new ones (dicts with `name`,
+          `parent` and `local`, a 16-float row-major matrix relative to the parent).
+        - `materials`: the original materials (their `colour`, `alpha` and `texture` may be changed),
+          then any new ones (dicts with `template`: the index of an original material to copy).
+        - `textures`: the texture list; new entries are dicts with `width`, `height`, `levels`,
+          `format` and `dds`.
+        Objects (a rigid bone's list or a layer's skinned list) that do not exist yet are created, and
+        the bounds of every object whose parts changed are recomputed.
         """
         parts = self.parts if parts is None else parts
         textures = self.textures if textures is None else textures
+        bones = self.bones if bones is None else bones
+        materials = self.materials if materials is None else materials
+        nb_old, nb = len(self.bones), len(bones)
+        if nb < nb_old or any((a['name'], a['parent']) != (b['name'], b['parent'])
+                              for a, b in zip(self.bones, bones)):
+            raise HGPError('Bones can be added after the original ones, not removed or reordered')
+        if nb > 255:
+            raise HGPError('At most 255 bones (the parent field is one byte)')
+        if len(materials) < len(self.materials):
+            raise HGPError('Materials can be added, not removed')
+        for i, b in enumerate(bones[nb_old:], nb_old):
+            if not -1 <= b['parent'] < i:
+                raise HGPError(f"New bone {b['name']} must have a parent that comes before it")
+        for m in materials:
+            if m['texture'] is not None and not 0 <= m['texture'] < len(textures):
+                raise HGPError(f"A material names texture {m['texture']}, of {len(textures)}")
         for p in parts:
-            _validate(p, len(self.bones), len(self.materials), len(textures))
+            _validate(p, nb, len(materials), len(textures))
         out = bytearray(self.data[:self.texture_block])
         put = lambda o, fmt, *v: struct.pack_into(fmt, out, o, *v)
+        H = self.header
 
-        # 1. new records go in a block just before the texture block; only the blocks after it move
+        def alloc(blob):
+            """New data goes in a block just before the texture block; only the blocks after it move."""
+            out.extend(bytes(_align(len(out), 16) - len(out)))
+            at = len(out)
+            out.extend(blob)
+            return at
+
+        # 1. new geometry records (a morph block, if any, follows its record as in the originals)
         added = [p for p in parts if p.offset is None]
         new_offset = {}
         for p in added:
             if p.template is None or len(p.template) != GEOMETRY_SIZE:
                 raise HGPError('A new part needs a 232-byte template record')
-            new_offset[id(p)] = len(out)
-            out += p.template
-            if p.morph is not None:
-                raise HGPError('A new part cannot carry a morph block')
-        pad = _align(len(out), 16) - len(out)
-        out += bytes(pad)
-        offset_of = lambda p: p.offset if p.offset is not None else new_offset[id(p)]
+            new_offset[id(p)] = alloc(bytes(p.template) + encode_morph(p.shapes, len(p.positions)))
+        # an original record whose morph block changes size cannot stay where it is: it moves here too
+        for p in parts:
+            if p.offset is None:
+                continue
+            block = encode_morph(p.shapes, len(p.positions))
+            old = len(p.morph) if p.morph is not None else 0
+            if len(block) != old:
+                rec = bytearray(self.data[p.offset:p.offset + GEOMETRY_SIZE])
+                new_offset[id(p)] = alloc(bytes(rec) + block)
+            elif block and block != p.morph:
+                out[p.offset + GEOMETRY_SIZE:p.offset + GEOMETRY_SIZE + len(block)] = block
+        offset_of = lambda p: new_offset.get(id(p), p.offset)
 
-        # 2. chains: each object lists its parts in the order given
+        # 2. skeleton: new bones are appended; the tables, and every per-bone array, move to new copies
+        layer_arrays = {}
+        for layer in self.layers:
+            rec = H[19] + 20 * layer['index']
+            layer_arrays[layer['index']] = [self.u32(rec + 4), self.u32(rec + 12)]
+        if nb > nb_old:
+            names, joints, local, inverse = bytearray(), bytearray(), bytearray(), bytearray()
+            for i, b in enumerate(bones):
+                if i < nb_old:
+                    joints += self.data[H[7] + 0x60 * i:H[7] + 0x60 * (i + 1)]
+                    local += self.data[H[8] + 64 * i:H[8] + 64 * (i + 1)]
+                    inverse += self.data[H[9] + 64 * i:H[9] + 64 * (i + 1)]
+                    continue
+                world = _bone_world(bones, i)
+                parent_rec = H[7] + 0x60 * (b['parent'] if 0 <= b['parent'] < nb_old else 0)
+                rec = bytearray(self.data[parent_rec:parent_rec + 0x60])
+                orient = list(b['local'][:12]) + [0.0, 0.0, 0.0, 1.0]      # rotation, no translation
+                struct.pack_into('<19f', rec, 0, *orient, 0.0, 0.0, 0.0)
+                rec[0x50] = 255 if b['parent'] < 0 else b['parent']
+                rec[0x51] = 8 if b['parent'] < 0 else 33
+                joints += rec
+                local += struct.pack('<16f', *b['local'])
+                inverse += struct.pack('<16f', *_inverse(world))
+                names += b['name'].encode('ascii', 'replace') + bytes(1)
+            name_at = alloc(bytes(names))
+            o = name_at
+            for i in range(nb_old, nb):
+                struct.pack_into('<I', joints, 0x60 * i + 0x4C, o)
+                o += len(bones[i]['name'].encode('ascii', 'replace')) + 1
+            h7, h8, h9 = alloc(bytes(joints)), alloc(bytes(local)), alloc(bytes(inverse))
+            put(4 * 6, '<4I', nb, h7, h8, h9)
+            for index, arrays in layer_arrays.items():
+                for k, at in enumerate(arrays):
+                    if at:
+                        old = self.data[at:at + 4 * nb_old]
+                        arrays[k] = alloc(old + bytes(4 * (nb - nb_old)))
+                        put(H[19] + 20 * index + (4 if k == 0 else 12), '<I', arrays[k])
+
+        # 3. objects: each lists its parts in the order given; missing ones are created
         by_object = {}
         for p in parts:
-            key = (p.layer, p.slot, p.bone)
-            by_object.setdefault(key, []).append(p)
+            by_object.setdefault((p.layer, p.slot, p.bone), []).append(p)
         objects = {(o['layer'], o['slot'], o['bone']): o['offset'] for o in self.objects}
+        original_lists = {}
+        for p in self.parts:
+            original_lists.setdefault((p.layer, p.slot, p.bone), []).append(p)
         for o in self.objects:
             put(o['offset'] + 12, '<I', 0)
         for key, plist in by_object.items():
+            layer, slot, bone = key
+            if not 0 <= layer < len(self.layers):
+                raise HGPError(f'Layer {layer} does not exist')
             if key not in objects:
-                raise HGPError(f'No object for layer {key[0]} {key[1]} bone {key[2]} in the original model')
+                at = alloc(bytes(OBJECT_SIZE))
+                objects[key] = at
+                rec = H[19] + 20 * layer
+                if slot == 'rigid':
+                    if not layer_arrays[layer][0]:
+                        layer_arrays[layer][0] = alloc(bytes(4 * nb))
+                        put(rec + 4, '<I', layer_arrays[layer][0])
+                    put(layer_arrays[layer][0] + 4 * bone, '<I', at)
+                else:
+                    put(rec + (8 if slot == 'skinned' else 16), '<I', at)
             put(objects[key] + 12, '<I', offset_of(plist[0]))
             for a, b in zip(plist, plist[1:]):
                 put(offset_of(a), '<I', offset_of(b))
             put(offset_of(plist[-1]), '<I', 0)
+            same = original_lists.get(key, [])
+            if not (len(plist) == len(same) and all(a is b for a, b in zip(plist, same))):
+                put(objects[key] + 0x14, '<13f', *_bounds([v for p in plist for v in p.positions]))
 
-        # 3. vertex buffers: every buffer is the concatenation of its parts' vertices, in file order
+        # 4. materials: originals patched in place; new ones copied from a template
+        mat_at = []
+        for i, m in enumerate(materials):
+            if i < len(self.materials):
+                at = self.materials[i]['offset']
+            else:
+                t = self.materials[m['template']]['offset']
+                rec = bytearray(self.data[t:t + 0xB4])
+                struct.pack_into('<I', rec, 0x30, 0xFFFFFFFF)            # no linked pass
+                at = alloc(bytes(rec) + bytes(12))
+            mat_at.append(at)
+            put(at + 0x54, '<3f', *m['colour'])
+            put(at + 0x74, '<f', m['alpha'])
+            put(at + 0x78, '<H', 0 if m['texture'] is None else m['texture'] + 1)
+        if len(materials) > len(self.materials):
+            table = alloc(struct.pack(f'<{len(mat_at)}I', *mat_at))
+            put(4 * 4, '<2I', len(materials), table)
+
+        # 5. vertex buffers: every buffer is the concatenation of its parts' vertices, in file order
         order = sorted(parts, key=lambda p: offset_of(p))
         # (a buffer no original part draws from is copied as it is: some originals carry one)
         buffers = {bid: bytearray() if bid in self.buffer_kind else bytearray(self.buffers[bid])
                    for bid in self.buffer_order}
+        buffer_order = list(self.buffer_order)
+        kinds = dict(self.buffer_kind)
         base_of = {}
         for p in order:
             if p.buffer not in buffers:
-                raise HGPError(f'Vertex buffer {p.buffer} does not exist in the original model')
-            if self.buffer_kind.get(p.buffer, p.kind) != p.kind:
-                raise HGPError(f'Vertex buffer {p.buffer} holds kind {self.buffer_kind[p.buffer]:#x}, not {p.kind:#x}')
+                if p.buffer != max(buffer_order, default=-1) + 1:
+                    raise HGPError(f'A new vertex buffer must be numbered {max(buffer_order, default=-1) + 1}')
+                buffers[p.buffer] = bytearray()
+                buffer_order.append(p.buffer)
+            if kinds.setdefault(p.buffer, p.kind) != p.kind:
+                raise HGPError(f'Vertex buffer {p.buffer} holds kind {kinds[p.buffer]:#x}, not {p.kind:#x}')
             buf = buffers[p.buffer]
             base_of[id(p)] = len(buf) // STRIDE[p.kind]
             buf += _pack_vertices(p)
-        # 4. index buffer: original parts keep their order, new ones follow
+        # 6. index buffer: original parts keep their order, new ones follow
         index_order = sorted((p for p in parts if p.offset is not None), key=lambda p: p.original[1]) + added
         indices = []
         start_of = {}
@@ -362,7 +508,7 @@ class Model:
             start_of[id(p)] = len(indices)
             indices += p.strip
 
-        # 5. patch every record
+        # 7. patch every record
         for p in parts:
             g = offset_of(p)
             n, count = len(p.strip), len(p.positions)
@@ -375,10 +521,9 @@ class Model:
             palette = list(p.palette) + [0] * (15 - len(p.palette))
             put(g + 0xAC, '<16H', len(p.palette), *palette)
             put(g + 0xD0, '<6I', TRIANGLE_STRIP, base_of[id(p)], 0, count, start_of[id(p)], n - 2)
-            keep_morph = p.morph is not None and p.morph_vertices == count
-            put(g + 0x38, '<I', MORPH_FLAG if keep_morph else 0)
+            put(g + 0x38, '<I', MORPH_FLAG if p.shapes else 0)
 
-        # 6. texture block
+        # 8. texture block
         tb = len(out)
         base = tb + 8
         n_tex = len(textures)
@@ -398,11 +543,11 @@ class Model:
         for blob in blobs:
             out += blob
 
-        # 7. vertex block
-        nbuf = len(self.buffer_order)
+        # 9. vertex block
+        nbuf = len(buffer_order)
         hdr = _align(0x30 + 12 * nbuf, 16)
         offs, pos = [], 0
-        for bid in self.buffer_order:
+        for bid in buffer_order:
             offs.append(pos)
             pos = _align(pos + len(buffers[bid]), 16)
         index_off = pos
@@ -412,11 +557,11 @@ class Model:
         block = bytearray(hdr + 16)
         struct.pack_into('<9I', block, 0, nbuf, 1, hdr + 16 + index_off + raw - slack, 0x30, hdr + 16,
                          index_off, hdr, index_off + hdr + 16, _align(raw, 16))
-        for i, bid in enumerate(self.buffer_order):
+        for i, bid in enumerate(buffer_order):
             struct.pack_into('<3I', block, 0x30 + 12 * i, len(buffers[bid]), bid, offs[i])
         struct.pack_into('<I', block, hdr, raw)
         out += block
-        for bid, off in zip(self.buffer_order, offs):
+        for bid, off in zip(buffer_order, offs):
             out += bytes(off - (len(out) - vb - hdr - 16))
             out += buffers[bid]
         out += bytes(index_off - (len(out) - vb - hdr - 16))
@@ -425,12 +570,47 @@ class Model:
         out += struct.pack(f'<{len(indices)}H', *indices)
         out += bytes(_align(raw, 16) - raw)
 
-        # 8. header
+        # 10. header
         struct.pack_into('<I', out, 0, len(out))
         struct.pack_into('<I', out, 8, n_tex)
         struct.pack_into('<I', out, 12, tb)
         struct.pack_into('<I', out, 0x94, tb)
         return bytes(out)
+
+
+def _bone_world(bones, i):
+    b = bones[i]
+    if 'world' not in b:
+        b['world'] = list(b['local']) if b['parent'] < 0 else _mul(b['local'], _bone_world(bones, b['parent']))
+    return b['world']
+
+
+def _inverse(m):
+    """Inverse of a 4x4 row-major matrix (Gauss-Jordan)."""
+    a = [list(m[r * 4:r * 4 + 4]) + [1.0 if r == c else 0.0 for c in range(4)] for r in range(4)]
+    for c in range(4):
+        piv = max(range(c, 4), key=lambda r: abs(a[r][c]))
+        if abs(a[piv][c]) < 1e-12:
+            raise HGPError('A bone matrix cannot be inverted')
+        a[c], a[piv] = a[piv], a[c]
+        f = a[c][c]
+        a[c] = [x / f for x in a[c]]
+        for r in range(4):
+            if r != c and a[r][c]:
+                g = a[r][c]
+                a[r] = [x - g * y for x, y in zip(a[r], a[c])]
+    return [a[r][4 + c] for r in range(4) for c in range(4)]
+
+
+def _bounds(points):
+    """Object bounds as the originals store them: R, R*R, min xyz, max xyz, centre xyz, R, R*R,
+    where R is the largest half-size of the box (3,063 of 3,064 original objects match exactly)."""
+    f32 = lambda x: struct.unpack('<f', struct.pack('<f', x))[0]
+    lo = [min(v[i] for v in points) for i in range(3)]
+    hi = [max(v[i] for v in points) for i in range(3)]
+    centre = [f32((a + b) / 2) for a, b in zip(lo, hi)]
+    r = f32(max((b - a) / 2 for a, b in zip(lo, hi)))
+    return [r, f32(r * r)] + lo + hi + centre + [r, f32(r * r)]
 
 
 def _mul(a, b):
@@ -440,6 +620,10 @@ def _mul(a, b):
 
 def _validate(p, n_bones, n_materials, n_textures):
     n = len(p.positions)
+    if p.shapes is not None:
+        for sid, deltas in p.shapes:
+            if deltas is not None and len(deltas) != n:
+                raise HGPError(f'Shape {sid} has {len(deltas)} offsets for a part of {n} vertices')
     if not (len(p.normals) == len(p.colours) == len(p.uvs) == n):
         raise HGPError('Part arrays differ in length')
     if n > 0xFFFF:
@@ -498,6 +682,49 @@ def _same_skin(raw, weights, palette):
               if w > 1e-6 and 0 <= int(round(j)) < len(palette)]
     return len(stored) == len(weights) and all(a[0] == b[0] and abs(a[1] - b[1]) < 1e-7
                                                for a, b in zip(stored, weights))
+
+
+def decode_morph(block, vertices):
+    """A morph block -> [(id, deltas or None)]. Layout: u32 size, u32 count, three pointers relative to
+    their own position (offset table, id list, data) and -1; then per shape an offset relative to its
+    own table slot (0 = no data), the ids, and the shapes' position offsets, 3 floats per vertex."""
+    size, n, p1, p2, p3, end = struct.unpack_from('<6I', block)
+    if size != len(block) or p1 != 0x10 or p2 != 0xC + 4 * n or p3 != 8 + 8 * n or end != 0xFFFFFFFF:
+        raise HGPError('Unsupported morph block header')
+    out, pos = [], 0x18 + 8 * n
+    for k in range(n):
+        off = struct.unpack_from('<I', block, 0x18 + 4 * k)[0]
+        sid = struct.unpack_from('<I', block, 0x18 + 4 * n + 4 * k)[0]
+        if off == 0:
+            out.append((sid, None))
+            continue
+        start = 0x18 + 4 * k + off
+        if start != pos or start + 12 * vertices > size:
+            raise HGPError('Unsupported morph block layout')
+        flat = struct.unpack_from(f'<{3 * vertices}f', block, start)
+        out.append((sid, [flat[i:i + 3] for i in range(0, len(flat), 3)]))
+        pos = start + 12 * vertices
+    if pos != size:
+        raise HGPError('Morph block has data after its shapes')
+    return out
+
+
+def encode_morph(shapes, vertices):
+    """The inverse of decode_morph (b'' for no shapes)."""
+    if not shapes:
+        return b''
+    n = len(shapes)
+    head = 0x18 + 8 * n
+    table, data = [], bytearray()
+    for k, (sid, deltas) in enumerate(shapes):
+        if deltas is None:
+            table.append(0)
+            continue
+        table.append(head + len(data) - (0x18 + 4 * k))
+        data += struct.pack(f'<{3 * vertices}f', *(c for d in deltas for c in d))
+    size = head + len(data)
+    return (struct.pack('<6I', size, n, 0x10, 0xC + 4 * n, 8 + 8 * n, 0xFFFFFFFF) +
+            struct.pack(f'<{n}I', *table) + struct.pack(f'<{n}I', *(sid for sid, _ in shapes)) + bytes(data))
 
 
 def stripify(triangles):

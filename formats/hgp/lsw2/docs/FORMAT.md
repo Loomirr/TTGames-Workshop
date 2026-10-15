@@ -3,8 +3,7 @@
 Measured on the 261 `.hgp` files of the Steam PC release (`lego_data/game.dat`, index version -1). 257 are
 this format; the other four (`chars/chewbacca/_chewbacca.hgp`, `chars/yoda/_yoda.hgp`,
 `chars/palpatine/walk.hgp`, `chars/obiwankenobi/tpm/obiwankenobi.hgp`) are LEGO Star Wars 1 files
-shipped by mistake and are refused. Reader and writer: `../hgp.py`. Checks:
-`../tests/check_roundtrip.py` (no Blender), `../tests/check_blender.py` and `../tests/check_blender_edits.py`.
+shipped by mistake and are refused. Reader and writer: `../hgp.py`. Checks: `../tests/` (see the add-on README).
 
 Everything is little-endian. **Every pointer is an absolute file offset**; there is no relocation table.
 "Always" below means in all 257 files.
@@ -38,9 +37,13 @@ see above. `h[18]` layer count, `h[19]` layer table. `h[20]` extra structure or 
 
 ## Skeleton
 
-Joint record (0x60): a matrix (64 bytes; neither the local nor the world bind matrix, not used here),
-three floats, name pointer at +0x4c, parent at +0x50 (byte, 255 = root; a model may have several roots),
-a flag byte at +0x51 (33, 8 or 1).
+Joint record (0x60): a matrix (64 bytes; its translation is always zero and its rotation usually equals
+the bone's local bind rotation; not used by the reader, and animation does not use it either: see below),
+three floats (always zero), name pointer at +0x4c, parent at +0x50 (byte, 255 = root; a model may have
+several roots), a flag byte at +0x51 (33 on 4,418 child bones, 1 on 470, 8 on 278 roots).
+
+New bones are appended: the writer copies the joint, local and inverse tables (and every per-bone array of
+the layers) to new places with the new bones at the end, so every existing bone number stays valid.
 
 Matrices are row-major for row vectors (translation in the last row). The world matrix of bone i is
 `local[i] * world[parent]`, and the inverse table is exactly its inverse (5,171 of 5,171 bones).
@@ -56,7 +59,9 @@ pointer or 0), **skinned object**, `d` (pointer to a per-bone array, always zero
 Layer names (`defaultLayer`, `TT1_Special`, `TT2_HiRes`, ...) follow the bone names in the name table;
 nothing points to them.
 
-Object (0x70): geometry pointer at +12, then floats (bounds, not decoded).
+Object (0x70): geometry pointer at +12; at +0x14 thirteen floats: R, R², minimum x y z, maximum x y z,
+centre x y z, R, R², where R is the largest half-size of the box (3,063 of 3,064 objects match this exactly;
+the other is the lightsabre file's, whose box also covers its unreferenced records); the rest is zero.
 
 Geometry record (0xe8, 232 bytes), a linked list from the object:
 
@@ -94,9 +99,45 @@ carry a buffer no part draws from. The colour is 0xff000000 throughout in 192 fi
 
 ### Morph blocks (facial shapes)
 
-After a record flagged 0xb4: u32 block size, u32 shape count, then pointers relative to their own
-position (an offset table, an ID list, the data) and -1. Shapes are 3 floats per vertex, but in 278 of
-369 blocks the spacing is uneven (stored sparsely); not decoded further. Kept as they are.
+After a record flagged 0xb4 (369 records):
+
+| Offset | Meaning |
+| --- | --- |
+| +0x00 | block size |
+| +0x04 | shape count n |
+| +0x08, +0x0c, +0x10 | pointers relative to their own position: offset table (0x10), id list (0x0c + 4n), data (8 + 8n) |
+| +0x14 | -1 |
+| +0x18 | n offsets, each relative to its own slot; 0 = an empty shape |
+| +0x18 + 4n | n ids (0..n-1 in 365 blocks) |
+| +0x18 + 8n | the non-empty shapes in order: 3 floats per vertex (position offset), the block ending exactly at its size |
+
+All 369 blocks follow this, and re-encoding them gives the same bytes. A record whose morph block changes
+size is moved by the writer into the new-data block, with its chain relinked.
+
+## Animations (`.an3`, tag `4INA`)
+
+The same block layout as LEGO Star Wars: The Complete Saga (see `../anim.py`): per node
+nine channels (translation, rotation in radians, scale), each a constant or a curve stored per 4-frame
+segment. Measured on the PC files:
+
+- **Z mirror.** Translations are stored with z negated: in 756 model and clip pairs, frame 0 reproduces
+  the bind translations only with z mirrored. The local matrix is diag(1,1,-1,1) M diag(1,1,-1,1).
+- **Rotations are relative to the bind rotation, scale first.** local = S · B · R (row vectors), with B the
+  bone's bind rotation and R = Rx Ry Rz. Posing the skinned meshes of five characters over 12 clips, the
+  mean edge stretch is 2.7% with B, 8.7% without it, 11.7% with the joint record's matrix in its place;
+  the rotation order barely matters (single-axis turns dominate), and x y z is the order of the earlier
+  games. Putting the scale before B makes a non-uniform scale (General Grievous's cloak) representable.
+  Rendered frames of Luke, Han and Leia look right; nothing was compared in the game.
+- **Which skeleton a clip is for.** A character's `.txt` declares its clips (`anim_start="name"`); 2,444
+  declared clips resolve to a file (beside the model, or in `chars/commonanims`) with the model's bone count,
+  139 have another bone count, 66 are missing. For an undeclared clip: the bones it holds still must sit at
+  the skeleton's bind translations (90%). Cross-character matches by that test are between skeletons that
+  differ only in name style (`leftHand` against `leftElbowLength|leftHand`).
+- **Clips for the first bones only.** Some models add root bones at the end (`IK` on the tauntaun,
+  `|LightSabre` in a Jedi file); their clips have fewer nodes. Such a clip drives the first bones when every
+  extra bone is a trailing root or hangs under one, and the driven bones pass the proportions test (78 of 160
+  such clip and model pairs in the release); the extra bones stay at rest.
+- **Frame rate**: `fpsec=` inside a clip's `anim_start` block of the character `.txt` (30 in most); else 30.
 
 ## Materials (0xb4)
 

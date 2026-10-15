@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "io_lsw2_hgp"
-version = "0.1.0"
+version = "0.2.0"
 name = "LEGO Star Wars II Model (.hgp)"
 tagline = "Import and export LEGO Star Wars II (2006, PC) models"
 maintainer = "Gibby"

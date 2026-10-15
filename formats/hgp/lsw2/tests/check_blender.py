@@ -72,8 +72,15 @@ for path in paths:
     target = next(iter(exporter.collect(arm)), None)      # rigid parts move in their bone's space
     moved_ok = None
     if target is not None:
-        for v in target.data.vertices:
-            v.co.z += 0.01
+        def lift(dz):
+            # with shape keys the Basis key holds the shape (as Edit Mode would change it), so move every key
+            keys = target.data.shape_keys.key_blocks if target.data.shape_keys else []
+            for kb in keys:
+                for d in kb.data:
+                    d.co.z += dz
+            for v in target.data.vertices:
+                v.co.z += dz
+        lift(0.01)
         edit_path = out_dir / f'{name}_edit.hgp'
         data2, notes2 = exporter.export_hgp(bpy.context, str(edit_path), arm)
         m2 = hgp.Model(data2)
@@ -94,8 +101,7 @@ for path in paths:
             changed = [i for i, (p, q) in enumerate(zip(others, orig_others)) if (p.positions, p.strip) != (q.positions, q.strip)]
             print(f'EDIT DETAIL {name}: part {idx} max deviation {dev:.2e}; other parts changed {changed[:8]} '
                   f'of {len(others)} vs {len(orig_others)}; notes {notes2}')
-        for v in target.data.vertices:
-            v.co.z -= 0.01
+        lift(-0.01)
     render(name, arm)
     results.append((name, len(model.parts), n_obj, identical, moved_ok, notes))
     print(f'RESULT {name}: parts {len(model.parts)} objects {n_obj} unchanged-export-identical {identical} '
