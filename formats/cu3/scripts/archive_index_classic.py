@@ -12,7 +12,7 @@ if 'tt_dependency_check' not in sys.modules:
 from tt_dependency_check.archive_v5 import index_v5
 from tt_dependency_check.archive_assets import index_v6
 
-LAYOUTS={'LB1':-2,'TCS':-3,'LB2':-4,'SW3':-4,'LMSH1':-5,'HOBBIT':-5,'MOVIE1':-5,'LB3':-6}
+LAYOUTS={'LSW2':-1,'LB1':-2,'TCS':-3,'LB2':-4,'SW3':-4,'LMSH1':-5,'HOBBIT':-5,'MOVIE1':-5,'LB3':-6}
 
 
 def main(argv=None):

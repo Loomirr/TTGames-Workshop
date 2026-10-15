@@ -33,7 +33,7 @@ framing: a readable header or completed command is not proof of complete coverag
 | AN3 | 4INA, 6INA, 8INA and observed unrelocated 5INA | Nine-channel scalar inspection; no skeleton ownership or Blender pose conversion |
 | GIZ | File version 1; checked section layouts | Section inventory, pickup versions 4/5/7 and empty v6, selected fixed-size records |
 | NU20 GHG/GSC | Observed PC container versions 1, 2, 4; separate payloads | Raw geometry, native rig/bind records, embedded DDS, UVs and normals; unsupported strides/draws are reported |
-| DAT | Separate shared archive reader | LB1 -2, TCS -3, LB2/SW3 -4; see [archive profiles](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md) |
+| DAT | Separate shared archive reader | LSW2 -1 ([notes](../../games/lsw2/README.md)), LB1 -2, TCS -3, LB2/SW3 -4; see [archive profiles](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md) |
 | AN3 playback, native/glTF export | Not enabled | Ownership, conversion and writing remain unverified |
 
 CU2 uses a companion script's `fpsec`, then the header rate, otherwise an

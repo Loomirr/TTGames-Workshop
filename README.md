@@ -27,6 +27,7 @@ building the complete model/scene. No row means every asset in that game is veri
 | Game / platform | File types | Support and how to use it |
 | --- | --- | --- |
 | LEGO Star Wars: The Video Game (2005), PC | HGP | [HGP addon](formats/hgp/lsw1/README.md): models, native rigs and textures; some headers remain unsupported. Does not cover LSW2/TCS. |
+| LEGO Star Wars II: The Original Trilogy (2006), PC | DAT -1; AN3, CU2 516/517; HGP | [PC DAT index CLI](games/lsw2/README.md): checked paths and file spans. Classic AN3/CU2 inspectors pass on extracted files. Character HGPs use an undecoded layout; no Blender import. |
 | LEGO Star Wars: The Complete Saga, PC | DAT -3; NU20 GHG/GSC; CU2, AN3, GIZ | [Classic inspection](formats/classic-pc/README.md): raw models/rigs/textures in the character addon; CU2 static references in the cutscene addon; AN3/GIZ CLI inspection. Rigid attachments, costume selection, native shaders and animation playback remain incomplete. Installed tree has local mods. |
 | LEGO Batman (2008), PC | DAT -2; NU20 GHG/GSC; CU2, AN3, GIZ | Same [classic inspection](formats/classic-pc/README.md), with installed-DAT or extracted character browsing. Raw Blender models and CU2 reference scenes have explicit omissions; no complete character/cutscene or AN3 playback claim. |
 | LEGO Indiana Jones 1, PC | CU2, AN3, GIZ; NU20 GHG/GSC | Same [classic inspection tools](formats/classic-pc/README.md) for reported matching layouts. **No local game validation yet.** Separate from the Xbox prototype. |
