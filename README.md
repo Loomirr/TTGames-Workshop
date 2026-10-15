@@ -74,6 +74,13 @@ The separate [classic PC contribution](formats/classic-pc/README.md) retains its
 The [minifigure issue patch notes](docs/ISSUE_1_MINIFIGS.md) cover the newer
 accessory LOD and LMSH1 arm UV fixes, plus the remaining reported problems.
 
+The [TCS PC scripting guide](games/tcs/scripting/README.md) documents AI state
+machines, native command names, character/animation definitions, stock saber
+colors, portraits, engine limits and character/level text integration. It separates
+asset observations and native analysis from unverified runtime behaviour; no
+script compiler or gameplay changes are included. Its authoring recipes use
+the native game's existing interfaces only.
+
 ## Using the tools
 
 Ready-to-use packages are in [builds/](builds/README.md), with download and

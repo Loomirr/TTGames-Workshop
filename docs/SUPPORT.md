@@ -1,5 +1,12 @@
 # Support and validation
 
+The [TCS PC scripting reference](../games/tcs/scripting/README.md) adds
+documentation of observed SCP syntax, selected native parser paths, character
+and animation definitions, stock colors, portraits and original engine limits.
+Its recipes use native interfaces only. New examples have not been executed
+in-game; it adds no script compiler or new importer support. See its
+[evidence and limitations](../games/tcs/scripting/RESEARCH.md).
+
 Character 0.5.16 / CU3 0.1.25 add LB1/TCS raw model inspection and a separate
 classic CU2 reference importer. Missing rigid attachments, overlapping variants,
 approximate shaders and unavailable AN3 playback remain explicit limitations.
