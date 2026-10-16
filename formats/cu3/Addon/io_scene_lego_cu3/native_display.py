@@ -1,4 +1,4 @@
-"""Observed DISP 18/21/23/32 draw bindings and named model instances."""
+"""Observed DISP 12-14 (LEGO Batman 2), 18/21/23/32 draw bindings and named model instances."""
 from pathlib import Path
 import math
 from .cu3 import FormatError
@@ -12,7 +12,7 @@ def read_display(path, part_count):
         raise FormatError('Native display section missing')
     c = Cursor(data, at + 4)
     version = c.get('I')
-    if version not in (16, 18, 21, 23, 24, 26, 32):
+    if version not in (12, 13, 14, 16, 18, 21, 23, 24, 26, 32):
         raise FormatError(f'DISP {version} requires a separate verified reader')
     dx = version in (26, 32)
     def array(size=None):
@@ -51,6 +51,13 @@ def read_display(path, part_count):
                 c.expect(b'ROTV', '4s')
                 if array(4) != len(clips):
                     raise FormatError('DISP 16 auxiliary count differs from clip table')
+        elif version in (12, 13, 14):
+            # LEGO Batman 2 has the same three per-clip arrays, but only the
+            # first carries a ROTV marker; the other two are count + values.
+            c.expect(b'ROTV', '4s')
+            for _ in range(3):
+                if array(4) != len(clips):
+                    raise FormatError('LB2 display auxiliary count differs from clip table')
         c.take(4)
     names_at = data.find(b'LBTN')
     names_start = names_at + 12
@@ -119,7 +126,7 @@ def model_bindings(display, special, *, highest_detail=True):
     # This only selects the explicit final clip for a highest-detail preview;
     # it does not attempt to reproduce the engine's distance switching.
     zero_tail = display['version'] == 32 and len(ranges) == 4
-    if (display['version'] not in (16, 18, 21, 24, 26, 32)
+    if (display['version'] not in (12, 13, 14, 16, 18, 21, 24, 26, 32)
             or len(ranges) > 8 or ranges[-1] != 0
             or any(not math.isfinite(v) or v < 0 for v in ranges)
             or any(a <= b and not (zero_tail and a == b == 0)
