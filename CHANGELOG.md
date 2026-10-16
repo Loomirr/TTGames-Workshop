@@ -1,5 +1,17 @@
 # Changelog
 
+## TCS four-player patch — 16 October 2026
+
+- New [TCS PC four-player patch](games/tcs/four-player/README.md) (v0.48): local
+  players 3 and 4 with their own pads, HUD, stud counters, Free Play picks, Cantina
+  characters, shop and controller setup, installed as a `dinput8.dll` that patches
+  the Steam executable in memory after checking every original byte. No game file
+  is modified or included.
+- [Research notes](games/tcs/four-player/RESEARCH.md), a
+  [P1/P2 parity audit](games/tcs/four-player/AUDIT.md) of 217 native functions and
+  the [hook list](games/tcs/four-player/PATCHES.md). Many features are tested in
+  game on one machine; the README's status table separates them from untested ones.
+
 ## Attachment dependency integrity — 6 October 2026
 
 - Character 0.5.6 preserves earlier/shared texture provenance and image/store

@@ -11,6 +11,12 @@ debugging workflow. A separate LSW1 comparison identifies inherited commands
 whose earlier bindings are absent in TCS. It is research documentation, not a script
 compiler or a claim of complete language coverage.
 
+## Four-player patch
+
+The [four-player patch](four-player/README.md) adds local players 3 and 4 to
+the Steam PC version as a `dinput8.dll` that patches the game in memory. It is
+built from source and lists which features are tested in-game.
+
 ## Binary assets and tools
 
 See [classic PC inspection](../../formats/classic-pc/README.md) for NU20
