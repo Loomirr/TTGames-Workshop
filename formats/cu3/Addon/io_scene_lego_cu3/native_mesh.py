@@ -87,13 +87,20 @@ class Cursor:
         return value
 
 
+# 48: LEGO Batman 2 (see docs/LB2_MESH48.md); 161-175: later games.
+VERSIONS = (48, 161, 169, 170, 175)
+
+
 class MeshReader:
     def __init__(self, data, at):
         self.c = Cursor(data, at + 4)
         self.version = self.c.get('I')
-        if self.version not in (161, 169, 170, 175):
+        if self.version not in VERSIONS:
             raise FormatError(f'Native MESH version {self.version} is not supported')
         self.dx = self.version == 175
+        # MESH 48 has the 169 part records, but its vertex buffers carry no
+        # DXTV tag, no repeated version and no six trailing layout bytes.
+        self.untagged = self.version == 48
         self.buffers = {}
         self.serial = 0
         self.bases = None
@@ -119,8 +126,9 @@ class MeshReader:
             raise FormatError('Unreasonable native buffer element count')
         item = {'kind': kind, 'record_offset': at, 'count': count, 'flags': flags}
         if kind == 'vertex':
-            c.expect(b'DXTV', '4s')
-            c.expect(161 if self.version == 161 else 169)
+            if not self.untagged:
+                c.expect(b'DXTV', '4s')
+                c.expect(161 if self.version == 161 else 169)
             descriptors = [c.get('3B') for _ in range(c.count(32))]
             if not descriptors or len({a[0] for a in descriptors}) != len(descriptors):
                 raise FormatError('Empty or duplicate native vertex descriptors')
@@ -130,7 +138,8 @@ class MeshReader:
             occupied = [b for _, typ, offset in descriptors for b in range(offset, offset + SIZES[typ])]
             if len(set(occupied)) != len(occupied) or set(occupied) != set(range(stride)):
                 raise FormatError('Overlapping or padded native vertex descriptor layout')
-            c.take(6)  # Retained layout fields; not vertex payload.
+            if not self.untagged:
+                c.take(6)  # Retained layout fields; not vertex payload.
             item.update(descriptors=descriptors, stride=stride, start=c.take(count * stride))
         else:
             size = c.get('I')
@@ -277,7 +286,7 @@ def read_mesh_bytes(data):
     candidates = []
     at = data.find(b'HSEM')
     while at >= 0:
-        if at + 8 <= len(data) and int.from_bytes(data[at+4:at+8], 'big') in (161, 169, 170, 175):
+        if at + 8 <= len(data) and int.from_bytes(data[at+4:at+8], 'big') in VERSIONS:
             candidates.append(at)
         at = data.find(b'HSEM', at + 4)
     if len(candidates) != 1:
