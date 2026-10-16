@@ -87,7 +87,7 @@ class Cursor:
         return value
 
 
-# 48: LEGO Batman 2 (see docs/LB2_MESH48.md); 161-175: later games.
+# 48: LEGO Batman 2 (see docs/LB2_GEOMETRY.md); 161-175: later games.
 VERSIONS = (48, 161, 169, 170, 175)
 
 
