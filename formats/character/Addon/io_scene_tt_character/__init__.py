@@ -79,11 +79,11 @@ def character_catalog(assets):
     return [(p, Path(p).stem, p) for p in sorted(paths)]
 
 
-def import_classic_model(context, path):
+def import_classic_model(context, path, game):
     from ._classic.blender_inspect import inspect_model
     from ._core.dds import read_dds
     from ._core.geometry_normals import apply_authored_normals
-    return inspect_model(context, path, read_dds, apply_authored_normals)
+    return inspect_model(context, path, read_dds, apply_authored_normals, profile=game)
 
 
 class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
@@ -159,8 +159,8 @@ class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
                 raise ValueError('The game changed; open the character browser again')
             path = _catalog_assets.find_exact(self.resource)
             if game in ('LB1', 'TCS'):
-                collection, report = import_classic_model(context, path)
-                self.report({'WARNING'}, f'Classic inspection: {report["meshes"]} meshes, {report["unbound_rigid_meshes"]} unbound rigid pieces hidden. See Classic model report.')
+                collection, report = import_classic_model(context, path, game)
+                self.report({'WARNING'}, f'Classic inspection: {report["meshes"]} meshes, {report["rigid_bound_meshes"]} rigid pieces bound to joints, {report["unbound_rigid_meshes"]} unbound rigid pieces hidden. See Classic model report.')
                 return {'FINISHED'}
             rig, report = import_character(context, path, Path(bpy.path.abspath(getattr(prefs, game.lower()))), game,
                 cache=Path(bpy.path.abspath(prefs.cache)) if prefs.cache else None, assets=_catalog_assets,
@@ -212,7 +212,7 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
             if self.game in ('LB1', 'TCS'):
                 if Path(self.filepath).suffix.lower() not in ('.ghg', '.gsc'):
                     raise ValueError('Classic inspection requires a PC GHG/GSC; modern CD definitions are not supported')
-                collection, report = import_classic_model(context, Path(self.filepath))
+                collection, report = import_classic_model(context, Path(self.filepath), self.game)
                 if prefs and self.assets:
                     setattr(prefs, self.game.lower(), self.assets)
                 context.scene.tt_character_game = self.game
