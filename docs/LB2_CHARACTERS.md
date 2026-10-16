@@ -39,8 +39,9 @@ costume path: body front and back, arms, hands, hips, legs and head prints.
   extracted tree:
   - 198 import, with no material left unresolved.
   - 15 are refused by existing checks: 14 definitions in stream versions 18/22/23/24, and `super_test` (MESH 47).
-  - 32 of the imported characters skip an attachment: 28 for an attachment definition in stream version 23/24,
-    4 hats with MESH 47 or an older material table, and 1 missing female face resource.
+  - 32 of the imported characters skip at least one attachment (35 skipped in all): 28 attachment definitions
+    in stream version 23/24, 6 hats with MESH 47 or an older material table, and 1 missing female face
+    resource.
 
 - `formats/cu3/scripts/test_lb2_profile.py`: the profile accepts only MESH 48 `_NXG` models, and costume
   prints use UV pair 0.
