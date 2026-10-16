@@ -29,6 +29,15 @@ example, declares format 0 with `arms_template` there. Storm's hair
 (`skinnedhair_storm`, UMTL 172) is format 0 with `stormhair_normal`, so it still
 imports without a normal map.
 
+A follow-up looked for a decoded field that separates format 0 normals from
+format 0 non-normals (all 645 LMSH1 format 0 slot-6 uses, every decoded scalar
+field). None separates them. The closest is the costume role: the 44 uses whose
+texture is named as a normal all have role 0, and only 6 of the 50 role-0 uses
+are not named as normals: `lego_white` on `wingsfeather` (3 uses, plainly not a
+normal), `comgrip` (2 uses, normal-like channel means) and `handlegrip_diff` on
+Beta Ray Bill's hammer (1 use). A "format 0 and no costume role" gate would
+therefore still bind the wings' white texture as a normal, so it is not used.
+
 Green orientation was checked rather than assumed. For a map derived from a
 height field, the slopes implied by X and Y are consistent (near-zero curl) in
 only one Y orientation. On 40 format 5 maps and 40 format 2 maps, the same
