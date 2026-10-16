@@ -1,4 +1,4 @@
-"""Counted HGOL 10/12/16/17 model variants observed in original NXG/DX11 bodies.
+"""Counted HGOL 9/10/12/16/17 model variants observed in original NXG/DX11 bodies.
 
 The zero-threshold resource has an identity joint map and no remap to another
 resource. Other records explicitly map its metadata to their own metadata.
@@ -32,8 +32,8 @@ def annotate_variant_group(data, candidates, errors):
         if not 1 <= count <= 64 or count != len(ordered) or ordered[0]['hgol_offset'] != start:
             raise FormatError('Native variant count does not cover every HGOL interpretation')
         version = ordered[0]['version']
-        if version not in (10, 12, 16, 17) or any(c['version'] != version for c in ordered):
-            raise FormatError('Native variant trailer requires observed HGOL 10, 12, 16 or 17 throughout')
+        if version not in (9, 10, 12, 16, 17) or any(c['version'] != version for c in ordered):
+            raise FormatError('Native variant trailer requires observed HGOL 10, 12, 16 or 17 (or LB2 HGOL 9) throughout')
         if len({c.get('name_table_offset') for c in ordered}) != 1:
             raise FormatError('Native variants disagree on name-table ownership')
         decoded = []
@@ -43,7 +43,9 @@ def annotate_variant_group(data, candidates, errors):
                 raise FormatError('Native variant trailer does not end at the next counted HGOL')
             decoded.append(tail)
         end = decoded[-1]['end_offset']
-        fence = b'\0\0\0\0\1ATEM' if version in (10,12) else b'\0\0\0\0ATEM'
+        # LEGO Batman 2 (HGOL 9) has the HGOL 10 trailer, with a zero fifth fence byte.
+        fence = (b'\0\0\0\0\1ATEM' if version in (10,12) else
+                 b'\0\0\0\0\0ATEM' if version == 9 else b'\0\0\0\0ATEM')
         if data[end:end+len(fence)] != fence:
             raise FormatError('Native variant group has an unverified terminal boundary')
         group = dict(schema='tt.native-hgol-variants.v1', array_offset=start-8,
@@ -63,7 +65,7 @@ def _trailer(data, reader, candidate):
     pos = candidate['end_offset']
     start = pos
     typed = candidate['version'] in (12,16,17)
-    secondary_map = candidate['version'] in (10,12)
+    secondary_map = candidate['version'] in (9,10,12)
     def get(fmt, size):
         nonlocal pos
         value = reader.get(fmt, pos)
@@ -98,7 +100,7 @@ def _trailer(data, reader, candidate):
     secondary = array('B', 1, 255) if secondary_map else None
     scale = get('f', 4) if secondary_map else None
     if secondary_map and (secondary != joint_map or scale != 1):
-        raise FormatError('Unverified HGOL 10/12 secondary joint map or scale')
+        raise FormatError('Unverified HGOL 9/10/12 secondary joint map or scale')
     metadata_map = array('H', 2, 65536)
     if get('B', 1) != 0:
         raise FormatError('Unverified native variant terminal flag')
