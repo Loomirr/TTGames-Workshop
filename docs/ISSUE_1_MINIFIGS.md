@@ -85,6 +85,15 @@ and export check, not in-game shader equivalence. Other mesh/table combinations
 and surface encodings remain gated. The gold hatch's cubemap shader, reported
 shoulder spot, Vulture's eyes and Alfred's head-print seam remain open.
 
+## Follow-up: surface format 2 normals and Storm's hair
+
+Storm's UMTL 172 hair now imports through the explicit 172 layout (checked:
+1,318 vertices, `StormHairLOD_Mat`). Its only texture is `stormhair_normal` in
+slot 6, declared as surface format 0, which remains unbound because format 0
+slot 6 also holds non-normal textures. LMSH1 surface format 2, an RGB DXT1
+normal in the same slot, is now bound; this restores strand detail on hairs such
+as Black Widow's and Sif's. See [the evidence](SURFACE_FORMAT_2.md).
+
 ## Shared import follow-up: 0.5.9 / 0.1.18
 
 Four reproducible shared-code defects are corrected: filename-case-sensitive

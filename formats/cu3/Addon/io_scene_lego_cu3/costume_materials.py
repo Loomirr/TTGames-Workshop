@@ -242,8 +242,9 @@ class CostumeMaterials:
         if normal:
             try:
                 path, texture, data = self.model_texture(model, normal['texture'])
-                if texture['kind'] != 1 or texture['dds']['format'] != 'DXT5':
-                    raise FormatError('Native surface normal needs the verified embedded DXT5 layout')
+                expected = 'DXT5' if normal['packed_x_alpha'] else 'DXT1'
+                if texture['kind'] != 1 or texture['dds']['format'] != expected:
+                    raise FormatError(f'Native surface normal needs the verified embedded {expected} layout')
                 image = self.dds_image((path,normal['texture'],'normal'), data, path.stem+f' / normal {normal["texture"]}')
                 normal_applied = attach_normal_map(material, image, packed_x_alpha=normal['packed_x_alpha'],
                                                    uv_map=f'Source uv {normal["uv"]}')
