@@ -14,6 +14,8 @@ compiler or a claim of complete language coverage.
 ## Binary assets and tools
 
 See [classic PC inspection](../../formats/classic-pc/README.md) for NU20
-GHG/GSC, CU2, AN3 and GIZ support. A binary `.GSC` scene/model is not an AI
+GHG/GSC, CU2, AN3 and GIZ support, including the
+[character layer table](../../formats/classic-pc/README.md#tcs-character-layer-table)
+that binds rigid heads and accessories to joints. A binary `.GSC` scene/model is not an AI
 `.SCP` script. These notes apply to TCS PC; they do not establish compatibility
 with LSW1, LSW2, console TCS or later TT games.
