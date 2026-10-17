@@ -87,8 +87,11 @@ class Cursor:
         return value
 
 
-# 48: LEGO Batman 2 (see docs/LB2_GEOMETRY.md); 161-175: later games.
-VERSIONS = (48, 161, 169, 170, 175)
+# 47 and 48: LEGO Batman 2 (see docs/LB2_GEOMETRY.md); 161-175: later games.
+VERSIONS = (47, 48, 161, 169, 170, 175)
+# MESH 47 part-record words: the low two bits are the stream count. 0x25 and
+# 0x601 were seen only on depth copies; their other bits are not decoded.
+MESH47_STREAM_WORDS = {1: 1, 2: 2, 0x25: 1, 0x601: 1}
 
 
 class MeshReader:
@@ -100,11 +103,14 @@ class MeshReader:
         self.dx = self.version == 175
         # MESH 48 has the 169 part records, but its vertex buffers carry no
         # DXTV tag, no repeated version and no six trailing layout bytes.
-        self.untagged = self.version == 48
+        self.untagged = self.version in (47, 48)
+        # MESH 47 counts only full records; depth copies come between and after.
+        self.old = self.version == 47
         self.buffers = {}
         self.serial = 0
         self.bases = None
         self.parts = []
+        self.depth_copies = []
 
     def buffer(self, kind):
         c = self.c
@@ -155,18 +161,56 @@ class MeshReader:
         reference = self.buffer('vertex')
         return {'buffer': reference, 'byte_offset': self.c.get('I')}
 
+    def depth_copies_follow(self):
+        # The MESH 47 section ends where the material table begins (u32 1, LTMU).
+        return self.c.data[self.c.at+4:self.c.at+8] != b'LTMU'
+
     def read(self):
         c = self.c
-        if not self.dx:
+        if not self.dx and not self.old:
             c.expect(b'ROTV', '4s')
         count = c.count(100_000)
-        for index in range(count):
+        full = 0
+        while full < count or (self.old and self.depth_copies_follow()):
             start = c.at
             if self.dx:
                 c.expect(1)
-            streams = [self.stream() for _ in range(c.count(16))]
-            c.expect(0)
+            if self.old:
+                word = c.get('I')
+                if word not in MESH47_STREAM_WORDS:
+                    raise FormatError(f'Unsupported MESH 47 part-record word {word:#x} at {start:#x}')
+                streams = [self.stream() for _ in range(MESH47_STREAM_WORDS[word])]
+            else:
+                streams = [self.stream() for _ in range(c.count(16))]
+            depth = c.get('I') if self.old else 0
+            if not self.old:
+                c.expect(0)
             indices = self.buffer('index')
+            if depth:
+                # MESH 47 depth copy of the previous full record: its vertex
+                # count, then first vertex, first index and the first vertex
+                # again. It has no index count or palette: it draws as many
+                # indices as that full record, placed right after them, and
+                # skinned copies use that record's palette.
+                # Display lists number only full records, so depth copies are
+                # returned separately, after the parts.
+                first_vertex, first_index, repeated = c.get('3I')
+                previous = self.parts[-1] if self.parts else None
+                if previous is None or repeated != first_vertex:
+                    raise FormatError(f'Unsupported MESH 47 depth record at {start:#x}')
+                self.serial += 1
+                self.depth_copies.append(dict(index=len(self.depth_copies), of_part=previous['index'],
+                                       record_offset=start, end_offset=c.at, depth_copy=True,
+                                       streams=streams, index_buffer=indices, first_index=first_index,
+                                       index_count=previous['index_count'], first_vertex=first_vertex,
+                                       vertex_count=depth, palette=previous['palette'], morphs=None, record_word=word))
+                continue
+            if full >= count:
+                raise FormatError('MESH 47 full record beyond the declared part count')
+            if self.old and word != MESH47_STREAM_WORDS[word]:
+                raise FormatError('MESH 47 record word flags seen only on depth copies')
+            full += 1
+            index = len(self.parts)
             first_index, index_count, first_vertex = c.get('3I')
             c.expect(0, 'H')
             vertex_count = c.count(1_000_000)
@@ -201,8 +245,19 @@ class MeshReader:
             if not self.dx or not ids:
                 c.take(4)
             c.take(36)
-            self.serial += 2 if self.dx else 1
-            if not self.dx:
+            if self.old:
+                # MESH 47 tails are 40 bytes, or 72 where MESH 48's secondary
+                # field and 28 bytes follow (all zero; a part record cannot
+                # start with a zero word). A long tail counts one record, as in
+                # MESH 48; a short one counts none.
+                if c.data[c.at:c.at+4] == bytes(4):
+                    if c.data[c.at:c.at+32] != bytes(32):
+                        raise FormatError('Unsupported MESH 47 long part tail')
+                    c.take(32)
+                    self.serial += 1
+            else:
+                self.serial += 2 if self.dx else 1
+            if not self.dx and not self.old:
                 secondary = c.get('I')
                 if secondary != 0:
                     raise FormatError('Secondary NXG mesh stream requires a separate verified decoder')
@@ -222,14 +277,17 @@ class MeshReader:
             if item['kind'] != reference['kind']:
                 raise FormatError('Native buffer reference type mismatch')
             return item
-        for part in self.parts:
+        for part in self.parts + self.depth_copies:
             self.decode_part(part, resolve)
             if self.version == 161 and part['palette']:
                 types=part['attribute_types']
                 if types.get('position')!=6 or types.get('indices')!=7 or types.get('packed_weights')!=8:
                     raise FormatError('MESH 161 skin requires the verified half-position and byte index/weight layout')
-        return dict(schema='tt.native-mesh.v1', mesh_version=self.version,
-                    end_offset=c.at, reference_base=base, parts=self.parts)
+        result = dict(schema='tt.native-mesh.v1', mesh_version=self.version,
+                      end_offset=c.at, reference_base=base, parts=self.parts)
+        if self.old:
+            result['depth_copies'] = self.depth_copies
+        return result
 
     def decode_part(self, part, resolve):
         r = self.c.reader
