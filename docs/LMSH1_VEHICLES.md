@@ -1,6 +1,6 @@
 # LEGO Marvel Super Heroes: DISP 17 and 22, material tables 166 and 169
 
-LMSH1 vehicles, animals and some accessories use three section versions the
+LMSH1 vehicles, animals and some accessories use four section versions the
 readers refused. Each turns out to be a neighbour's layout.
 
 ## DISP 17 = DISP 16
