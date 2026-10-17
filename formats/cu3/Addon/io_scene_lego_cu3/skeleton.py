@@ -8,7 +8,7 @@ from .model_validation import matrix as validate_bind_matrix
 from .native_variants import annotate_variant_group, select_variant_base
 
 
-SUPPORTED_VERSIONS = (10, 12, 15, 16, 17)
+SUPPORTED_VERSIONS = (9, 10, 12, 15, 16, 17)
 MAX_CANDIDATE_ATTEMPTS = 4096
 
 
@@ -144,7 +144,7 @@ def select_skeleton(candidates, expected_nodes=None, *, display=None, identity=N
             rejected.append({'offset': candidate.get('hgol_offset'), 'issue': str(error)})
     if not compatible:
         details = '; '.join(f"0x{item['offset']:x}: {item['issue']}" for item in rejected if isinstance(item['offset'], int))
-        raise FormatError('No supported matching GHG skeleton (HGOL 10/12 or ROTV layouts 15/16/17)' + (': ' + details if details else ''))
+        raise FormatError('No supported matching GHG skeleton (HGOL 9/10/12 or ROTV layouts 15/16/17)' + (': ' + details if details else ''))
     identities = {candidate['identity']['ownership_sha256'] for candidate in compatible}
     if len(identities) != 1:
         same_bind = len({candidate['identity']['binding_sha256'] for candidate in compatible}) == 1
@@ -182,7 +182,7 @@ def read_skeleton(path, expected_nodes=None, *, display=None, identity=None, mes
     scan = scan_skeleton_candidates(path)
     if not scan['candidates']:
         details = '; '.join(f"0x{item['offset']:x}: {item['issue']}" for item in scan['errors'][:32])
-        raise FormatError('No supported matching GHG skeleton (HGOL 10/12 or ROTV layouts 15/16/17)' + (': ' + details if details else ''))
+        raise FormatError('No supported matching GHG skeleton (HGOL 9/10/12 or ROTV layouts 15/16/17)' + (': ' + details if details else ''))
     if any('native_variant_group' in c for c in scan['candidates']) and (mesh is None or display is None):
         # Standalone skeleton/AN4 callers need the same ownership proof as model
         # import. Decode only when a counted multi-resource group requires it.
@@ -308,13 +308,16 @@ def scan_skeleton_candidates(path):
         start = pos
         post_poi_bytes = list(take(array_count()))
         span('post_poi_bytes', start)
-        start = pos
-        length = reader.get('I', pos)
-        take(4)
-        span('opaque_length', start)
-        start = pos
-        opaque_tail = take(length)
-        span('opaque_payload', start)
+        opaque_tail = b''
+        if version != 9:
+            # HGOL 9 (LEGO Batman 2) has no length-prefixed block here.
+            start = pos
+            length = reader.get('I', pos)
+            take(4)
+            span('opaque_length', start)
+            start = pos
+            opaque_tail = take(length)
+            span('opaque_payload', start)
         start = pos
         metadata = []
         for _ in range(array_count()):
@@ -346,7 +349,7 @@ def scan_skeleton_candidates(path):
             if version not in SUPPORTED_VERSIONS:
                 errors.append({'offset': at, 'issue': f'Unverified HGOL version {version}'})
                 continue
-            tables = name_tables if version in (10, 12) else [None]
+            tables = name_tables if version in (9, 10, 12) else [None]
             if not tables:
                 raise FormatError('HGOL name table missing')
             for table in tables:

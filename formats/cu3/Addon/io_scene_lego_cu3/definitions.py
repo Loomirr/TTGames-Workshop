@@ -54,7 +54,10 @@ def read_definition_bytes(data, *, source=None):
         raise FormatError('Uncompressed definition StreamInfo missing')
     _, info_end = block(marker, b'StreamInfo')
     version = get('I', marker+11, info_end)
-    if version not in (25, 26, 27, 28, 29, 30, 31):
+    # LEGO Batman 2 also has streams 18, 19 and 22-24 (see docs/LB2_CHARACTERS.md):
+    # 3 schema words per field before 22, a 16-bit list count before 24 and
+    # an 18-byte object header before 25.
+    if version not in (18, 19, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31):
         raise FormatError(f'Definition stream version {version} is not verified')
     marker = data.find(b'ClassList\0', info_end)
     if marker < 0:
@@ -80,8 +83,8 @@ def read_definition_bytes(data, *, source=None):
         for _ in range(count):
             typ = get('I', pos, types_end)
             field, pos = string(pos+4, types_end)
-            details = get('5I' if version >= 27 else '4I', pos, types_end)
-            pos += 20 if version >= 27 else 16
+            details = get('5I' if version >= 27 else '4I' if version >= 22 else '3I', pos, types_end)
+            pos += 4 * len(details)
             fields.append({'type':typ, 'name':field, 'details':details})
         if pos != types_end:
             raise FormatError('Definition field schema does not fill block')
@@ -109,10 +112,10 @@ def read_definition_bytes(data, *, source=None):
     # GAMEANIMDATA MOBJ blocks are not Character Anim Entry objects.
     members = set()
     for owner in lists:
-        count = get('I', owner['start'] + 15, owner['end'])
+        count = get('I' if version >= 24 else 'H', owner['start'] + 15, owner['end'])
         if count > 65536:
             raise FormatError('Unreasonable definition object count')
-        pos = owner['start'] + 19
+        pos = owner['start'] + (19 if version >= 24 else 17)
         for _ in range(count):
             _, end = block(pos + 8, b'MOBJ')
             if end > owner['end']:
@@ -127,7 +130,7 @@ def read_definition_bytes(data, *, source=None):
         if not owners:
             raise FormatError('Definition object has no enclosing typed list')
         cls = min(owners, key=lambda o:o['end']-o['start'])['class']
-        pos = start + (17 if version >= 28 else 16)
+        pos = start + (17 if version >= 28 else 16 if version >= 25 else 18)
         if pos > end:
             raise FormatError('Truncated definition object header')
         values = {}
@@ -158,6 +161,13 @@ def read_definition_bytes(data, *, source=None):
 def character_definition(path):
     result = read_definition(path)
     definitions = [o for o in result['objects'] if o['class']=='Character Definition' and 'Skeleton Name' in o['fields']]
+    if not definitions and result['version'] < 24:
+        # LB2's older streams (faces, the base minifigure) name their model in
+        # 'Model File' and have no skeleton name: read it as the model override.
+        definitions = [o for o in result['objects'] if o['class']=='Character Definition' and o['fields'].get('Model File')]
+        if len(definitions) == 1:
+            fields = definitions[0]['fields']
+            definitions[0] = dict(definitions[0], fields=dict(fields, **{'Override Model File':fields['Model File'], 'Skeleton Name':''}))
     if len(definitions) != 1:
         offsets=', '.join(hex(o['offset']) for o in definitions)
         raise FormatError('Expected one character definition with a skeleton name; found '+str(len(definitions))+

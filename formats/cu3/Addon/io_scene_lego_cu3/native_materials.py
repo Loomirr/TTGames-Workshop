@@ -2,7 +2,7 @@
 import struct
 from pathlib import Path
 from .cu3 import Reader, FormatError
-from .material_flags import read_render_flags
+from .material_flags import read_render_flags, LB2_VERSIONS
 
 
 class _MaterialReader(Reader):
@@ -46,6 +46,9 @@ def costume_uv_index(entry, mesh_version):
     if name.endswith('_DX11'):
         name = name[:-5]
     role = costume_slot(entry)
+    if mesh_version == 48:
+        # LEGO Batman 2: every observed costume-role part carries one UV pair.
+        return 0
     if (mesh_version == 169 and entry.get('table_version') == 176
             and (name, role) in (('LEFTARM_GAME', 24), ('RIGHTARM_GAME', 5),
                                 ('HEAD_FRONT_GAME', 1), ('HEAD_BACK_GAME', 2))):
@@ -76,8 +79,23 @@ def surface_normal_binding(entry, mesh_version):
     return dict(texture=texture, uv=uv, packed_x_alpha=True)
 
 
+# LEGO Batman 2: where the texture IDs start (16 slots up to 126, 18 later).
+LB2_TEXTURES = {106: 341, 108: 341, 111: 342, 120: 342, 121: 342, 122: 342, 123: 345, 125: 346, 126: 346, 127: 390, 128: 389, 129: 389, 130: 389, 132: 389}
+
+
 def shader_prefix(data, start, version, *, limit=None):
     r = _MaterialReader(data, start, limit)
+    if version in LB2_TEXTURES:
+        # Only the leading version word is constant across every LB2 record;
+        # the remaining prefix stays opaque (docs/LB2_GEOMETRY.md).
+        size = LB2_TEXTURES[version]
+        r.span(start, size)
+        fields = dict(version=r.get('I', start), shaderType=None, lightingModel=None, uvSets=[],
+                      opaqueShaderPrefix=data[start+4:start+size].hex(),
+                      vertAlbedo=None, canAlphaBlend=None, ignoreVertexOpacity=None)
+        if fields['version'] != 2:
+            raise FormatError('Unverified LB2 UMTL shader prefix')
+        return fields, start+size
     if version == 228:
         # Avengers faces/accessories: seventeen UV pairs, eighteen texture
         # IDs at 0x1aa, then a seventeen-byte format array. Do not reuse 229's
@@ -279,7 +297,7 @@ def read_materials_bytes(data):
     if marker < 0:
         raise FormatError('Native material table missing')
     version, count = r.get('2I', marker+4)
-    if version not in (163, 168, 172, 174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 228, 229, 232, 234, 235) or count > 65536:
+    if version not in (*LB2_VERSIONS, 163, 168, 172, 174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 228, 229, 232, 234, 235) or count > 65536:
         raise FormatError(f'Unverified native material table version/count: {version}/{count}')
     start = marker+12
     if version < 190:
@@ -291,7 +309,17 @@ def read_materials_bytes(data):
     # The final marker is accepted only with the observed 21-byte table tail.
     # A TDML token inside a name, shader or opaque field is not a boundary.
     limits = []
-    at = data.find(b'TDML', start)
+    lb2 = version in LB2_VERSIONS
+    if lb2:
+        # LEGO Batman 2 has no ROTV/TDML table tail: the last footer ends one
+        # flag byte before the following HSCB section.
+        at = data.find(b'HSCB', start)
+        while at >= 0:
+            if data[at-1] == 1:
+                limits.append(at)
+            at = data.find(b'HSCB', at+4)
+        limits = limits[:1]
+    at = -1 if lb2 else data.find(b'TDML', start)
     while at >= 0:
         if at-21 >= start and data[at-21:at-13] == b'ROTV\0\0\0\0':
             limits.append(at)
@@ -301,7 +329,7 @@ def read_materials_bytes(data):
     if len(limits) != 1:
         raise FormatError('Ambiguous native material table boundaries')
     limit = limits[0]
-    records_end = limit-21
+    records_end = limit-1 if lb2 else limit-21
     # Names have a version-specific position inside a fixed shader prefix.
     # Require a unique position and exactly the declared number of records.
     lengths = []
@@ -330,7 +358,7 @@ def read_materials_bytes(data):
                 continue
             fields, texture_at = shader_prefix(data, candidate, version, limit=candidate+name_offset)
             modern = version in (228, 229, 232, 234, 235)
-            slots = 17 if version == 229 else 18
+            slots = 17 if version == 229 else 16 if version in (106, 108, 111, 120, 121, 122, 123, 125, 126) else 18
             ids = list(r.get(f'{slots}i', texture_at))
             if any(i < -1 or i > 65536 for i in ids):
                 continue
@@ -376,5 +404,5 @@ def read_materials_bytes(data):
             raise FormatError('Ambiguous native material name layout after full-table validation')
         entries = candidates[0]
     return {'version':version, 'materials':entries,
-            'table_offset':marker, 'table_end':limit+4,
+            'table_offset':marker, 'table_end':limit if lb2 else limit+4,
             'layout_validation':'Bounded prefix/name/texture/footer spans; name placement remains inferred from the table'}
