@@ -20,6 +20,15 @@ def _cstr(d, off):
     if end < 0: raise ValueError("Unterminated or overlong NU20 string")
     return d[off:end].decode("latin1")
 
+def bone_labels(names):
+    """Unique labels for native bone names, and the sorted names that were empty or repeated.
+
+    A label is the name, or name#index where the name is empty or repeated."""
+    repeated = sorted({n for n in names if not n or names.count(n) > 1})
+    labels = [n if n and n not in repeated else f"{n or 'bone'}#{i}" for i, n in enumerate(names)]
+    if len(set(labels)) != len(labels): raise ValueError("NU20 bone names cannot be given unique labels")
+    return labels, repeated
+
 
 def decode_vertex_format(vf):
     """Returns list of (attribute, kind, offset) and the stride implied by the format flags.
@@ -305,6 +314,7 @@ class NU20:
         # Bone record, 96 bytes: 4x4 matrix, vec3, name pointer (relative to itself), parent (s8), 15 pad.
         # After the records: one 4x4 bind matrix per bone (local to parent), then one inverse bind per bone.
         self.bones = []
+        self.repeated_bone_names = []
         bone_count = self.i32(g + 0x164)
         if not 0 <= bone_count < 512: raise ValueError("Invalid NU20 bone count")
         if bone_count and not self.i32(g+0x168): raise ValueError("Missing NU20 bone table")
@@ -331,9 +341,12 @@ class NU20:
                 bone["rest_local"] = rest
                 finite(bone["bind_local"] + bone["inverse_bind"] + record, "bone matrices")
                 if not -1 <= bone["parent"] < i: raise ValueError("Invalid/cyclic NU20 parent order")
-            names = [b["name"] for b in self.bones]
-            if any(not name for name in names) or len(set(names)) != len(names):
-                raise ValueError("Empty/duplicate NU20 bone names")
+            # Some retail TCS rigs repeat a name (Dexter's four arms, Grievous's feet, the probe droid's five
+            # legs). The game addresses bones by index (AN3 clips carry one node per bone and no names), so
+            # "name" stays as read and "label" is unique: the name, or name#index where it is empty or repeated.
+            labels, self.repeated_bone_names = bone_labels([b["name"] for b in self.bones])
+            for bone, label in zip(self.bones, labels):
+                bone["label"] = label
 
         # scene: models (mesh + material lists) and special objects (named, with a matrix)
         self.models = []

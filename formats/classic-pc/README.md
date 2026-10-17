@@ -62,6 +62,12 @@ in the hidden **Unbound rigid pieces / inspect separately** collection and the
 report says why.
 The Text Editor's **Classic model report** lists omissions. Geometry, native
 bind records, UVs, normals and packed DDS images are preserved where decoded.
+Some rigs repeat a bone name: eleven retail TCS characters (Dexter's and
+Grievous's four arms, the probe droid's five legs) and LB1's robot and large
+laser cannon and LIJ1's flying wing (each with its `_LR` copy). The game addresses
+bones by index (AN3 clips have one node per bone and no names), so such a bone and
+its vertex group are named `name#index` in Blender, the native name is kept on the
+bone as `native_name`, and the report lists the names.
 Rigs with non-unit rest scale, shear or reflection are explicitly refused;
 diffuse RGB/vertex colors are an approximation, not native shader reconstruction.
 Texture alpha is preserved as data but not automatically treated as opacity.

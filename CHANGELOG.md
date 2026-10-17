@@ -1,5 +1,13 @@
 # Changelog
 
+## Classic rigs with repeated bone names — 17 October 2026
+
+- The classic NU20 reader no longer refuses rigs that repeat a bone name (11
+  retail TCS characters, among them Dexter, Grievous and the probe droid, plus
+  LB1's robot and large laser cannon and LIJ1's flying wing). Native names are
+  kept; each bone gets a unique `label` (`name#index` where repeated or empty),
+  which Blender bones and vertex groups use. Distributable ZIPs not rebuilt.
+
 ## TCS rigid pieces bound to their joints — 16 October 2026
 
 - The classic NU20 reader decodes the TCS PC character layer table on request
