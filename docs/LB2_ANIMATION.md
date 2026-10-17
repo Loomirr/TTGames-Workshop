@@ -53,9 +53,20 @@ Every LB2 `.an4` tree now reads. Of the animation records in them:
 - **3,221 sample:** all 6-curve blocks (flags `0xE4`/`0xEC`), in every tree
   version, ANI-B and ANI-D.
 - **1,023 are 9-curve blocks** (flags `0xA4`/`0xAC`): many level and vehicle
-  clips, rides, some taunts. The sampler already refused 9-curve skeletal blocks
-  for every game, and their channels 6-8 do not decode as scale with the scene
-  rules. They stay refused.
+  clips, rides, some taunts. The bare sampler (`prepare()` with no options)
+  refuses 9-curve skeletal blocks for every game, as before. The character
+  importer does not use that path: `prepare_pose` reads them with the scene
+  rules, where channels 6-8 are bone scale, used only on nodes with flag 8.
+  All 1,023 read and sample that way.
+  - 965 stay inside plain ranges on every frame (translation within 50,
+    rotation within 7 radians, scale within 20).
+  - 51 of the other 58 are rotations wound past one turn (spins; some table
+    minimums are whole multiples of pi, such as -78.54 = -25 pi).
+  - 7 have scale keys the files really hold: a scale table entry of minimum
+    1.0 and step 15,259,023, so the key runs from 1 to 10^12 (Catwoman's
+    `Object` actor in `idle3`, Penguin's save-point and RC switches), and
+    Poison Ivy's `whip_crack` root at 100.
+  - Blender check below: they pose correctly.
 - 2 are 6-curve blocks with flags `0xD4`/`0xDC`, refused as before.
 
 ## Blender checks
@@ -103,5 +114,11 @@ background, original files from the extracted tree:
   - versions 3 and 8, little-endian 3, a size mismatch and a little-endian facial
     block are refused.
 
-Not checked: anything in the game. Not done: 9-curve blocks, LB2 facial
-animation, cutscenes (CU3).
+- **9-curve clips, Blender 5.2.2:** Catwoman (`catwoman.cd`) with `idle3`
+  (103 nodes, 175 frames, flags `0xAC`, node 102 with scale) and `whip_crack`
+  from `catwoman_default`: both import; mid-clip she stands in the idle and
+  strides with the arm out in the whip crack; her 27 tail/cape bones move up to
+  0.04 and 0.36 units.
+
+Not checked: anything in the game. Not done: LB2 facial animation, cutscenes
+(CU3).
