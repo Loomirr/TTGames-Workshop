@@ -84,7 +84,9 @@ class Animation:
             raise FormatError('ANI-E sampling is not yet verified; structural inventory only')
         if self.descriptors is not None:
             return
-        if morph_channels and (self.nodes != 1 or self.curves != 53 or self.flags not in (0xa4, 0xac)
+        # LMSH1/LB3 faces have 53 channels; LEGO Batman 2's have 37
+        # (docs/LB2_FACES.md).
+        if morph_channels and (self.nodes != 1 or self.curves not in (37, 53) or self.flags not in (0xa4, 0xac)
                                or tuple(self.node_flags) != (0,) or self.magic != b'DINA'):
             raise FormatError('Facial scalar layout not verified for this animation')
         if (not scene_channels and not morph_channels and (self.curves != 6 or self.flags & 0xe0 != 0xe0)) or self.flags & 1:

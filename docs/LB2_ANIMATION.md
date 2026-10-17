@@ -26,8 +26,8 @@ forms:
   nodes. The 9 files with several root nodes or children show the 44-byte stride:
   names, records and children land on valid entries only with it.
 
-The facial-control (BSA) pointer at node +36 is used only for big-endian trees;
-little-endian trees refuse it.
+The facial-control (BSA) pointer is at node +36 in big-endian trees and +40 in
+little-endian ones: [LB2_FACES.md](LB2_FACES.md).
 
 ## ANI-B blocks
 
@@ -95,7 +95,8 @@ background, original files from the extracted tree:
   - Each character lists 39 clips whose source is missing from the game files.
   - Issues reported while playing are about faces and attachments, not the
     body:
-    - LB2 facial blocks (BSA header, 53-channel layout) are not verified;
+    - LB2 facial blocks (BSA header, 53-channel layout) are not verified (read
+      later: [LB2_FACES.md](LB2_FACES.md));
     - some attachment actors are not matched.
 
 ## Regression
@@ -111,8 +112,8 @@ background, original files from the extracted tree:
 - `formats/cu3/scripts/test_lb2_an4.py`, constructed two-node trees:
   - big-endian versions 2 and 4-7 and little-endian 1 and 2 sample exactly as the
     same tree with ANI-D;
-  - versions 3 and 8, little-endian 3, a size mismatch and a little-endian facial
-    block are refused.
+  - versions 3 and 8, little-endian 3 and a size mismatch are refused (a
+    little-endian tree with no facial pointer has no facial block).
 
 - **9-curve clips, Blender 5.2.2:** Catwoman (`catwoman.cd`) with `idle3`
   (103 nodes, 175 frames, flags `0xAC`, node 102 with scale) and `whip_crack`
@@ -120,5 +121,5 @@ background, original files from the extracted tree:
   strides with the arm out in the whip crack; her 27 tail/cape bones move up to
   0.04 and 0.36 units.
 
-Not checked: anything in the game. Not done: LB2 facial animation, cutscenes
+Not checked: anything in the game. Not done: cutscenes
 (CU3).
