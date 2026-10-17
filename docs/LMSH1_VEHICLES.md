@@ -59,6 +59,19 @@ kept opaque, vertex albedo not read) all 5 load, with plausible footers and
 tail bytes of 0/1. It is **not enabled here**: `test_material_flags.py`
 requires 164 to stay refused, so the choice is yours.
 
+## MESH 161 with morph targets: measured, not enabled
+
+Seven LMSH1 models stop at 'MESH 161 target streams are not verified': the fish,
+goat and pig, the Iron Spider and Sandman-goon faces, and `super_city` /
+`super_city_remap`. Their morph parts are skinned and store positions as
+float3 (type 3), where the MESH 161 skin check expects half floats (type 6);
+their unmorphed parts use half floats. With both gates opened, the existing
+target reader decodes them (dense and run-length targets, 1 to 21 per part, the
+target-table boundary matching) and the buffer references after them resolve
+with one base; 6 of the 7 load (`super_city` then stops at a joint map). Not
+enabled here: `test_mesh_edit.py` requires a MESH 161 skin and face fixture to
+stay refused.
+
 ## Results
 
 - `load_model` over all 466 LMSH1 `chars/` models: **414 load**, up from 384. No
