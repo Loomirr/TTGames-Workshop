@@ -165,7 +165,8 @@ class IMPORT_SCENE_OT_tt_game_character(bpy.types.Operator):
             rig, report = import_character(context, path, Path(bpy.path.abspath(getattr(prefs, game.lower()))), game,
                 cache=Path(bpy.path.abspath(prefs.cache)) if prefs.cache else None, assets=_catalog_assets,
                 attachments=context.scene.tt_import_attachments, layer_mode=context.scene.tt_costume_layers,
-                highest_detail=context.scene.tt_mesh_detail == 'HIGHEST')
+                highest_detail=context.scene.tt_mesh_detail == 'HIGHEST',
+                game_handedness=context.scene.tt_game_handedness)
         except (ValueError, OSError, KeyError, RuntimeError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
@@ -183,6 +184,8 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
     assets: StringProperty(name='Game / extracted folder', subtype='DIR_PATH', description='Optional if saved in addon preferences; otherwise defaults to the input folder')
     definition: StringProperty(name='Optional matching CD', subtype='FILE_PATH', description='Use with a raw GHG to select its costume and native layers')
     attachments: BoolProperty(name='Import declared attachments', default=True)
+    game_handedness: BoolProperty(name='Mirror to game handedness', default=False,
+        description='Mirror the imported character object on X so left and right match the game; native and export data unchanged')
     mesh_detail: EnumProperty(name='Mesh detail', items=[('HIGHEST', 'Highest detail', 'Select the nearest verified native LOD'),
         ('AUTHORED', 'Authored binding', 'Inspect the original display binding without LOD override')], default='HIGHEST')
     layers: EnumProperty(name='Costume layers', items=[('default', 'Default costume', 'Use native default character layers'),
@@ -196,6 +199,7 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
         self.mesh_detail = context.scene.tt_mesh_detail
         self.layers = context.scene.tt_costume_layers
         self.attachments = context.scene.tt_import_attachments
+        self.game_handedness = context.scene.tt_game_handedness
         if self.filepath:
             return context.window_manager.invoke_props_dialog(self, width=500)
         return ImportHelper.invoke(self, context, event)
@@ -222,7 +226,7 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
                 definition_path=Path(bpy.path.abspath(self.definition)) if self.definition else None,
                 cache=Path(bpy.path.abspath(prefs.cache)) if prefs and prefs.cache else None,
                 attachments=self.attachments, layer_mode=self.layers,
-                highest_detail=self.mesh_detail == 'HIGHEST')
+                highest_detail=self.mesh_detail == 'HIGHEST', game_handedness=self.game_handedness)
         except (OSError, ValueError, KeyError, RuntimeError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
@@ -504,7 +508,7 @@ class TTCHAR_PT_settings(bpy.types.Panel):
         if scene.tt_character_game != 'FORTNITE':
             box = layout.box(); box.label(text='Next character import')
             box.prop(scene, 'tt_mesh_detail'); box.prop(scene, 'tt_costume_layers')
-            box.prop(scene, 'tt_import_attachments')
+            box.prop(scene, 'tt_import_attachments'); box.prop(scene, 'tt_game_handedness')
             box.label(text='Change detail/costume, then reimport.')
         box = layout.box(); box.label(text='Viewing scene')
         if scene.tt_character_game != 'FORTNITE':
