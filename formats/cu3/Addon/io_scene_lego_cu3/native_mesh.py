@@ -183,8 +183,16 @@ class MeshReader:
             else:
                 streams = [self.stream() for _ in range(c.count(16))]
             depth = c.get('I') if self.old else 0
+            frames = []
             if not self.old:
-                c.expect(0)
+                at = c.at
+                frame_count = c.get('I')
+                if frame_count:
+                    # LEGO Batman 2 (MESH 48) vertex animation: a frame count,
+                    # then that many position-only streams (docs/LB2_GEOMETRY.md).
+                    if self.version != 48 or frame_count > 4096:
+                        raise FormatError(f'Unsupported native mesh field at {at:#x}; expected 0')
+                    frames = [self.stream() for _ in range(frame_count)]
             indices = self.buffer('index')
             if depth:
                 # MESH 47 depth copy of the previous full record: its vertex
@@ -266,6 +274,8 @@ class MeshReader:
                                    streams=streams, index_buffer=indices, first_index=first_index,
                                    index_count=index_count, first_vertex=first_vertex,
                                    vertex_count=vertex_count, palette=palette, morphs=targets))
+            if frames:
+                self.parts[-1]['vertex_frames'] = frames
         if self.bases is not None and len(self.bases) != 1:
             raise FormatError('Ambiguous native buffer reference base')
         base = next(iter(self.bases)) if self.bases else None
@@ -303,7 +313,27 @@ class MeshReader:
                 if variable in attributes:
                     raise FormatError('Duplicate vertex attribute across native streams')
                 attributes[variable] = (start + offset, typ, buffer['stride'])
-        if 0 not in attributes or attributes[0][1] not in (3, 4, 6):
+        frame_positions = []
+        for stream in part.get('vertex_frames', ()):
+            buffer = resolve(stream['buffer'])
+            if len(buffer['descriptors']) != 1 or buffer['descriptors'][0][0] != 0 or buffer['descriptors'][0][1] not in (3, 4, 6):
+                raise FormatError('MESH 48 vertex frame is not a position-only stream')
+            typ = buffer['descriptors'][0][1]
+            start = buffer['start'] + stream['byte_offset'] + part['first_vertex'] * buffer['stride']
+            if start < buffer['start'] or start + part['vertex_count'] * buffer['stride'] > buffer['start'] + buffer['count'] * buffer['stride']:
+                raise FormatError('Vertex frame range exceeds its native stream')
+            fmt = f'{typ}f' if typ in (3, 4) else '4e'
+            frame = [list(r.get(fmt, start + i * buffer['stride']))[:3] for i in range(part['vertex_count'])]
+            if not all(math.isfinite(v) for p in frame for v in p):
+                raise FormatError(f'Non-finite vertex frame position: part {part["index"]}')
+            frame_positions.append(frame)
+        if frame_positions:
+            part['frame_positions'] = frame_positions
+        if 0 not in attributes and frame_positions:
+            # Vertex-animated parts keep positions only in their frames;
+            # the first frame stands in (it can be a collapsed start).
+            part['position_source'] = 'vertex frame 0'
+        elif 0 not in attributes or attributes[0][1] not in (3, 4, 6):
             raise FormatError('Native mesh requires a verified 3D position stream')
         vertices = []
         for index in range(part['vertex_count']):
@@ -325,6 +355,8 @@ class MeshReader:
                     raise FormatError('Unsupported native skin attribute encoding')
                 vertex['weights'], vertex['weight_diagnostics'] = decode_skin_weights(
                     vertex['indices'], vertex['packed_weights'], part['palette'])
+            if 'position' not in vertex and frame_positions:
+                vertex['position'] = frame_positions[0][index] + [1.0]
             vertices.append(vertex)
         buffer = resolve(part['index_buffer'])
         if part['first_index'] + part['index_count'] > buffer['count'] or part['index_count'] % 3:

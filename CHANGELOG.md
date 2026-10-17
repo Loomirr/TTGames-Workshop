@@ -1,5 +1,13 @@
 # Changelog
 
+## LEGO Batman 2 vertex animation — 17 October 2026
+
+- MESH 48 parts with a frame count read their position-only frame streams
+  (`frame_positions`); parts without a position stream of their own take frame
+  0. In Blender each frame becomes a keyed shape key. Seven LB2 level files
+  load that did not. See
+  [LB2_GEOMETRY.md](docs/LB2_GEOMETRY.md).
+
 ## Attachment dependency integrity — 6 October 2026
 
 - Character 0.5.6 preserves earlier/shared texture provenance and image/store
