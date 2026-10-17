@@ -146,7 +146,7 @@ class CostumeMaterials:
             material['tt_preview_glass_approximation'] = True
             self.report.append({'material':entry['name'], 'issue':'Older glass shader uses a transparent preview; native refraction remains unresolved'})
         slot = costume_slot(entry)
-        if entry.get('table_version') in (163, 168, 169, 172, 174):
+        if entry.get('table_version') in (163, 166, 168, 169, 172, 174):
             self.report.append({'material':entry['name'], 'issue':'Older static shader flag meanings remain unresolved; texture/UV and render footer are decoded, shading is approximate'})
         matched_objects = [(i, o) for i, o in enumerate(definition['objects']) if o['fields'].get('Material')==slot] if definition and slot is not None else []
         matched = [o['fields'] for _, o in matched_objects]

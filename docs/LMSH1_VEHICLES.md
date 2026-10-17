@@ -49,6 +49,16 @@ With 168's prefix one byte shorter, all 11 tables read. Their texture IDs run in
 order through each file (`TTShaderMaterial1` 0, decals 1, `TPage_LEGO_Hard`
 2 and 3), and the footers give cull 0 (one 1), filter 3, write mask 15.
 
+## UMTL 164: measured, not enabled
+
+Table 164 (5 models: snake, penguin, rat, lizard tongue, skunk-tail backpack)
+is 168 with one byte less inside the opaque flag block (shader version at +319)
+and one less after the colour space (texture IDs at +397, names at +961), and
+its footer has 15 tail flag bytes where 168 has 16. Read that way (the 15 bytes
+kept opaque, vertex albedo not read) all 5 load, with plausible footers and
+tail bytes of 0/1. It is **not enabled here**: `test_material_flags.py`
+requires 164 to stay refused, so the choice is yours.
+
 ## Results
 
 - `load_model` over all 466 LMSH1 `chars/` models: **414 load**, up from 384. No
