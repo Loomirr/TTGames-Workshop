@@ -200,6 +200,7 @@ def select_variant_base(candidates, *, display, mesh):
     all_specials = set()
     all_parts = set()
     cross_layers = []
+    rigid_remaps = []
     omissions = []
     from .native_display import model_bindings
     for candidate in candidates:
@@ -276,9 +277,16 @@ def select_variant_base(candidates, *, display, mesh):
             # cape LODs rename it; face LODs replace morph skins with rigids.
             # Each endpoint's ownership/palette was validated above, so neither
             # matching labels nor matching representation kinds are required.
+            # LB2 and LMSH1 vehicles and creatures pair some base draws with an
+            # LOD draw on another joint: a mirror twin (wing_R with wing_L,
+            # wheelPos_FL with wheelPos_RR) or a merged child (Neck2 with
+            # Head). Only the base is imported, so the pairing is kept as
+            # evidence instead of refused (docs/LB2_VEHICLES.md).
             if (source['kind'] == row['kind'] == 0 and
                     source['joint'] != joint_map[row['joint']]):
-                raise FormatError('Native variant remap disagrees with its rigid binding')
+                rigid_remaps.append(dict(candidate_offset=candidate['hgol_offset'],base_metadata=index,
+                                         variant_metadata=target,base_joint=source['joint'],
+                                         variant_joint=row['joint'],variant_joint_in_base=joint_map[row['joint']]))
             # Original DX11 explicitly relocates one repeated StudHi draw to
             # another valid layer. Preserve that map; never force layer equality.
             if source['layer'] != row['layer']:
@@ -292,4 +300,6 @@ def select_variant_base(candidates, *, display, mesh):
     evidence = dict(group,base_offset=base['hgol_offset'],
                     reason='verified_native_variant_base',mesh_associations_checked=True,
                     cross_layer_remaps=cross_layers,remap_omissions=omissions)
+    if rigid_remaps:
+        evidence['rigid_remap_differences'] = rigid_remaps
     return base, evidence

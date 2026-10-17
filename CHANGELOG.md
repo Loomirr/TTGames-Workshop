@@ -1,5 +1,15 @@
 # Changelog
 
+## LEGO Batman 2 vehicles — 17 October 2026
+
+- HGOL 9 base trailers with collision groups (hulls and primitives on wheel and
+  body joints) are read and kept as `collision`; other versions still refuse a
+  nonzero auxiliary array.
+- LOD remaps whose rigid partner rides on another joint (mirror twins, merged
+  joints) are kept as `rigid_remap_differences` evidence instead of refused.
+- LB2 models that load: 1,094 to 1,150; LMSH1 vehicles 59 to 75. See
+  [LB2_VEHICLES.md](docs/LB2_VEHICLES.md).
+
 ## Attachment dependency integrity — 6 October 2026
 
 - Character 0.5.6 preserves earlier/shared texture provenance and image/store
