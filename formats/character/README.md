@@ -22,8 +22,9 @@ for supported companions inside the installed game's archives.
 ## Install
 
 **LB1 and TCS are separate inspection profiles.** They expose raw classic PC
-GHG/GSC draws and native rigs, not fully assembled characters. Rigid attachments
-can be hidden as unresolved, variants can overlap, shaders are approximate and
+GHG/GSC draws and native rigs, not fully assembled characters. TCS rigid pieces
+named in the native layer table are bound to their joints; LB1 rigid attachments
+can be hidden as unresolved. Variants can overlap, shaders are approximate and
 AN3 playback/native export are unavailable. See [classic instructions](../classic-pc/README.md#blender-inspection).
 
 Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.19.zip).

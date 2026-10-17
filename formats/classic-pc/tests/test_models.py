@@ -51,4 +51,51 @@ class ClassicModels(unittest.TestCase):
         self.assertNotIn('bitangent',[x[0] for x in fmt])
 
 
+def layer_fixture(rigid_target=None, second=False, count=2):
+    """Constructed TCS-style character layer table (no game data): 2 joints, 3 special objects."""
+    d=bytearray(0x1000);g=0x100;so_at=0x800
+    def rel(at,target):struct.pack_into('<i',d,at,target-at if target else 0)
+    def record(at,special):rel(at+8,so_at+special*0xD0 if special>=0 else 0x7F0)
+    struct.pack_into('<i',d,g+0x18C,count);rel(g+0x190,0x400)
+    d[0x300:0x304]=b'TT1\0'
+    rel(0x400,0x300);rel(0x404,0x600);rel(0x408,0x700)            # layer 0: name, rigid table, skin
+    rel(0x600+4,0x710)                                             # joint 1 -> record 0x710
+    record(0x700,0);record(0x710,1 if rigid_target is None else rigid_target)
+    rel(0x414+12,0x620 if second else 0);rel(0x414+16,0x720)       # layer 1: unnamed, extra object
+    if second:rel(0x620,0x700)
+    record(0x720,2)
+    n=NU20.__new__(NU20);n.d=bytes(d);n.nu20_size=len(d);n.gsnh=g;n.special_at=so_at
+    n.bones=[{'name':'root'},{'name':'head'}];n.special_objects=[{'index':i} for i in range(3)]
+    return n
+
+
+class ClassicCharacterLayers(unittest.TestCase):
+    def test_observed_layout(self):
+        result=layer_fixture().character_layers()
+        self.assertEqual([l['name'] for l in result['layers']],['TT1',''])
+        self.assertEqual(result['rigid'],{1:(1,0)})
+        self.assertEqual((result['layers'][0]['skin'],result['layers'][1]['extra']),(0,2))
+        self.assertEqual(result['notes'],[])
+
+    def test_second_joint_table_is_counted_not_decoded(self):
+        result=layer_fixture(second=True).character_layers()
+        self.assertEqual(result['layers'][1]['second_joint_entries'],1)
+        self.assertEqual(len(result['notes']),1)
+
+    def test_object_must_be_a_special_object_record(self):
+        with self.assertRaisesRegex(ValueError,'special object'):layer_fixture(rigid_target=-1).character_layers()
+
+    def test_rigid_and_layer_object_cannot_overlap(self):
+        with self.assertRaisesRegex(ValueError,'both'):layer_fixture(rigid_target=0).character_layers()
+
+    def test_layer_count_and_extent(self):
+        for count in (-1,0,65):
+            with self.assertRaisesRegex(ValueError,'layer count'):layer_fixture(count=count).character_layers()
+        n=layer_fixture();n.nu20_size=0x410                          # table runs past the metadata
+        with self.assertRaisesRegex(ValueError,'outside'):n.character_layers()
+
+    def test_no_skeleton_means_no_layers(self):
+        n=layer_fixture();n.bones=[]
+        self.assertEqual(n.character_layers()['layers'],[])
+
 if __name__=='__main__':unittest.main()

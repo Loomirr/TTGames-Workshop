@@ -50,11 +50,24 @@ Set the installed or extracted root containing `CHARS`, then use **Browse game
 characters**. You can also choose **File > Import > LEGO Character / Model**
 and select a classic PC GHG/GSC with the matching game profile.
 
-This displays raw draws, not a configured character. Unresolved rigid pieces
-(including some heads/accessories) are kept in the hidden **Unbound rigid pieces /
-inspect separately** collection. Costume and visibility alternatives can overlap.
+This displays raw draws, not a configured character. With the **TCS** profile,
+rigid pieces named in the GHG's native character layer table (heads, hips,
+helmets, hair and droid parts) are placed at their joint and weighted fully to it,
+and each native layer gets its own collection. All layers stay visible, so LOD and
+costume alternatives (for example hair and helmet) still overlap; hide layer
+collections to compare them. The game chooses layers from the character's `.txt`
+`layers_*` lists, which this importer does not read yet. With the LB1 profile, or
+when a TCS layer table does not resolve exactly, unresolved rigid pieces are kept
+in the hidden **Unbound rigid pieces / inspect separately** collection and the
+report says why.
 The Text Editor's **Classic model report** lists omissions. Geometry, native
 bind records, UVs, normals and packed DDS images are preserved where decoded.
+Some rigs repeat a bone name: eleven retail TCS characters (Dexter's and
+Grievous's four arms, the probe droid's five legs) and LB1's robot and large
+laser cannon and LIJ1's flying wing (each with its `_LR` copy). The game addresses
+bones by index (AN3 clips have one node per bone and no names), so such a bone and
+its vertex group are named `name#index` in Blender, the native name is kept on the
+bone as `native_name`, and the report lists the names.
 Rigs with non-unit rest scale, shear or reflection are explicitly refused;
 diffuse RGB/vertex colors are an approximation, not native shader reconstruction.
 Texture alpha is preserved as data but not automatically treated as opacity.
@@ -64,6 +77,29 @@ In Cutscene 0.1.25, use **File > Import > LEGO CU2 references (classic PC;
 inspection only)**. This creates a separate scene with actor/object placements,
 camera reference empties and shot markers where present. It does not assemble
 meshes, environments, animated cameras, lens settings or animation playback.
+
+## TCS character layer table
+
+Facts, measured on 16 October 2026 on 21 TCS PC character GHGs (container
+version 2). These were community character mods on the test machine; they keep
+the original exporter structure, but they are not a retail roster census.
+
+- Scene header `+0x18C` is the layer count (1 to 9 seen) and `+0x190` a
+  self-relative pointer to 20-byte records: name (may be null), per-joint rigid
+  object table, skinned object, a second per-joint table, extra object.
+- Object entries are 12-byte records; their third field points at a 0xD0-byte
+  special object. Every special object in all 21 files was named exactly once by
+  this table (as rigid, skinned or extra).
+- Rigid vertices are local to the joint. Placed with the special object's matrix
+  and then the joint's bind transform, 191 of 192 rigid pieces with geometry had
+  their centre within 0.15 units of the joint; the exception is an oversized
+  custom head. Every sampled minifigure head spans 0.274 to 0.386 units, on top
+  of its skinned body.
+
+Not decoded: the second per-joint table (empty in every sample), the role of the
+extra object (only on layer 0), and the first field of object entries. A layer
+table that does not resolve exactly is reported and not used. LB1 and LIJ1
+files have not been checked, so the LB1 profile keeps the earlier behaviour.
 
 ## Validation and attribution
 
@@ -90,6 +126,13 @@ existing bounded implementation. No BactaTank implementation was copied or trans
 ```text
 python formats/classic-pc/tests/test_readers.py
 python formats/classic-pc/tests/test_models.py
+```
+
+With Blender and your own TCS character GHG, the rigid-piece binding can be
+checked from source (the output folder must be new; keep it under `local/`):
+
+```text
+blender -b --factory-startup --python-exit-code 1 --python formats/classic-pc/tests/check_tcs_layers_blender.py -- "path/to/CHARACTER_PC.GHG" "local/tcs-layer-check" --render
 ```
 
 See [the review and outstanding work](../../docs/GITHUB_REVIEW_2026-10-09.md).

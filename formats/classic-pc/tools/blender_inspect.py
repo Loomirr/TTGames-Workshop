@@ -1,8 +1,9 @@
 """Viewing-only classic geometry and CU2 references. No native export bindings.
 
 Coordinates convert source left-handed Y-up into Blender Z-up with (x,z,y).
-Skinned geometry keeps its source bind positions; unresolved rigid pieces are
-isolated and hidden until their native attachment ownership is decoded.
+Skinned geometry keeps its source bind positions. For TCS GHGs, rigid pieces
+named in the native character layer table are placed at and weighted to their
+joint; other unresolved rigid pieces stay isolated and hidden.
 """
 import json
 import math
@@ -39,8 +40,7 @@ def transaction(operation):
         raise
 
 
-def skeleton(nu, collection):
-    if not nu.bones:return None
+def bone_worlds(nu):
     worlds=[]
     for b in nu.bones:
         local=row_matrix(b['bind_local'])
@@ -49,23 +49,28 @@ def skeleton(nu, collection):
         # Refuse these rigs rather than silently stripping native transforms.
         basis=world.to_3x3();metric=basis.transposed() @ basis
         if basis.determinant() <= 0 or max(abs(metric[i][j]-(i==j)) for i in range(3) for j in range(3)) > 0.002:
-            raise ValueError('Classic rig has unsupported rest scale/shear/reflection: '+b['name'])
+            raise ValueError('Classic rig has unsupported rest scale/shear/reflection: '+b['label'])
         residual=world @ row_matrix(b['inverse_bind'])
         if max(abs(residual[i][j] - (i==j)) for i in range(4) for j in range(4))>0.002:
-            raise ValueError('Classic bind and inverse-bind matrices disagree: '+b['name'])
+            raise ValueError('Classic bind and inverse-bind matrices disagree: '+b['label'])
         worlds.append(world)
+    return worlds
+
+
+def skeleton(nu, collection, worlds):
+    if not nu.bones:return None
     arm=bpy.data.armatures.new(Path(nu.path).stem+' / native rig')
     rig=bpy.data.objects.new(arm.name,arm);collection.objects.link(rig)
     bpy.context.view_layer.objects.active=rig;rig.select_set(True)
     bpy.ops.object.mode_set(mode='EDIT')
     for b,world in zip(nu.bones,worlds):
-        bone=arm.edit_bones.new(b['name']);bone.matrix=C @ world @ C
+        bone=arm.edit_bones.new(b['label']);bone.matrix=C @ world @ C
         bone.length=0.015
-        if b['parent']>=0:bone.parent=arm.edit_bones[nu.bones[b['parent']]['name']]
+        if b['parent']>=0:bone.parent=arm.edit_bones[nu.bones[b['parent']]['label']]
     bpy.ops.object.mode_set(mode='OBJECT')
     for b in nu.bones:
-        bone=arm.bones[b['name']]
-        bone['native_index']=b['index'];bone['native_bind_local']=b['bind_local']
+        bone=arm.bones[b['label']]
+        bone['native_index']=b['index'];bone['native_name']=b['name'];bone['native_bind_local']=b['bind_local']
         bone['native_inverse_bind']=b['inverse_bind'];bone['native_record_matrix']=b['record_matrix']
     rig['tt_classic_inspection']=True
     rig['tt_classic_source']=str(nu.path)
@@ -97,7 +102,7 @@ def weights(nu, mesh):
     return rows
 
 
-def inspect_model(context, path, read_dds, apply_normals):
+def inspect_model(context, path, read_dds, apply_normals, profile=None):
     nu=NU20(path)
     report=dict(source=str(path),version=nu.version,mode='classic_raw_inspection',issues=[],meshes=0,
                 limitations=['Raw source draws include costume/visibility alternatives; this is not a configured character.',
@@ -105,11 +110,43 @@ def inspect_model(context, path, read_dds, apply_normals):
                              'Diffuse RGB and vertex-color approximation only. Material tint/render states, alpha, layered shaders, expressions and AN3 playback remain incomplete.'])
     planned=[]
     planned_vertices=0
+    worlds=bone_worlds(nu) if nu.bones else []
+    if nu.repeated_bone_names:
+        report['issues'].append('Repeated native bone names kept as read; Blender bones use name#index for: '
+                                +', '.join(n or '(empty)' for n in nu.repeated_bone_names))
+    # TCS only: rigid pieces named by the native character layer table are
+    # joint-local; place them with their joint's bind transform. Other games
+    # keep the previous behaviour until their own files are checked.
+    layers=None
+    if profile=='TCS' and nu.bones:
+        try:
+            layers=nu.character_layers()
+        except ValueError as error:
+            report['issues'].append('Character layer table not used: '+str(error))
+    rigid=layers['rigid'] if layers else {}
+    owner={}
+    for layer in (layers['layers'] if layers else []):
+        for so in list(layer['rigid'].values())+[layer['skin'],layer['extra']]:
+            if so>=0:owner[so]=layer['index']
+    if layers:
+        report['character_layers']=[l['name'] or f'(unnamed {l["index"]})' for l in layers['layers']]
+        report['issues'].extend(layers['notes'])
+        report['limitations'][1]=('Rigid GHG pieces named in the TCS character layer table are bound to their joint; '
+                                  'each native layer has its own collection and all layers are shown, so LOD and costume '
+                                  'alternatives still overlap. Other unbound rigid pieces are hidden separately.')
     # Keep each declared model-material pairing; do not borrow another draw's material.
     special_models={s['model'] for s in nu.special_objects if s['model']>=0}
-    draws=[(s['name'],nu.models[s['model']],row_matrix(s['matrix'])) for s in nu.special_objects if 0<=s['model']<len(nu.models)]
-    draws += [('Static',model,Matrix.Identity(4)) for model in nu.models if model['index'] not in special_models]
-    for name,model,transform in draws:
+    draws=[]
+    for s in nu.special_objects:
+        if not 0<=s['model']<len(nu.models):continue
+        transform=row_matrix(s['matrix'])
+        joint=None
+        if s['index'] in rigid:
+            joint=rigid[s['index']][0]
+            transform=worlds[joint] @ transform
+        draws.append((s['name'],nu.models[s['model']],transform,joint,owner.get(s['index'])))
+    draws += [('Static',model,Matrix.Identity(4),None,None) for model in nu.models if model['index'] not in special_models]
+    for name,model,transform,joint,layer_index in draws:
         for mi,material in zip(model['meshes'],model['materials']):
             if mi<0:
                 report['issues'].append('Unsupported display command in model '+str(model['index']));continue
@@ -121,18 +158,28 @@ def inspect_model(context, path, read_dds, apply_normals):
                 if not geo:raise ValueError(mesh['geometry_note'])
                 if not geo[4]:continue
                 skin=weights(nu,mesh) if nu.bones else None
-                planned.append((name,model['index'],mesh,geo,skin,transform))
+                if joint is not None:
+                    if skin is not None:
+                        raise ValueError('a rigid layer object carries its own skin weights')
+                    skin=[[(joint,1.0)]]*len(geo[0])
+                planned.append((name,model['index'],mesh,geo,skin,transform,joint,layer_index))
                 planned_vertices+=len(geo[0])
             except ValueError as error:
                 report['issues'].append(f'Mesh {mi}: {error}')
     if not planned:raise ValueError('No supported classic geometry: '+'; '.join(report['issues'][:3]))
+    report['rigid_bound_meshes']=0
 
     def build():
         collection=bpy.data.collections.new(Path(path).stem+' / Classic inspection')
         context.scene.collection.children.link(collection)
         unbound=bpy.data.collections.new('Unbound rigid pieces / inspect separately')
         collection.children.link(unbound);unbound.hide_render=True;unbound.hide_viewport=True
-        rig=skeleton(nu,collection)
+        rig=skeleton(nu,collection,worlds)
+        layer_collections={}
+        for layer in (layers['layers'] if layers else []):
+            child=bpy.data.collections.new(f'Layer {layer["index"]}: '+(layer['name'] or '(unnamed)'))
+            collection.children.link(child);child['tt_native_layer']=layer['index']
+            layer_collections[layer['index']]=child
         materials={};images={}
         def material(index):
             if index in materials:return materials[index]
@@ -169,14 +216,16 @@ def inspect_model(context, path, read_dds, apply_normals):
                 except (ValueError,RuntimeError,OSError) as error:
                     report['issues'].append(f'Texture {tex}: {error}')
             materials[index]=mat;return mat
-        for name,model_id,source,(pos,normals,uv,col,tris),skin,transform in planned:
+        for name,model_id,source,(pos,normals,uv,col,tris),skin,transform,joint,layer_index in planned:
             mesh=bpy.data.meshes.new(f'{name} / model {model_id} / mesh {source["index"]}')
             matrix=C @ transform
             mesh.from_pydata([matrix @ Vector(v) for v in pos],[],[(a,c,b) for a,b,c in tris]);mesh.update()
             obj=bpy.data.objects.new(mesh.name,mesh)
             unresolved=bool(nu.bones and skin is None)
-            (unbound if unresolved else collection).objects.link(obj)
+            (unbound if unresolved else layer_collections.get(layer_index,collection)).objects.link(obj)
             obj['tt_classic_mesh_index']=source['index'];obj['tt_classic_model_index']=model_id
+            if joint is not None:
+                obj['tt_classic_rigid_joint']=nu.bones[joint]['label'];report['rigid_bound_meshes']+=1
             if uv:
                 layer=mesh.uv_layers.new(name='Native UV')
                 for loop in mesh.loops:
@@ -191,7 +240,7 @@ def inspect_model(context, path, read_dds, apply_normals):
             if rig:
                 obj.parent=rig
                 if skin:
-                    groups=[obj.vertex_groups.new(name=b['name']) for b in nu.bones]
+                    groups=[obj.vertex_groups.new(name=b['label']) for b in nu.bones]
                     for vi,row in enumerate(skin):
                         for bi,value in row:groups[bi].add([vi],value,'ADD')
                     mod=obj.modifiers.new('Native skin','ARMATURE');mod.object=rig
