@@ -45,10 +45,17 @@ class Animation:
     def __init__(self, reader, at, limit):
         self.reader, self.at, self.limit = reader, at, limit
         raw_magic = reader.data[at:at + 4]
-        self.endian = '>' if raw_magic in (b'ANID', b'ANIE') else '<'
+        self.endian = '>' if raw_magic in (b'ANID', b'ANIE', b'ANIB') else '<'
         self.magic = raw_magic[::-1] if self.endian == '>' else raw_magic
+        # LEGO Batman 2's ANI-B has the ANI-D header and key layout
+        # (docs/LB2_ANIMATION.md); it is sampled as ANI-D.
+        if self.magic == b'BINA':
+            self.magic = b'DINA'
+            self.variant = 'ANIB'
+        else:
+            self.variant = self.magic[::-1].decode('latin1')
         if self.magic not in (b'DINA', b'EINA'):
-            raise FormatError(f'Expected ANI-D/E at 0x{at:x}')
+            raise FormatError(f'Expected ANI-B/D/E at 0x{at:x}')
         self.nodes, self.keys, self.stride, self.old_frames, self.curves, self.old_first = reader.get('6H', at + 4, self.endian)
         self.flags = reader.get('B', at + 19)
         self.integer_constant_count = reader.get('B', at + 17)
