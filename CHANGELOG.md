@@ -7,7 +7,10 @@
   nonzero auxiliary array.
 - LOD remaps whose rigid partner rides on another joint (mirror twins, merged
   joints) are kept as `rigid_remap_differences` evidence instead of refused.
-- LB2 models that load: 1,094 to 1,150; LMSH1 vehicles 59 to 75. See
+- HGOL 8 skeletons (older LB2 models: the T-rex, Robin's zorb, Penguin's
+  umbrella) are read with the HGOL 9 layout; their variant trailer has no
+  terminal byte.
+- LB2 models that load: 1,094 to 1,160; LMSH1 vehicles 59 to 75. See
   [LB2_VEHICLES.md](docs/LB2_VEHICLES.md).
 
 ## Attachment dependency integrity — 6 October 2026

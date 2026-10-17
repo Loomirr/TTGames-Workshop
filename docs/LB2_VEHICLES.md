@@ -65,9 +65,37 @@ existing `cross_layer_remaps`, instead of refusing the model. Every other check 
 the group (complete ownership, palettes, joint maps, duplicate targets) still
 applies.
 
+## 3. Older skeletons: HGOL 8
+
+19 LB2 `.ghg` stopped at the skeleton with an unverified HGOL version: 15 are
+HGOL 8, three HGOL 6 (`pig`, `face_male`, `phantom_minifig`) and one HGOL 5
+(`ufo`). HGOL 8 has the HGOL 9 layout (name table, joints, binds, points of
+interest, no length-prefixed block, layer metadata and layers):
+- every HGOL 8 skeleton (21 candidates) ends where HGOL 9 ones do, followed by
+  the same zero words, and sits in the same `5LVI` wrapper;
+- bind matrices, display ownership and skin palettes pass the existing checks;
+- in Blender the T-rex fossil (53 joints), the penguin creature, Penguin's
+  umbrella and Robin's acrobat zorb assemble correctly.
+
+One difference: an HGOL 8 variant trailer has **no terminal byte**. The next
+counted HGOL follows the metadata map at once (police cruiser A: its second and
+third rigs start straight after the map), and the group ends with the HGOL 9
+fence.
+
+HGOL 8 is now accepted with that layout, and its variant groups with that
+trailer. 10 models load: the T-rex, `super_test`, Robin's zorb, the penguin
+creature and umbrella, the backpack hose, the wind-up teeth, two Joker-robot
+parts and `minikit_6243`. Of the other five HGOL 8 files, three stop at
+material tables 56, 61 and 105 (the jetpack, the flight cape, the security
+camera). Two stay refused because the file contradicts itself: police cruiser
+A's middle LOD and the old super minifig list their joints in another order
+(the cruiser's four wheels) while their joint map claims the identity mapping.
+HGOL 5 and 6 are not decoded.
+
 ## Results
 
-- **LB2 `load_model`, all 1,259 `.ghg`/`.gsc`: 1,150 load**, up from 1,094.
+- **LB2 `load_model`, all 1,259 `.ghg`/`.gsc`: 1,160 load**, up from 1,094
+  (1,150 with sections 1 and 2, 10 more with HGOL 8).
   - 44 load with collision on the base rig (4 of the 48 stop at other checks).
   - 32 load with remap differences.
 - **LMSH1 vehicles: 75 of 101 load**, up from 59. Among them the X-Jet, the
@@ -83,7 +111,8 @@ applies.
   correctly placed geometry.
 - `formats/cu3/scripts/test_lb2_vehicles.py`: hull and primitive groups read to the
   standard fields; no collision keeps the existing fields; seven kinds of
-  inconsistency refused; HGOL 10 still refuses a nonzero array. All other
+  inconsistency refused; HGOL 10 still refuses a nonzero array; an HGOL 8
+  trailer ends without the terminal byte. All other
   `test_*.py` in `formats/cu3/scripts` and `formats/character` pass, including the
   two Blender ones and `test_native_variants.py`.
 

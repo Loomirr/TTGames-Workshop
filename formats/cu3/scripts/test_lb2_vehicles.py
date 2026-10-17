@@ -81,6 +81,15 @@ class LB2VehicleCollision(unittest.TestCase):
         with self.assertRaises(FormatError):
             read(bytes(broken))
 
+    def test_hgol8_trailer_ends_at_the_metadata_map(self):
+        raw = tail([group(0, [hull()], 1)])[:-1]          # no terminal byte
+        result = read(raw, version=8)
+        self.assertEqual(result['end_offset'], len(raw))
+        self.assertEqual(len(result['collision']), 1)
+        self.assertEqual(read(raw + b'\0', version=9)['end_offset'], len(raw) + 1)
+        with self.assertRaises(FormatError):
+            read(raw + b'\1', version=9)
+
     def test_only_hgol9_reads_collision(self):
         raw = tail([group(0, [hull()], 1)])
         with self.assertRaisesRegex(FormatError, 'exceeds its verified bound'):
