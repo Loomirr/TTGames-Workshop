@@ -17,7 +17,7 @@ from ._core.geometry_normals import normal_preservation_status
 from .scene_settings import ensure_scene_settings, missing_scene_settings, unregister_scene_settings
 from .preview_identity import linked_child
 
-GAMES = [('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
+GAMES = [('LB2', 'LEGO Batman 2', 'Observed PC NXG models (experimental)'), ('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
          ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models'),
          ('AVENGERS', "LEGO Marvel's Avengers", 'Observed PC DX11 characters'),
          ('LB1', 'LEGO Batman 1 (raw model inspection)', 'Classic PC geometry/rig inspection; incomplete costume and rigid-part assembly; no AN3 playback'),

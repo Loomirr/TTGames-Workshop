@@ -1,4 +1,4 @@
-"""Observed DISP 18/21/23/32 draw bindings and named model instances."""
+"""Observed DISP 7-14 (LEGO Batman 2), 18/21/23/32 draw bindings and named model instances."""
 from pathlib import Path
 import math
 from .cu3 import FormatError
@@ -12,9 +12,18 @@ def read_display(path, part_count):
         raise FormatError('Native display section missing')
     c = Cursor(data, at + 4)
     version = c.get('I')
-    if version not in (16, 18, 21, 23, 24, 26, 32):
+    if version not in (7, 8, 9, 10, 12, 13, 14, 16, 18, 21, 23, 24, 26, 32):
         raise FormatError(f'DISP {version} requires a separate verified reader')
     dx = version in (26, 32)
+    # LEGO Batman 2's older lists (with MESH 47): see docs/LB2_GEOMETRY.md.
+    old = version in (7, 8, 9, 10)
+    def separator():
+        # Non-DX11 arrays are separated by ROTV (skipped unchecked as before);
+        # in DISP 9 and 10 it is checked, and DISP 7 and 8 have none.
+        if not old:
+            c.take(4)
+        elif version >= 9:
+            c.expect(b'ROTV', '4s')
     def array(size=None):
         if dx:
             c.expect(b'ROTV', '4s')
@@ -24,10 +33,10 @@ def read_display(path, part_count):
         return n
     if not dx:
         array(1)
-        c.take(4)
+        separator()
     commands = [c.get('BBI') for _ in range(array())]
     if not dx:
-        c.take(4)
+        separator()
     clips = []
     for _ in range(array()):
         if dx:
@@ -42,7 +51,7 @@ def read_display(path, part_count):
         clips.append({'materials': materials, 'items': items})
     if not dx:
         for size in (2, 4):
-            c.take(4)
+            separator()
             array(size)
         if version == 16:
             # Three additional per-clip scalar arrays precede the specials.
@@ -51,7 +60,26 @@ def read_display(path, part_count):
                 c.expect(b'ROTV', '4s')
                 if array(4) != len(clips):
                     raise FormatError('DISP 16 auxiliary count differs from clip table')
-        c.take(4)
+        elif version in (12, 13, 14):
+            # LEGO Batman 2 has the same three per-clip arrays, but only the
+            # first carries a ROTV marker; the other two are count + values.
+            c.expect(b'ROTV', '4s')
+            for _ in range(3):
+                if array(4) != len(clips):
+                    raise FormatError('LB2 display auxiliary count differs from clip table')
+        elif old:
+            # The same per-clip arrays (two in DISP 7), then two more arrays
+            # that DISP 12 dropped: pairs of command indices (8 bytes each)
+            # and 16-byte records. Neither is interpreted.
+            separator()
+            for _ in range(2 if version == 7 else 3):
+                if array(4) != len(clips):
+                    raise FormatError('LB2 display auxiliary count differs from clip table')
+            separator()
+            array(8)
+            separator()
+            array(16)
+        separator()
     names_at = data.find(b'LBTN')
     names_start = names_at + 12
     names_end = names_start + c.reader.get('I', names_at + 8) if names_at >= 0 else 0
@@ -119,7 +147,7 @@ def model_bindings(display, special, *, highest_detail=True):
     # This only selects the explicit final clip for a highest-detail preview;
     # it does not attempt to reproduce the engine's distance switching.
     zero_tail = display['version'] == 32 and len(ranges) == 4
-    if (display['version'] not in (16, 18, 21, 24, 26, 32)
+    if (display['version'] not in (7, 8, 9, 10, 12, 13, 14, 16, 18, 21, 24, 26, 32)
             or len(ranges) > 8 or ranges[-1] != 0
             or any(not math.isfinite(v) or v < 0 for v in ranges)
             or any(a <= b and not (zero_tail and a == b == 0)

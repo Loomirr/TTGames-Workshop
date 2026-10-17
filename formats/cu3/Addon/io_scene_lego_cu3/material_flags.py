@@ -3,7 +3,43 @@ import json, struct
 from pathlib import Path
 
 
+# LEGO Batman 2 tables measured in docs/LB2_GEOMETRY.md. 106-123 have the same
+# footer with fewer trailing flag bytes (the first 8, 10 or 11 of the later 12);
+# 106 also has no alphaTestMode byte.
+LB2_VERSIONS=(106,108,111,120,121,122,123,125,126,127,128,129,130,132)
+LB2_TAIL_FLAGS={106:8,108:10,111:10,120:10,121:10,122:11,123:11}
+
+
+def lb2_footer(data,end,version=132):
+    """LB2's 91-byte footer: the later field family without alwaysUpdateRefraction,
+    sortLast or externalFixupTarget, and with twelve trailing flag bytes (8 to 11
+    in tables 106-123; 106 also lacks alphaTestMode)."""
+    tail=LB2_TAIL_FLAGS.get(version,12)
+    flags='old_alpha old_atst afail aref cull zmode stencilMode noprepass filter utc vtc colour fill only2d stencil_shadows castShadows old_autoStencil colourWriteMask alphaTestMode'.split()
+    if version==106:flags.remove('alphaTestMode')
+    size=len(flags)+16+4+2+2+2+2+16+8+tail+8
+    at=end-size;start=at;out={'alphaTestMode':None}
+    if start<0 or end>len(data):raise ValueError('Material footer outside the input buffer')
+    for f in flags:
+        out[f]=data[at];at+=1
+    for f in ('fx1','fx2','fx3','fx4','localTID'):
+        out[f]=struct.unpack_from('>I',data,at)[0];at+=4
+    out['fxid'],out['special_id']=data[at],data[at+1];at+=2
+    out['shortPri16bit'],out['shineSortID']=struct.unpack_from('>2H',data,at);at+=4
+    out['uanmode'],out['vanmode']=data[at],data[at+1];at+=2
+    for f in ('du','dv','su','sv'):
+        out[f]=struct.unpack_from('>f',data,at)[0];at+=4
+    out['firstVariantIdx'],out['nextVariantIdx']=struct.unpack_from('>2I',data,at);at+=8
+    out['lb2TailFlags']=list(data[at:at+tail]);at+=tail
+    out['name_ix'],out['defaultRenderStage']=struct.unpack_from('>2I',data,at);at+=8
+    if any(b not in (0,1) for b in out['lb2TailFlags']):
+        raise ValueError('Unverified LB2 material tail flags')
+    assert at==end
+    return start,out
+
+
 def footer(data,end,version):
+    if version in LB2_VERSIONS:return lb2_footer(data,end,version)
     if not 174 <= version <= 202 and version not in (163,168,172,228,229,232,234,235):raise ValueError("Material footer version outside the observed family")
     flags='old_alpha old_atst afail aref cull zmode stencilMode noprepass filter utc vtc colour fill only2d stencil_shadows castShadows old_autoStencil colourWriteMask alwaysUpdateRefraction sortLast'.split()
     if version>=190: flags.append('externalFixupTarget')
@@ -57,6 +93,11 @@ def read_render_flags(data, entries, version, *, table_end=None):
         raise ValueError('Material record offsets must be unique, ordered and inside the file')
     for i,entry in enumerate(entries):
         if i+1<len(entries):end=entries[i+1]['offset']
+        elif version in LB2_VERSIONS:
+            # LB2: the table ends one flag byte (1) before the HSCB section.
+            end=table_end-1
+            if data[table_end:table_end+4]!=b'HSCB' or data[end]!=1:
+                raise ValueError('Unrecognized final LB2 UMTL boundary')
         else:
             limit=data.find(b'TDML',entry['offset']) if table_end is None else table_end
             end=limit-21

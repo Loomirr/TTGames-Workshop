@@ -6,6 +6,13 @@ from .cu3 import Reader, Animation, FormatError
 from .tt_deflate import decompress
 
 
+# LEGO Batman 2 (docs/LB2_ANIMATION.md): big-endian trees 2 and 4-7 with the
+# 72-byte header and nodes, and little-endian trees 1 and 2 with 44-byte header
+# and nodes (the same node fields up to +36). Records are 80 bytes in both.
+LB2_BIG_ENDIAN = (2, 4, 5, 6, 7)
+LB2_LITTLE_ENDIAN = (1, 2)
+
+
 class AnimationFile:
     def __init__(self, path, fps=30, data=None):
         self.path = Path(path)
@@ -20,22 +27,31 @@ class AnimationFile:
         self.data = raw
         r = Reader(raw)
         version, size = r.get('2I', 0)
-        if version not in (13, 14, 15, 16, 18, 19, 20) or size != len(raw) or size < 72:
-            raise FormatError('Standalone AN4 requires a verified big-endian v13/14/15/16/18/19/20 tree; ANI-E is inspection only.')
-        strings, children = r.get('2I', 16)
-        if not 72 <= strings < size:
+        endian, head = '>', 72
+        if len(raw) >= 8 and r.get('I', 0, '<') in LB2_LITTLE_ENDIAN and r.get('I', 4, '<') == len(raw):
+            version, size = r.get('2I', 0, '<')
+            endian, head = '<', 44
+        elif version not in (*LB2_BIG_ENDIAN, 13, 14, 15, 16, 18, 19, 20):
+            size = -1
+        if size != len(raw) or size < head:
+            raise FormatError('Standalone AN4 requires a verified big-endian v2/4-7/13-16/18-20 tree or a '
+                              'little-endian LB2 v1/2 tree; ANI-E is inspection only.')
+        self.endian, self.header_size = endian, head
+        get = lambda fmt, at: r.get(fmt, at, endian)
+        strings, children = get('2I', 16)
+        if not head <= strings < size:
             raise FormatError('AN4 string table outside file')
         self.version, self.actors = version, []
         visited = set()
 
         def visit(at, parent, depth=0):
-            if depth > 64 or at in visited or at < 72 or at + 72 > size:
+            if depth > 64 or at in visited or at < head or at + head > size:
                 raise FormatError('Invalid or cyclic standalone AN4 hierarchy')
             visited.add(at)
             if len(visited) > 4096:
                 raise FormatError('Too many AN4 nodes')
-            count = r.get('H', at + 8)
-            child, records, name = r.get('3I', at + 20)
+            count = get('H', at + 8)
+            child, records, name = get('3I', at + 20)
             if not name:
                 raise FormatError('Invalid one-based AN4 actor name')
             actor = dict(index=len(self.actors), offset=at, parent=parent,
@@ -46,23 +62,23 @@ class AnimationFile:
                 raise FormatError('AN4 record table missing')
             for i in range(number):
                 rec = records + i * 80
-                if rec < 72 or rec + 80 > size:
+                if rec < head or rec + 80 > size:
                     raise FormatError('AN4 record outside file')
-                label, ani = r.get('2I', rec + 64)
-                if not label or ani < 72 or ani + 80 > size:
+                label, ani = get('2I', rec + 64)
+                if not label or ani < head or ani + 80 > size:
                     raise FormatError('AN4 animation/name pointer is invalid')
                 actor['records'].append(dict(index=i, offset=rec, name=r.string(strings + label - 1, size),
-                    matrix=list(r.get('16f', rec)), animation=Animation(r, ani, size)))
+                    matrix=list(get('16f', rec)), animation=Animation(r, ani, size)))
             if count > 4096:
                 raise FormatError('Too many child nodes')
             for i in range(count):
-                visit(child + i * 72, actor['index'], depth + 1)
+                visit(child + i * head, actor['index'], depth + 1)
 
-        count = r.get('H', 8)
+        count = get('H', 8)
         if count > 4096:
             raise FormatError('Too many AN4 root nodes')
         for i in range(count):
-            visit(children + i * 72, None)
+            visit(children + i * head, None)
 
     def choose_actor(self, nodes, name=''):
         candidates = [a for a in self.actors if any(r['animation'].nodes == nodes for r in a['records'])
@@ -78,6 +94,8 @@ class AnimationFile:
         CU3 embeds a different, little-endian tree. Keep its decoder separate.
         """
         r = Reader(self.data)
+        if self.endian != '>':
+            raise FormatError('Facial-control blocks are verified only in big-endian AN4 trees')
         at = r.get('I', actor['offset']+36)
         if not at:
             return None

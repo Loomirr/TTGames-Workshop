@@ -98,7 +98,7 @@ def facial_actions(source, actor, child, frames):
 def import_character(context, path, assets_root, game, *, definition_path=None, cache=None, attachments=True, assets=None, layer_mode='default', highest_detail=True):
     if context.mode != 'OBJECT':
         raise FormatError('Switch to Object Mode before importing')
-    if game not in ('LB3', 'LMSH1', 'HOBBIT', 'AVENGERS'):
+    if game not in ('LB2', 'LB3', 'LMSH1', 'HOBBIT', 'AVENGERS'):
         raise FormatError('Select LB3, LMSH1, The Hobbit or Avengers')
     assets = assets or open_assets(assets_root, game, cache_root=cache)
     resolver = ResourceResolver(assets, game)

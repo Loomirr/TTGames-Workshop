@@ -15,7 +15,7 @@ incomplete inspection modes. [Classic checks and gaps](../../docs/COMPATIBILITY_
 The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, plus a separate static **LEGO Fortnite** export profile. Version **0.5.19**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, an experimental **LEGO Batman 2 NXG** profile ([details](../../docs/LB2_CHARACTERS.md); [animation sets](../../docs/LB2_ANIMATION.md)), plus a separate static **LEGO Fortnite** export profile. Version **0.5.19**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
@@ -167,7 +167,8 @@ head/face, mirroring and shading reports.
 
 ## Browse animations and preview
 
-1. Import a character CD from an installed or unpacked **LB3, LMSH1, The Hobbit or Avengers** game folder.
+1. Import a character CD from an installed or unpacked **LB3, LMSH1, The Hobbit, Avengers or LEGO Batman 2**
+   game folder (LEGO Batman 2 is experimental; 9-curve clips are not played).
 2. Its declared animation sets appear automatically in **TT Character**.
    The search box filters action names and set names, including shared sets.
 3. Select an action and press **Load selected animation**. AN4 files and
