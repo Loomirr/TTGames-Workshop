@@ -1,4 +1,4 @@
-# LEGO Marvel Super Heroes: DISP 17 and 22, material table 169
+# LEGO Marvel Super Heroes: DISP 17 and 22, material tables 166 and 169
 
 LMSH1 vehicles, animals and some accessories use three section versions the
 readers refused. Each turns out to be a neighbour's layout.
@@ -36,21 +36,31 @@ UV sets) and plausible footers (cull 0, filter 3, write mask 15, alpha test
 mode 8). As 163, 172 or 174 the shader prefix fails. 169 now uses 168's prefix,
 footer and the same preview notes.
 
-UMTL 166 (11 models, among them the bicycle, golf cart and goblin glider) fits
-none of 163, 168 and 172 and stays refused.
+## UMTL 166 = UMTL 168 less one byte
+
+11 models have table 166 (the bicycle, golf cart, goblin glider, Mr Fantastic's
+guitar and teapot and others). Their names sit one byte earlier than in 168/169
+(962 against 963 from the record start), while the version word, the UV sets
+(+120) and the shader version (+320) and colour space sit where 168 has them.
+The texture IDs start at +398 against +399. So the missing byte lies between
+the colour space and the IDs, inside the bytes 168 also leaves opaque.
+
+With 168's prefix one byte shorter, all 11 tables read. Their texture IDs run in
+order through each file (`TTShaderMaterial1` 0, decals 1, `TPage_LEGO_Hard`
+2 and 3), and the footers give cull 0 (one 1), filter 3, write mask 15.
 
 ## Results
 
-- `load_model` over all 466 LMSH1 `chars/` models: **404 load**, up from 384. No
+- `load_model` over all 466 LMSH1 `chars/` models: **414 load**, up from 384. No
   model that loaded before changed (skeleton identity, selection and part
   count hashed).
-- LMSH1 vehicles: 72 of 101, up from 59. Most of the rest (21) stop at the
+- LMSH1 vehicles: 79 of 101, up from 59. Most of the rest (21) stop at the
   variant remap check, which PR #23 relaxes for mirror twins.
-- 629 random LMSH1, LB3 and LB2 models: 18 refused before now load, 16 refused
+- 629 random LMSH1, LB3 and LB2 models: 26 refused before now load, 8 refused
   ones now stop at a later check, none that loaded changed.
 - Blender 5.2.2, Character add-on built from this branch, `.ghg` imported
-  directly: the cat, Deadpool's Vespa, the news van and the Vulture's wings
-  assemble correctly.
+  directly: the cat, Deadpool's Vespa, the news van, the Vulture's wings, the
+  bicycle, the goblin glider and Mr Fantastic's guitar assemble correctly.
 - `formats/cu3/scripts/test_lmsh1_display_versions.py`: DISP 17 reads exactly
   as 16 and enforces its auxiliary counts; 22 reads as 21; 19 and 20 stay
   refused; LOD tables of 17 and 22 select the nearest clip, 23 is still refused.
