@@ -1,4 +1,4 @@
-"""Observed DISP 18/21/23/32 draw bindings and named model instances."""
+"""Observed DISP 16-18/21-24/26/32 draw bindings and named model instances."""
 from pathlib import Path
 import math
 from .cu3 import FormatError
@@ -12,7 +12,7 @@ def read_display(path, part_count):
         raise FormatError('Native display section missing')
     c = Cursor(data, at + 4)
     version = c.get('I')
-    if version not in (16, 18, 21, 23, 24, 26, 32):
+    if version not in (16, 17, 18, 21, 22, 23, 24, 26, 32):
         raise FormatError(f'DISP {version} requires a separate verified reader')
     dx = version in (26, 32)
     def array(size=None):
@@ -44,13 +44,14 @@ def read_display(path, part_count):
         for size in (2, 4):
             c.take(4)
             array(size)
-        if version == 16:
-            # Three additional per-clip scalar arrays precede the specials.
+        if version in (16, 17):
+            # Three additional per-clip scalar arrays precede the specials
+            # (also in LMSH1's DISP 17: docs/LMSH1_VEHICLES.md).
             # Treating the first count as the specials count loses hats/props.
             for _ in range(3):
                 c.expect(b'ROTV', '4s')
                 if array(4) != len(clips):
-                    raise FormatError('DISP 16 auxiliary count differs from clip table')
+                    raise FormatError(f'DISP {version} auxiliary count differs from clip table')
         c.take(4)
     names_at = data.find(b'LBTN')
     names_start = names_at + 12
@@ -119,7 +120,7 @@ def model_bindings(display, special, *, highest_detail=True):
     # This only selects the explicit final clip for a highest-detail preview;
     # it does not attempt to reproduce the engine's distance switching.
     zero_tail = display['version'] == 32 and len(ranges) == 4
-    if (display['version'] not in (16, 18, 21, 24, 26, 32)
+    if (display['version'] not in (16, 17, 18, 21, 22, 24, 26, 32)
             or len(ranges) > 8 or ranges[-1] != 0
             or any(not math.isfinite(v) or v < 0 for v in ranges)
             or any(a <= b and not (zero_tail and a == b == 0)

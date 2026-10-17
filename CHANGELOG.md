@@ -1,5 +1,13 @@
 # Changelog
 
+## LEGO Marvel Super Heroes: DISP 17 and 22, UMTL 169 — 17 October 2026
+
+- DISP 17 reads with the DISP 16 layout (three per-clip arrays, counts checked),
+  DISP 22 with the shared DISP 21 path; both join the LOD-table selector.
+- Material table 169 reads with 168's prefix and footer.
+- LMSH1 `chars/` models that load: 384 to 404 of 466. See
+  [LMSH1_VEHICLES.md](docs/LMSH1_VEHICLES.md).
+
 ## Attachment dependency integrity — 6 October 2026
 
 - Character 0.5.6 preserves earlier/shared texture provenance and image/store
