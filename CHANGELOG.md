@@ -1,5 +1,12 @@
 # Changelog
 
+## LEGO Batman 2's oldest material tables — 17 October 2026
+
+- UMTL 52, 55, 56, 58, 61 and 105: name position and length rule, texture
+  slots, flag set and tail per version; 57 of 61 tables read and LB2 models
+  that load go from 1,094 to 1,141. See
+  [LB2_OLDER_VERSIONS.md](docs/LB2_OLDER_VERSIONS.md).
+
 ## Attachment dependency integrity — 6 October 2026
 
 - Character 0.5.6 preserves earlier/shared texture provenance and image/store
