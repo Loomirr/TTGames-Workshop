@@ -109,6 +109,25 @@ class MaterialFlagTests(unittest.TestCase):
                 entry['fields']['surfaceMapFormat0']=encoding
                 self.assertIsNone(surface_normal_binding(entry,169))
 
+    def test_lmsh1_format2_rgb_normal(self):
+        for table in (172,174,176,177):
+            entry=self.normal_entry();entry['table_version']=table
+            entry['fields']['surfaceMapFormat0']=2
+            self.assertEqual(surface_normal_binding(entry,169),dict(texture=3,uv=0,packed_x_alpha=False))
+
+    def test_format2_outside_observed_lmsh1_tables(self):
+        for mesh,table in ((170,191),(175,196),(175,202),(175,232),(169,175),(169,178)):
+            entry=self.normal_entry();entry['table_version']=table
+            entry['fields']['surfaceMapFormat0']=2
+            self.assertIsNone(surface_normal_binding(entry,mesh))
+
+    def test_format0_stays_unbound_in_older_lmsh1_tables(self):
+        # Format 0 slot 6 also holds non-normal textures (for example the minifig arm template).
+        for table in (172,174):
+            entry=self.normal_entry();entry['table_version']=table
+            entry['fields']['surfaceMapFormat0']=0
+            self.assertIsNone(surface_normal_binding(entry,169))
+
     def test_normal_requires_enabled_valid_uv(self):
         for uv in ((0,0),(1,0xffffffff),(1,16)):
             entry=self.normal_entry();entry['fields']['uvSets'][4]=uv

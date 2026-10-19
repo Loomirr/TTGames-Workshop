@@ -62,18 +62,27 @@ def surface_normal_binding(entry, mesh_version):
     The gated LMSH1/Hobbit/LB3-family layouts store the DXT5 normal in texture slot 6 and its UV
     selector in pair 4. Surface format 5 packs tangent X in alpha, Y in green
     and Z in blue. File payload validation happens before creating nodes.
+
+    LMSH1 surface format 2 uses the same slot and selector for an ordinary
+    DXT1 RGB normal (X red, Y green, Z blue); see docs/SURFACE_FORMAT_2.md.
+    Format 0 is not enabled: its slot 6 also holds non-normal textures.
     """
     fields = entry['fields']
-    if (mesh_version, entry.get('table_version')) not in {
-            (169, 176), (169, 177), (170, 191), (175, 196), (175, 202), (175, 232), (175, 234)}:
+    pair, encoding = (mesh_version, entry.get('table_version')), fields.get('surfaceMapFormat0')
+    if fields.get('surfaceMapMethod') != 1:
         return None
-    if fields.get('surfaceMapMethod') != 1 or fields.get('surfaceMapFormat0') != 5:
+    if encoding == 5 and pair in {
+            (169, 176), (169, 177), (170, 191), (175, 196), (175, 202), (175, 232), (175, 234)}:
+        packed = True
+    elif encoding == 2 and pair in {(169, 172), (169, 174), (169, 176), (169, 177)}:
+        packed = False
+    else:
         return None
     texture = entry['texture_ids'][6]
     enabled, uv = fields['uvSets'][4]
     if texture < 0 or enabled != 1 or uv not in range(16):
         return None
-    return dict(texture=texture, uv=uv, packed_x_alpha=True)
+    return dict(texture=texture, uv=uv, packed_x_alpha=packed)
 
 
 def shader_prefix(data, start, version, *, limit=None):
