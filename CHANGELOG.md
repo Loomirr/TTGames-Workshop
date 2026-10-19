@@ -48,6 +48,13 @@
   slots, flag set and tail per version; 57 of 61 tables read and LB2 models
   that load go from 1,094 to 1,141. See
   [LB2_OLDER_VERSIONS.md](docs/LB2_OLDER_VERSIONS.md).
+## LEGO Batman 2 vertex animation — 17 October 2026
+
+- MESH 48 parts with a frame count read their position-only frame streams
+  (`frame_positions`); parts without a position stream of their own take frame
+  0. In Blender each frame becomes a keyed shape key. Seven LB2 level files
+  load that did not. See
+  [LB2_GEOMETRY.md](docs/LB2_GEOMETRY.md).
 
 ## Attachment dependency integrity — 6 October 2026
 

@@ -22,6 +22,30 @@ def load_model(path, *, skeleton_identity=None):
     return model
 
 
+def add_vertex_frames(obj, frames, transform):
+    """LEGO Batman 2 MESH 48 vertex animation: one shape key per source frame
+    (TT_Frame_000...), keyed so scene frame k+1 shows source frame k. The mesh's
+    own positions are left as decoded."""
+    keys = obj.shape_key_add(name='Basis', from_mix=False).id_data
+    blocks = []
+    for k, frame in enumerate(frames):
+        block = obj.shape_key_add(name=f'TT_Frame_{k:03d}', from_mix=False)
+        block.data.foreach_set('co', [c for p in frame for c in (transform @ Vector(p))])
+        blocks.append(block)
+    keys.animation_data_create()
+    action = bpy.data.actions.new(obj.name + ' / source vertex frames')
+    slot = action.slots.new('KEY', keys.name)
+    bag = action.layers.new('Source vertex frames').strips.new(type='KEYFRAME').channelbag(slot, ensure=True)
+    for k, block in enumerate(blocks):
+        curve = bag.fcurves.new(data_path=block.path_from_id('value'))
+        curve.keyframe_points.add(len(frames))
+        curve.keyframe_points.foreach_set('co', [c for f in range(len(frames)) for c in (f + 1, float(f == k))])
+        for point in curve.keyframe_points:
+            point.interpolation = 'CONSTANT'
+    keys.animation_data.action, keys.animation_data.action_slot = action, slot
+    obj['tt_vertex_frames'] = len(frames)
+
+
 def create_model(model, name, collection, definition=None, material_factory=None, *, layer_mode='authored', highest_detail=True):
     skeleton = model['skeleton']
     draws = selected_draws(model, definition, layer_mode=layer_mode, highest_detail=highest_detail)
@@ -137,5 +161,7 @@ def create_model(model, name, collection, definition=None, material_factory=None
         if part['morphs']:
             add_shape_keys(obj, part['morphs'], transform)
             bind_source(obj, companion, part['index'], transform)
+        elif part.get('frame_positions'):
+            add_vertex_frames(obj, part['frame_positions'], transform)
         objects.append(obj)
     return rig, objects

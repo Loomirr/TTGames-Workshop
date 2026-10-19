@@ -143,6 +143,38 @@ The same 200 randomly sampled LMSH1 character models decode identically before
 and after these changes (174 load; the one changed result is an error message
 naming HGOL 9).
 
+## Vertex animation in MESH 48 (added later)
+
+In 9 LB2 level files a part record has a nonzero word where the reader expected
+the zero after its streams (4arkhaminta_tech at 0x4ee1c0: 40). It is a **frame
+count**: that many streams follow, each a position-only vertex buffer (one
+descriptor, attribute 0, half4 or float3) or a reference to one, with its byte
+offset, and then the part's index buffer as usual.
+
+- In `4arkhaminta_tech` part 47 the 40 frames hold 1,082 vertices each. Drawn in
+  Blender, frame 0 is a flattened shape; by the middle and last frames it is a
+  full tank that has risen (its first vertex goes from y 0.011 to 0.50 and 1.25).
+- Animated parts keep **no position in their own streams** (uv, colour,
+  normal only): the frames are their only positions.
+- Across the 24 animated parts in the 7 files that now load, the mean movement
+  per frame changes gradually from frame to frame, and the buffer references
+  after the frames resolve with one base.
+
+The reader accepts this for MESH 48 only and keeps the frames as
+`part['frame_positions']` (one list of positions per frame); a part with no
+position stream of its own takes the animation's first frame as its positions
+(`position_source`), which can be a collapsed start as in part 47. Other versions
+still refuse a nonzero word there. 7 of the 9 files now load (3 to 70 frames per
+part); `builder_magicprops` then stops at non-finite UVs, and `vfx_gen` has a
+buffer reference that does not resolve.
+
+In Blender the native model builder gives such a part one shape key per source
+frame (`TT_Frame_000`...), keyed with constant interpolation so scene frame
+k+1 shows source frame k (`tt_vertex_frames` holds the count). In
+`4arkhaminta_tech` 9 objects animate; the largest, `Lego_Inflation_Tube_L`
+(51 frames, 2,016 vertices), inflates from its flat first frame, which is why
+that frame looks collapsed.
+
 ## Still unsupported
 
 MESH 47, DISP 7-10, UMTL 106-123 and the older definition streams were added
