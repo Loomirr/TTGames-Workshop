@@ -62,7 +62,5 @@ costume path: body front and back, arms, hands, hips, legs and head prints.
 - **Capes** lie flat behind the figure in the bind pose; LB2's clips now pose them ([LB2_ANIMATION.md](LB2_ANIMATION.md)).
 - **Faces** show all expression layers, as a plain LMSH1 import does; the existing face previews apply.
 - **Definitions** in stream versions 18-24 and **older models** (MESH 47, material tables 106-123) were
-  added later: [LB2_OLDER_VERSIONS.md](LB2_OLDER_VERSIONS.md). Material tables 52-58 stay refused.
-- **Not attempted:** cutscenes, native shading, export back into LB2. (Facial animation:
-  [LB2_FACES.md](LB2_FACES.md).) (9-curve animation blocks
-  play through the character importer: [LB2_ANIMATION.md](LB2_ANIMATION.md).)
+  added later: [LB2_OLDER_VERSIONS.md](LB2_OLDER_VERSIONS.md). Material tables 52-105 were added after that; four low-detail city streams remain refused.
+- **Not attempted:** cutscenes, native shading, export back into LB2. See [body animation](LB2_ANIMATION.md) and [facial animation](LB2_FACES.md) for their tested scope.

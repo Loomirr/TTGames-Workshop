@@ -89,7 +89,7 @@ def surface_normal_binding(entry, mesh_version):
 
 
 # LEGO Batman 2: where the texture IDs start (16 slots up to 126, 18 later).
-LB2_TEXTURES = {106: 341, 108: 341, 111: 342, 120: 342, 121: 342, 122: 342, 123: 345, 125: 346, 126: 346, 127: 390, 128: 389, 129: 389, 130: 389, 132: 389}
+LB2_TEXTURES = {52: 321, 55: 321, 56: 321, 58: 322, 61: 336, 105: 336, 106: 341, 108: 341, 111: 342, 120: 342, 121: 342, 122: 342, 123: 345, 125: 346, 126: 346, 127: 390, 128: 389, 129: 389, 130: 389, 132: 389}
 
 
 def shader_prefix(data, start, version, *, limit=None):
@@ -338,12 +338,14 @@ def read_materials_bytes(data):
     if len(limits) != 1:
         raise FormatError('Ambiguous native material table boundaries')
     limit = limits[0]
+    # In UMTL 52-58 the name length leaves out the closing zero (docs/LB2_OLDER_VERSIONS.md).
+    unterminated = 1 if version in (52, 55, 56, 58) else 0
     records_end = limit-1 if lb2 else limit-21
     # Names have a version-specific position inside a fixed shader prefix.
     # Require a unique position and exactly the declared number of records.
     lengths = []
     for offset in range(0x300, min(0x600, records_end-start-2)):
-        length = r.get('H', start+offset)
+        length = r.get('H', start+offset)+unterminated
         raw = data[start+offset+2:min(start+offset+2+length, records_end)]
         if 2 <= length < 256 and len(raw)==length and raw.endswith(b'\0') and all(32 <= c <= 126 for c in raw[:-1]):
             lengths.append(offset)
@@ -360,14 +362,14 @@ def read_materials_bytes(data):
             cursor = candidate+4
             if candidate+name_offset+2 > records_end:
                 continue
-            length = r.get('H', candidate+name_offset)
+            length = r.get('H', candidate+name_offset)+unterminated
             end = candidate+name_offset+2+length
             raw = data[candidate+name_offset+2:end]
-            if not 1 <= length < 512 or end > records_end or not raw.endswith(b'\0') or any(c<32 or c>126 for c in raw[:-1]):
+            if not 1+unterminated <= length < 512 or end > records_end or not raw.endswith(b'\0') or any(c<32 or c>126 for c in raw[:-1]):
                 continue
             fields, texture_at = shader_prefix(data, candidate, version, limit=candidate+name_offset)
             modern = version in (228, 229, 232, 234, 235)
-            slots = 17 if version == 229 else 16 if version in (106, 108, 111, 120, 121, 122, 123, 125, 126) else 18
+            slots = 17 if version == 229 else 16 if version in (52, 55, 56, 58, 61, 105, 106, 108, 111, 120, 121, 122, 123, 125, 126) else 18
             ids = list(r.get(f'{slots}i', texture_at))
             if any(i < -1 or i > 65536 for i in ids):
                 continue

@@ -61,8 +61,39 @@ texture-ID positions were checked:
   other single offset. Each offset sits the same distance before the name as in
   the later tables (497 bytes in 106-111, 498 from 120).
 
-Tables 52-58 (51 files, mostly the unused `lego_city` level streams) stay
-refused.
+## Material tables 52-105 (added later)
+
+The oldest tables in LB2 (61 files) have the 106 record layout with three
+differences per version, measured over all their 3,182 records:
+
+| version (files) | name at | name length | texture IDs at | flags | tail flags |
+|---|---|---|---|---|---|
+| 52 (3) | +820 | without the closing zero | +321 | 17 | 7 |
+| 55 (42) | +820 | without the closing zero | +321 | 17 | 8 |
+| 56 (13) | +820 | without the closing zero | +321 | 17 | 8 |
+| 58 (1) | +821 | without the closing zero | +322 | 18 | 8 |
+| 61 (1), 105 (1) | +833 | with it (as 106) | +336 | 18 | 8 |
+
+- **Names:** at the version's offset in every record; in 52-58 the u16 length
+  counts the characters only (`LEGO_BASIC` has 10, then a zero). A record must
+  have at least one character there, which keeps a stray `00 00 00 02` inside a
+  record from reading as an empty-named one.
+- **Texture IDs:** 16 slots at the only offset where every record holds -1 or
+  a texture number and the next word is 4, as in 106. The credits pictures
+  (`pictures2`, 56) use slot 0, one texture each (0 to 3).
+- **Footer:** the 106 footer read from the record's end. The tail is 8 flag
+  bytes (7 in 52): the only length where the tail bytes are 0 or 1, the
+  variant words -1 or valid and the four floats small, in every record. 58, 61
+  and 105 have 106's 18 flags (no `alphaTestMode`); 52, 55 and 56 also lack
+  `noprepass`. Same-named materials settle it: `LEGO_Shaders:Basic1` reads
+  `7c 00 00 00 01 03` from `aref` to `filter` in 106 and `7c 00 00 00 03` in 52
+  and 56, and `LEGO_Hard:LEGO_Base` has 106's six bytes in 58, 61 and 105 and
+  the five in 55. Every decoded flag set is plausible: `cull` 0 or 2, `filter`
+  3, `colourWriteMask` 15.
+
+57 of the 61 tables read. Four low-detail `lego_city` streams
+(`sf_residential_07xx_ld`) stay refused: no `HSCB` section follows their table,
+and 11 unexplained bytes come before the next `TDML`.
 
 ## MESH 47
 

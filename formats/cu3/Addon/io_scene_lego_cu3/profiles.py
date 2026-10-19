@@ -14,7 +14,7 @@ CHARACTER_PROFILES = {
               'cutscene_version': 18, 'cutscene_versions': (16, 17, 18),
               'mesh_versions': (161, 169), 'static_mesh_versions': (161, 169)},
     'LB2': {'renderer': 'NXG', 'model_suffix': '_NXG', 'animation_suffix': 'NXG',
-            'cutscene_version': None, 'mesh_versions': (48,), 'static_mesh_versions': (48,)},
+            'cutscene_version': None, 'mesh_versions': (47, 48), 'static_mesh_versions': (47, 48)},
     'LB3': {'renderer': 'DX11', 'model_suffix': '_DX11', 'animation_suffix': 'NXG',
             'cutscene_version': 19, 'mesh_versions': (175,), 'static_mesh_versions': (175,)},
     'HOBBIT': {'renderer': 'NXG', 'model_suffix': '_NXG', 'animation_suffix': 'NXG',
