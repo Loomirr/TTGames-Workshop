@@ -143,10 +143,13 @@ def shader_prefix(data, start, version, *, limit=None):
                                                for a,b in fields['uvSets'])):
             raise FormatError('Unverified UMTL 172 shader prefix')
         return fields,start+405
-    if version == 168:
+    if version in (166, 168, 169):
+        # LMSH1 UMTL 169 (animals, vehicles) reads with 168's prefix; 166 has
+        # one byte less after colourSpace (docs/LMSH1_VEHICLES.md).
         # LMSH1 armour: bounded older prefix, 18 IDs at +399. The word
         # at +395 precedes the IDs; treating it as an ID shifts every texture.
-        r.span(start,399)
+        size = 398 if version == 166 else 399
+        r.span(start,size)
         fields=dict(version=r.get('I',start),shaderType=r.get('I',start+4),
                     lightingModel=r.get('I',start+8),
                     uvSets=[r.get('2I',start+120+i*8) for i in range(16)],
@@ -156,8 +159,8 @@ def shader_prefix(data, start, version, *, limit=None):
                     vertAlbedo=r.get('B',start+279),canAlphaBlend=None,ignoreVertexOpacity=None)
         if fields['version']!=2 or fields['shaderVersion']!=4 or fields['vertAlbedo'] not in (0,1) or any(
                 a not in (0,1) or b not in (*range(16),0xffffffff) for a,b in fields['uvSets']):
-            raise FormatError('Unverified UMTL 168 shader prefix')
-        return fields,start+399
+            raise FormatError(f'Unverified UMTL {version} shader prefix')
+        return fields,start+size
     if version == 163:
         # Older static NXG accessories have a separate bounded prefix. Boolean
         # meanings remain opaque; do not reuse the later flag offsets.
@@ -306,7 +309,7 @@ def read_materials_bytes(data):
     if marker < 0:
         raise FormatError('Native material table missing')
     version, count = r.get('2I', marker+4)
-    if version not in (*LB2_VERSIONS, 163, 168, 172, 174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 228, 229, 232, 234, 235) or count > 65536:
+    if version not in (*LB2_VERSIONS, 163, 166, 168, 169, 172, 174, 175, 176, 177, 183, 185, 186, 187, 191, 194, 195, 196, 198, 199, 200, 201, 202, 228, 229, 232, 234, 235) or count > 65536:
         raise FormatError(f'Unverified native material table version/count: {version}/{count}')
     start = marker+12
     if version < 190:

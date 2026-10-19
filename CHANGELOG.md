@@ -55,6 +55,14 @@
   0. In Blender each frame becomes a keyed shape key. Seven LB2 level files
   load that did not. See
   [LB2_GEOMETRY.md](docs/LB2_GEOMETRY.md).
+## LEGO Marvel Super Heroes: DISP 17 and 22, UMTL 166 and 169 — 17 October 2026
+
+- DISP 17 reads with the DISP 16 layout (three per-clip arrays, counts checked),
+  DISP 22 with the shared DISP 21 path; both join the LOD-table selector.
+- Material table 169 reads with 168's prefix and footer, 166 with that prefix
+  one byte shorter.
+- LMSH1 `chars/` models that load: 384 to 414 of 466. See
+  [LMSH1_VEHICLES.md](docs/LMSH1_VEHICLES.md).
 
 ## Attachment dependency integrity — 6 October 2026
 
