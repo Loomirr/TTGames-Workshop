@@ -90,3 +90,56 @@ def read_texture_store(path):
         raise FormatError('DDS boundaries disagree with texture inventory: extra payload')
     return dict(version=version, entries=entries, data=data,
                 payload_validation='DDS header-sized spans; enclosing native trailers remain opaque')
+
+
+def read_embedded_texture_store(path):
+    """LEGO Batman 2 models keep their textures inside the model (no companion).
+
+    The HGXT list (versions 9 and 10) names each texture; entries without a
+    name have no image. The named entries' DDS images follow, contiguous and
+    in list order. Version 9 entries also record each image's size, which must
+    match its DDS header. Indices keep unnamed entries, as material IDs do.
+    """
+    data = Path(path).read_bytes()
+    r = Reader(data)
+    at = data.find(b'HGXT')
+    if at < 0 or data.find(b'HGXT', at+4) >= 0:
+        raise FormatError('Expected one embedded HGXT texture list')
+    version = r.get('I', at+4)
+    if version not in (9, 10) or data[at+8:at+12] != b'ROTV':
+        raise FormatError(f'Unsupported embedded texture list version {version}')
+    count = r.get('I', at+12)
+    if count > 65536:
+        raise FormatError('Invalid embedded texture count')
+    cursor = at+16+4*count
+    if data[cursor:cursor+4] != b'ROTV' or r.get('I', cursor+4) != count:
+        raise FormatError('Embedded texture lists disagree')
+    cursor += 8
+    entries = []
+    for index in range(count):
+        digest = r.get('16s', cursor).hex()
+        size = r.get('2I', cursor+16) if version == 9 else None
+        length_at = cursor+53 if version == 9 else cursor+16
+        length = r.get('I', length_at)
+        if length > 65535 or (length and data[length_at+4+length-1:length_at+4+length] != b'\0'):
+            raise FormatError('Invalid embedded texture name')
+        name = r.string(length_at+4, length_at+4+length) if length > 1 else ''
+        entries.append(dict(index=index, name=name, kind=None, hash=digest, size=size))
+        cursor = length_at+4+length+(14 if version == 9 else 4)
+    populated = [entry for entry in entries if entry['name']]
+    image = next_dds_header(data, cursor) if populated else None
+    for number, entry in enumerate(populated):
+        if image is None:
+            raise FormatError('Embedded DDS images disagree with the texture list')
+        try:
+            dds = read_dds(data, image)
+        except FormatError as error:
+            raise FormatError(f'Texture {entry["index"]} ({entry["name"]}): {error}') from error
+        if entry['size'] is not None and tuple(entry['size']) != (dds['width'], dds['height']):
+            raise FormatError(f'Texture {entry["index"]} size disagrees with its DDS header')
+        entry.update(offset=image, end=dds['end'], width=dds['width'], height=dds['height'], dds=dds)
+        image = dds['end'] if number+1 < len(populated) else None
+        if image is not None and data[image:image+4] != b'DDS ':
+            raise FormatError('Embedded DDS images are not contiguous')
+    return dict(version=version, entries=entries, data=data, embedded=True,
+                payload_validation='HGXT names in list order; contiguous DDS header-sized spans')

@@ -46,6 +46,9 @@ def costume_uv_index(entry, mesh_version):
     if name.endswith('_DX11'):
         name = name[:-5]
     role = costume_slot(entry)
+    if mesh_version == 48:
+        # LEGO Batman 2: every observed costume-role part carries one UV pair.
+        return 0
     if (mesh_version == 169 and entry.get('table_version') == 176
             and (name, role) in (('LEFTARM_GAME', 24), ('RIGHTARM_GAME', 5),
                                 ('HEAD_FRONT_GAME', 1), ('HEAD_BACK_GAME', 2))):
@@ -96,7 +99,7 @@ def shader_prefix(data, start, version, *, limit=None):
         # the remaining prefix stays opaque (docs/LB2_GEOMETRY.md).
         size = LB2_TEXTURES[version]
         r.span(start, size)
-        fields = dict(version=r.get('I', start), shaderType=None, lightingModel=None, uvSets=None,
+        fields = dict(version=r.get('I', start), shaderType=None, lightingModel=None, uvSets=[],
                       opaqueShaderPrefix=data[start+4:start+size].hex(),
                       vertAlbedo=None, canAlphaBlend=None, ignoreVertexOpacity=None)
         if fields['version'] != 2:

@@ -113,6 +113,11 @@ existing checks plus the 0/1 tail. The table has no `ROTV`/`TDML` tail: the last
 footer ends one byte (always 1) before the following `HSCB` section, which holds
 in all 943 files. 120-123 have a shorter footer and stay unsupported.
 
+Lead for the older tables: with the same field order, the trailing flag block is 8 bytes in UMTL 106, 10 in
+108-121, 11 in 122-123 and 12 in 125-132 (each fits every record pair of every file). The length of the
+leading flag block is not determined for 106-123: `colourWriteMask` sits at a fixed distance from the end
+whatever that length is, and those files contain no occluder materials to anchor it. So they stay refused.
+
 ## Full loads and a Blender check
 
 `load_model` on every LB2 `.ghg`/`.gsc`:

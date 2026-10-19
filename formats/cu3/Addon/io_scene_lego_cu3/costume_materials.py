@@ -6,7 +6,7 @@ from pathlib import Path
 import bpy
 from .cu3 import FormatError
 from .material_preview import attach_vertex_albedo, attach_vertex_opacity, attach_normal_map, attach_albedo_glow, cubemap_to_equirect, attach_reflection_cubemap
-from .texture_store import read_texture_store
+from .texture_store import read_texture_store, read_embedded_texture_store
 from .dds import read_embedded_dds
 from .native_materials import costume_slot, costume_uv_index, surface_normal_binding, reflection_cubemap_binding, read_materials_bytes
 from .profiles import active_renderer_reference
@@ -103,6 +103,18 @@ class CostumeMaterials:
 
     def model_texture(self, model, index):
         source = Path(model['source'])
+        if model.get('mesh_version') == 48:
+            # LEGO Batman 2 keeps the textures inside the model itself.
+            if source not in self.stores:
+                self.stores[source] = read_embedded_texture_store(source)
+            store = self.stores[source]
+            if self.provenance:self.provenance.record(source,'texture-store',data=store['data'])
+            if not 0 <= index < len(store['entries']):
+                raise FormatError(f'Texture {index} is outside {source.name}')
+            entry = store['entries'][index]
+            if 'offset' not in entry:
+                raise FormatError(f'Texture {index} in {source.name} has no image')
+            return source, entry, store['data'][entry['offset']:entry['end']]
         path = None
         try:
             relative = source.relative_to(self.assets.root)
@@ -228,7 +240,8 @@ class CostumeMaterials:
                 links.new(node.outputs['Color'], surface.inputs['Base Color'])
                 if entry['fields']['canAlphaBlend'] or entry['fields'].get('alphaTest') == 5:
                     links.new(node.outputs['Alpha'], surface.inputs['Alpha'])
-                uv_index = entry['fields']['uvSets'][0][1]
+                # LEGO Batman 2 parts carry one UV pair; its shader prefix is opaque.
+                uv_index = 0 if model['mesh_version'] == 48 else entry['fields']['uvSets'][0][1]
                 if uv_index == 0xffffffff:uv_index = 0
                 uv = nodes.new('ShaderNodeUVMap');uv.uv_map=f'Source uv {uv_index}'
                 links.new(uv.outputs['UV'], node.inputs['Vector'])
@@ -264,6 +277,21 @@ class CostumeMaterials:
                     self.report.append({'material':entry['name'], 'issue':'Older untextured material uses authored vertex colors for inspection; native albedo flags and lighting remain unresolved'})
                 elif not entry['fields']['vertAlbedo']:
                     self.report.append({'material':entry['name'], 'issue':'Modern untextured material uses source vertex colors for inspection; shader color flags remain approximate'})
+        if (not assigned and model['mesh_version'] == 48 and entry['texture_ids'][0] < 0
+                and model.get('parts') and all(p.get('vertices') and 'color' in p['vertices'][0] for p in model['parts'])):
+            # LEGO Batman 2 colours untextured faces, cowls and hair with
+            # vertex colours stored at half strength: white details peak at
+            # 127. Double them (about 2**2.2 in linear light) for inspection;
+            # the source colour attribute itself is left unchanged.
+            node = nodes.new('ShaderNodeVertexColor');node.layer_name='SourceColor'
+            double = nodes.new('ShaderNodeMixRGB');double.blend_type='MULTIPLY';double.use_clamp=True
+            double.label='LB2 half-strength vertex colour';double.inputs[0].default_value=1
+            double.inputs[2].default_value=(2**2.2,2**2.2,2**2.2,1)
+            links.new(node.outputs['Color'], double.inputs[1])
+            links.new(double.outputs[0], surface.inputs['Base Color'])
+            material['tt_lb2_vertex_colour_scale'] = 2
+            assigned = True
+            self.report.append({'material':entry['name'], 'issue':'LB2 untextured material uses doubled source vertex colors for inspection (approximate)'})
         if not assigned:
             self.report.append({'material':entry['name'], 'issue':'Native material texture store or constant color remains unresolved'})
         if textured:
