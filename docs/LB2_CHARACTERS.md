@@ -2,8 +2,8 @@
 
 Builds on the LB2 model readers in [LB2_GEOMETRY.md](LB2_GEOMETRY.md) (pull request #14). This adds an
 experimental `LB2` character profile to the Character add-on, so an LB2 `.cd` can be imported from an installed
-game folder or an extracted tree. Static import only: LB2's AN4 animation sets (versions 2-7) and CU3 cutscenes
-are not decoded, so no clips are listed or played.
+game folder or an extracted tree. As first written this was static import only; LB2's animation sets were added
+later ([LB2_ANIMATION.md](LB2_ANIMATION.md)). CU3 cutscenes are still not decoded.
 
 ## What changed
 
@@ -59,8 +59,9 @@ costume path: body front and back, arms, hands, hips, legs and head prints.
 
 ## Known gaps
 
-- **Capes** lie flat behind the figure: that is their bind pose, which LB2's idle animation would correct.
+- **Capes** lie flat behind the figure in the bind pose; LB2's clips now pose them ([LB2_ANIMATION.md](LB2_ANIMATION.md)).
 - **Faces** show all expression layers, as a plain LMSH1 import does; the existing face previews apply.
 - **Definitions** in stream versions 18-24 and **older models** (MESH 47, material tables 106-123) were
   added later: [LB2_OLDER_VERSIONS.md](LB2_OLDER_VERSIONS.md). Material tables 52-58 stay refused.
-- **Not attempted:** animations, cutscenes, native shading, export back into LB2.
+- **Not attempted:** cutscenes, facial animation, native shading, export back into LB2. (9-curve animation blocks
+  play through the character importer: [LB2_ANIMATION.md](LB2_ANIMATION.md).)
