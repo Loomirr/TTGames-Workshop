@@ -7,6 +7,15 @@
   word. 1,057 LB2 blocks sample; faces move in Blender. Other channel counts and
   newer trees with a reserved word stay refused. See
   [LB2_FACES.md](docs/LB2_FACES.md).
+## TCS rigid pieces bound to their joints — 16 October 2026
+
+- The classic NU20 reader decodes the TCS PC character layer table on request
+  (`NU20.character_layers()`); malformed or unresolved tables raise errors.
+- With the TCS profile, the Character addon's classic inspection places rigid
+  heads, hips and accessories at their joint, weights them to it and groups draws
+  by native layer. LB1 behaviour is unchanged. Distributable ZIPs not rebuilt.
+- Constructed regressions cover the observed layout and malformed tables; see the
+  [format notes and evidence](formats/classic-pc/README.md#tcs-character-layer-table).
 
 ## Attachment dependency integrity — 6 October 2026
 

@@ -338,6 +338,7 @@ class NU20:
         # scene: models (mesh + material lists) and special objects (named, with a matrix)
         self.models = []
         self.special_objects = []
+        self.special_at = 0
         self.is_model = self.i32(g + 0x18C) != 0
         disp_rel = self.i32(g + 0x10C)
         if disp_rel:
@@ -419,6 +420,7 @@ class NU20:
                 p = disp + 0x70
                 so_at = p + 4 + self.i32(p) - 4
                 self.table(so_at, so_count, 0xD0, "special objects")
+                self.special_at = so_at
                 by_offset = {m["offset"]: m["index"] for m in self.models}
                 for i in range(so_count):
                     o = so_at + i * 0xD0
@@ -430,6 +432,71 @@ class NU20:
                     model_off = o + 0xB8 + mesh_ptr - 8
                     self.special_objects.append({"index": i, "name": name, "matrix": matrix,
                                                  "model": by_offset.get(model_off, -1)})
+
+    def character_layers(self):
+        """Character layer table of TCS PC GHG files (container version 2); read on request.
+
+        Observed (2026-10-16) in 21 TCS PC character GHGs from community character mods (original exporter
+        structure; not a retail census): header +0x18C holds the layer count and
+        +0x190 a self-relative pointer to 20-byte records { name, per-joint rigid objects, skinned object,
+        second per-joint table, extra object }. Object entries are 12-byte records whose third field points to
+        a special object (0xD0 bytes). A rigid object's vertices are local to its joint: placed with the
+        special object's matrix and then the joint's bind (world) transform, every sampled minifigure head
+        lands on top of its skinned body. The second per-joint table was empty in every sample and is only
+        counted. Any record that does not resolve exactly raises ValueError; nothing is guessed.
+
+        Returns {"layers": [...], "rigid": {special object: (joint, layer)}, "notes": [...]}."""
+        if not self.bones or not self.special_objects or not self.special_at:
+            return {"layers": [], "rigid": {}, "notes": ["no skeleton or special objects: no character layers"]}
+        g, joints = self.gsnh, len(self.bones)
+        count = self.i32(g + 0x18C)
+        if not 0 < count <= 64:
+            raise ValueError(f"Character layer count {count} is outside the observed TCS range (1..64)")
+        at = self.ptr(g + 0x190)
+        self.table(at, count, 20, "character layers", 64)
+
+        def special(record, what):
+            self.table(record, 1, 12, what)
+            target = self.ptr(record + 8)
+            index, rest = divmod(target - self.special_at, 0xD0)
+            if not target or rest or not 0 <= index < len(self.special_objects):
+                raise ValueError(f"{what} does not point at a special object record")
+            return index
+
+        layers, rigid, notes = [], {}, []
+        for i in range(count):
+            o = at + i * 20
+            name_at = self.ptr(o)
+            layer = {"index": i, "name": _cstr(self.d, name_at) if name_at else "", "rigid": {}, "skin": -1,
+                     "extra": -1, "second_joint_entries": 0}
+            label = f"character layer {i}"
+            table = self.ptr(o + 4)
+            if table:
+                self.table(table, joints, 4, label + " rigid objects")
+                for joint in range(joints):
+                    entry = self.ptr(table + joint * 4)
+                    if not entry:
+                        continue
+                    so = special(entry, f"{label} joint {joint} rigid object")
+                    if so in rigid and rigid[so][0] != joint:
+                        raise ValueError(f"Special object {so} is bound to joints {rigid[so][0]} and {joint}")
+                    rigid[so] = (joint, i)
+                    layer["rigid"][joint] = so
+            if self.ptr(o + 8):
+                layer["skin"] = special(self.ptr(o + 8), label + " skinned object")
+            second = self.ptr(o + 12)
+            if second:
+                self.table(second, joints, 4, label + " second joint table")
+                layer["second_joint_entries"] = sum(1 for j in range(joints) if self.i32(second + j * 4))
+                if layer["second_joint_entries"]:
+                    notes.append(f"{label}: {layer['second_joint_entries']} entries in the undecoded second joint table")
+            if self.ptr(o + 16):
+                layer["extra"] = special(self.ptr(o + 16), label + " extra object")
+            layers.append(layer)
+        skinned = {l["skin"] for l in layers} | {l["extra"] for l in layers}
+        if skinned & set(rigid):
+            raise ValueError("A special object is listed both as a rigid joint object and as a layer object")
+        return {"layers": layers, "rigid": rigid, "notes": notes}
 
     def _payload(self):
         d = self.d
