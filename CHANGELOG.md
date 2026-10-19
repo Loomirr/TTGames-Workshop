@@ -1,5 +1,13 @@
 # Changelog
 
+## LEGO Batman 2 facial animation — 17 October 2026
+
+- AN4 facial (BSA) blocks with 37 channels are read, as are LB2's little-endian
+  trees (pointer at node +40, header words as file offsets) and LB2's reserved
+  word. 1,057 LB2 blocks sample; faces move in Blender. Other channel counts and
+  newer trees with a reserved word stay refused. See
+  [LB2_FACES.md](docs/LB2_FACES.md).
+
 ## Attachment dependency integrity — 6 October 2026
 
 - Character 0.5.6 preserves earlier/shared texture provenance and image/store

@@ -94,16 +94,25 @@ class AnimationFile:
         CU3 embeds a different, little-endian tree. Keep its decoder separate.
         """
         r = Reader(self.data)
-        if self.endian != '>':
-            raise FormatError('Facial-control blocks are verified only in big-endian AN4 trees')
-        at = r.get('I', actor['offset']+36)
+        # LEGO Batman 2's little-endian trees (44-byte nodes) keep the
+        # pointer in the node's last word and write the magic reversed
+        # (docs/LB2_FACES.md).
+        little = self.endian == '<'
+        at = r.get('I', actor['offset'] + (40 if little else 36), self.endian)
         if not at:
             return None
-        if at < 72 or self.data[at:at+4] != b'BSA\0':
+        if at < self.header_size or self.data[at:at+4] != (b'\0ASB' if little else b'BSA\0'):
             raise FormatError('Unsupported standalone AN4 facial-control block')
-        header, padded, size, reserved = r.get('4I', at+4)
-        if header != 20 or reserved or size < 100 or not size <= padded <= size+4 or at+padded > len(self.data):
+        header, padded, size, reserved = r.get('4I', at+4, self.endian)
+        if little:
+            # These three words are file offsets there, not block sizes.
+            header, padded, size = header - at, padded - at, size - at
+        # LB2 sets the reserved word in some blocks (0x01010000 and similar);
+        # it is kept as `bsa_reserved` and does not change the block layout.
+        if header != 20 or (reserved and self.version not in LB2_BIG_ENDIAN + LB2_LITTLE_ENDIAN) or size < 100 \
+                or not size <= padded <= size+4 or at+padded > len(self.data):
             raise FormatError('Standalone BSA header/range is not verified')
         animation = Animation(r, at+header, at+size)
+        animation.bsa_reserved = reserved
         animation.prepare(morph_channels=True)
         return animation

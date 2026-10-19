@@ -168,7 +168,8 @@ head/face, mirroring and shading reports.
 ## Browse animations and preview
 
 1. Import a character CD from an installed or unpacked **LB3, LMSH1, The Hobbit, Avengers or LEGO Batman 2**
-   game folder (LEGO Batman 2 is experimental; its facial clips are not played).
+   game folder (LEGO Batman 2 is experimental; its 37-channel facial clips play
+   when the face block matches one clip: [LB2_FACES.md](../../docs/LB2_FACES.md)).
 2. Its declared animation sets appear automatically in **TT Character**.
    The search box filters action names and set names, including shared sets.
 3. Select an action and press **Load selected animation**. AN4 files and

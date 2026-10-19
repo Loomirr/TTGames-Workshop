@@ -83,8 +83,9 @@ class LB2AN4(unittest.TestCase):
             with self.assertRaisesRegex(FormatError, 'verified big-endian'):AnimationFile('x.an4', data=raw)
         bad = bytearray(tree('<', 2));struct.pack_into('<I', bad, 4, len(bad) + 4)
         with self.assertRaises(FormatError):AnimationFile('x.an4', data=bytes(bad))
-        with self.assertRaisesRegex(FormatError, 'big-endian AN4'):
-            source = AnimationFile('l.an4', data=tree('<', 2));source.morph_animation(source.actors[0])
+        # No facial pointer (node +40 in little-endian trees): no facial block.
+        source = AnimationFile('l.an4', data=tree('<', 2))
+        self.assertIsNone(source.morph_animation(source.actors[0]))
 
 
 if __name__ == '__main__':

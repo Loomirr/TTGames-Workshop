@@ -63,5 +63,6 @@ costume path: body front and back, arms, hands, hips, legs and head prints.
 - **Faces** show all expression layers, as a plain LMSH1 import does; the existing face previews apply.
 - **Definitions** in stream versions 18-24 and **older models** (MESH 47, material tables 106-123) were
   added later: [LB2_OLDER_VERSIONS.md](LB2_OLDER_VERSIONS.md). Material tables 52-58 stay refused.
-- **Not attempted:** cutscenes, facial animation, native shading, export back into LB2. (9-curve animation blocks
+- **Not attempted:** cutscenes, native shading, export back into LB2. (Facial animation:
+  [LB2_FACES.md](LB2_FACES.md).) (9-curve animation blocks
   play through the character importer: [LB2_ANIMATION.md](LB2_ANIMATION.md).)
