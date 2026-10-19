@@ -32,7 +32,7 @@ def annotate_variant_group(data, candidates, errors):
         if not 1 <= count <= 64 or count != len(ordered) or ordered[0]['hgol_offset'] != start:
             raise FormatError('Native variant count does not cover every HGOL interpretation')
         version = ordered[0]['version']
-        if version not in (9, 10, 12, 16, 17) or any(c['version'] != version for c in ordered):
+        if version not in (8, 9, 10, 12, 16, 17) or any(c['version'] != version for c in ordered):
             raise FormatError('Native variant trailer requires observed HGOL 10, 12, 16 or 17 (or LB2 HGOL 9) throughout')
         if len({c.get('name_table_offset') for c in ordered}) != 1:
             raise FormatError('Native variants disagree on name-table ownership')
@@ -45,7 +45,7 @@ def annotate_variant_group(data, candidates, errors):
         end = decoded[-1]['end_offset']
         # LEGO Batman 2 (HGOL 9) has the HGOL 10 trailer, with a zero fifth fence byte.
         fence = (b'\0\0\0\0\1ATEM' if version in (10,12) else
-                 b'\0\0\0\0\0ATEM' if version == 9 else b'\0\0\0\0ATEM')
+                 b'\0\0\0\0\0ATEM' if version in (8, 9) else b'\0\0\0\0ATEM')
         if data[end:end+len(fence)] != fence:
             raise FormatError('Native variant group has an unverified terminal boundary')
         group = dict(schema='tt.native-hgol-variants.v1', array_offset=start-8,
@@ -65,7 +65,7 @@ def _trailer(data, reader, candidate):
     pos = candidate['end_offset']
     start = pos
     typed = candidate['version'] in (12,16,17)
-    secondary_map = candidate['version'] in (9,10,12)
+    secondary_map = candidate['version'] in (8,9,10,12)
     def get(fmt, size):
         nonlocal pos
         value = reader.get(fmt, pos)
@@ -81,7 +81,11 @@ def _trailer(data, reader, candidate):
         if count > maximum:
             raise FormatError('Native variant array exceeds its verified bound')
         return [get(fmt, width) for _ in range(count)]
-    if array('B', 1, 0):
+    collision = None
+    if candidate['version'] in (8, 9) and not typed and reader.get('I', pos):
+        # LEGO Batman 2 vehicles keep collision shapes here (docs/LB2_VEHICLES.md).
+        collision, pos = _collision(data, reader, pos, len(candidate['joints']))
+    elif array('B', 1, 0):
         raise FormatError('Unverified native variant auxiliary array')
     prefix = list(get('2I', 8))
     bounds = list(get('6f', 24))
@@ -102,7 +106,9 @@ def _trailer(data, reader, candidate):
     if secondary_map and (secondary != joint_map or scale != 1):
         raise FormatError('Unverified HGOL 9/10/12 secondary joint map or scale')
     metadata_map = array('H', 2, 65536)
-    if get('B', 1) != 0:
+    # LEGO Batman 2's older HGOL 8 trailer ends at the metadata map: the next
+    # counted HGOL follows at once (docs/LB2_VEHICLES.md).
+    if candidate['version'] != 8 and get('B', 1) != 0:
         raise FormatError('Unverified native variant terminal flag')
     # Avengers HGOL 17 retains four opaque bytes and a second zero flag
     # between the remap and the next counted resource (or terminal fence).
@@ -110,10 +116,70 @@ def _trailer(data, reader, candidate):
     extension = get('4s', 4).hex() if candidate['version'] == 17 else None
     if candidate['version'] == 17 and get('B', 1) != 0:
         raise FormatError('Unverified HGOL 17 extension flag')
-    return dict(offset=start, end_offset=pos, threshold_offset=threshold_offset,
+    tail = dict(offset=start, end_offset=pos, threshold_offset=threshold_offset,
                 threshold=threshold, bounds=bounds, joint_map=joint_map,
                 secondary_joint_map=secondary, scale=scale, metadata_map=metadata_map, extension_hex=extension,
                 serialized_sha256=hashlib.sha256(data[start:pos]).hexdigest())
+    if collision is not None:
+        # Only present when read, so existing identities stay unchanged.
+        tail['collision'] = collision
+    return tail
+
+
+def _collision(data, reader, pos, joints):
+    """LB2 HGOL 9 collision groups, each riding on one joint.
+
+    A group is: u32 0, u32 type, 14 floats when type is 1 (a primitive whose
+    fields are kept, not interpreted), u32 hull count, the hulls, then the
+    joint as one byte. A hull is a face list (unit normal, corner count) and
+    then its corners (position, the hull's face count again).
+    """
+    def get(fmt, size):
+        nonlocal pos
+        value = reader.get(fmt, pos)
+        pos += size
+        return value
+    def finite(values):
+        if not all(math.isfinite(v) for v in values):
+            raise FormatError('Non-finite native collision value')
+        return list(values)
+    count = get('I', 4)
+    if not 1 <= count <= 64:
+        raise FormatError('Native collision group count exceeds its verified bound')
+    groups = []
+    for _ in range(count):
+        zero, kind = get('2I', 8)
+        if zero or kind not in (0, 1):
+            raise FormatError('Unverified native collision group type')
+        primitive = finite(get('14f', 56)) if kind == 1 else None
+        hull_count = get('I', 4)
+        if not (0 if kind else 1) <= hull_count <= 64:
+            raise FormatError('Native collision hull count exceeds its verified bound')
+        hulls = []
+        for _ in range(hull_count):
+            face_count = get('I', 4)
+            if not 1 <= face_count <= 4096:
+                raise FormatError('Native collision face count exceeds its verified bound')
+            faces = []
+            for _ in range(face_count):
+                normal, corners = finite(get('3f', 12)), get('I', 4)
+                if abs(math.sqrt(sum(v*v for v in normal)) - 1) > 1e-3 or not 3 <= corners <= 64:
+                    raise FormatError('Unverified native collision face')
+                faces.append(dict(normal=normal, corners=corners))
+            corner_count = get('I', 4)
+            if corner_count != sum(face['corners'] for face in faces):
+                raise FormatError('Native collision corners disagree with their faces')
+            points = []
+            for _ in range(corner_count):
+                points.append(finite(get('3f', 12)))
+                if get('I', 4) != face_count:
+                    raise FormatError('Unverified native collision corner field')
+            hulls.append(dict(faces=faces, corners=points))
+        joint = get('B', 1)
+        if joint >= joints:
+            raise FormatError('Native collision joint is outside its rig')
+        groups.append(dict(type=kind, primitive=primitive, hulls=hulls, joint=joint))
+    return groups, pos
 
 
 def select_variant_base(candidates, *, display, mesh):
@@ -136,6 +202,7 @@ def select_variant_base(candidates, *, display, mesh):
     all_specials = set()
     all_parts = set()
     cross_layers = []
+    rigid_remaps = []
     omissions = []
     from .native_display import model_bindings
     for candidate in candidates:
@@ -212,9 +279,16 @@ def select_variant_base(candidates, *, display, mesh):
             # cape LODs rename it; face LODs replace morph skins with rigids.
             # Each endpoint's ownership/palette was validated above, so neither
             # matching labels nor matching representation kinds are required.
+            # LB2 and LMSH1 vehicles and creatures pair some base draws with an
+            # LOD draw on another joint: a mirror twin (wing_R with wing_L,
+            # wheelPos_FL with wheelPos_RR) or a merged child (Neck2 with
+            # Head). Only the base is imported, so the pairing is kept as
+            # evidence instead of refused (docs/LB2_VEHICLES.md).
             if (source['kind'] == row['kind'] == 0 and
                     source['joint'] != joint_map[row['joint']]):
-                raise FormatError('Native variant remap disagrees with its rigid binding')
+                rigid_remaps.append(dict(candidate_offset=candidate['hgol_offset'],base_metadata=index,
+                                         variant_metadata=target,base_joint=source['joint'],
+                                         variant_joint=row['joint'],variant_joint_in_base=joint_map[row['joint']]))
             # Original DX11 explicitly relocates one repeated StudHi draw to
             # another valid layer. Preserve that map; never force layer equality.
             if source['layer'] != row['layer']:
@@ -228,4 +302,6 @@ def select_variant_base(candidates, *, display, mesh):
     evidence = dict(group,base_offset=base['hgol_offset'],
                     reason='verified_native_variant_base',mesh_associations_checked=True,
                     cross_layer_remaps=cross_layers,remap_omissions=omissions)
+    if rigid_remaps:
+        evidence['rigid_remap_differences'] = rigid_remaps
     return base, evidence

@@ -30,6 +30,18 @@
   mirrors only the imported character object on X, so left and right match the
   game (issue #1). Native meshes, skeleton, animation and export are unchanged;
   `check_game_handedness_blender.py` verifies byte-identical export.
+## LEGO Batman 2 vehicles — 17 October 2026
+
+- HGOL 9 base trailers with collision groups (hulls and primitives on wheel and
+  body joints) are read and kept as `collision`; other versions still refuse a
+  nonzero auxiliary array.
+- LOD remaps whose rigid partner rides on another joint (mirror twins, merged
+  joints) are kept as `rigid_remap_differences` evidence instead of refused.
+- HGOL 8 skeletons (older LB2 models: the T-rex, Robin's zorb, Penguin's
+  umbrella) are read with the HGOL 9 layout; their variant trailer has no
+  terminal byte.
+- LB2 models that load: 1,094 to 1,160; LMSH1 vehicles 59 to 75. See
+  [LB2_VEHICLES.md](docs/LB2_VEHICLES.md).
 
 ## Attachment dependency integrity — 6 October 2026
 

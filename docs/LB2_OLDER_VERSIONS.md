@@ -123,6 +123,8 @@ to `model_bindings`. 116 instances are refused for draw command `0xB5`, as in
 
 ## Results
 
+(Vehicles were added later: 1,150 load, [LB2_VEHICLES.md](LB2_VEHICLES.md).)
+
 `load_model` over all 1,259 LB2 `.ghg`/`.gsc` files: **1,094 load** (895 `.gsc`,
 199 `.ghg`), up from 927. 126 of them are MESH 47 files. The other 165:
 - 58 at the multi-rig rules (unchanged);
