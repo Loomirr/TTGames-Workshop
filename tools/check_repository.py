@@ -34,6 +34,9 @@ def main():
     subprocess.run([sys.executable,str(ROOT/'tools/test_prune_builds.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_readers.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_models.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_bone_labels.py')],check=True,cwd=ROOT)
+    for path in sorted((ROOT/'formats/cu3/scripts').glob('test_lb2_*.py')):
+        subprocess.run([sys.executable, str(path)], check=True, cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_archive_classic.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/an4/lmsh1/test_cli.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'tools/skeleton_transfer/test_transfer.py')],check=True,cwd=ROOT)
@@ -50,7 +53,8 @@ def main():
                  'test_skeleton_diagnostics.py','test_native_variants.py',
                  'test_material_capabilities.py','test_face_live_groups.py',
                  'test_material_declarations.py','test_material_remaps.py','test_material_parameters.py',
-                 'test_face_target_summary.py']:
+                 'test_face_target_summary.py','test_reflection_cubemap.py',
+                 'test_lmsh1_display_versions.py']:
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_mesh_edit.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_model_validation.py')],check=True,cwd=ROOT)

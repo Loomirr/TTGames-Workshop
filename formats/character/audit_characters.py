@@ -23,7 +23,7 @@ from tt_character_audit.skeleton import attachment_locator
 from tt_character_audit.dependencies import active_attachments, find_character_asset, ResourceResolver
 from tt_character_audit.profiles import CHARACTER_PROFILES, validate_profile_model, inspection_profile
 
-PROFILES = ('LMSH1', 'LB3', 'AVENGERS', 'TFA', 'DCSV', 'LMSH2', 'LOTR', 'HOBBIT')
+PROFILES = ('LB2', 'LMSH1', 'LB3', 'AVENGERS', 'TFA', 'DCSV', 'LMSH2', 'LOTR', 'HOBBIT')
 
 
 def audit(root, game, cache, limit=0, *, contains='', layer_mode='default'):

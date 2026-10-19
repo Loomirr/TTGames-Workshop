@@ -58,7 +58,8 @@ def profile_identity(game, *, structure_versions=None, inspection=False):
         'model_suffix': profile['model_suffix'], 'animation_suffix': profile['animation_suffix'],
         'structure_versions': dict(structure_versions or {}),
         'structure_byte_orders': {'definition': 'little', 'HGOL': 'big',
-                                  'standalone_AN4': 'big', 'embedded_AN4_tree': 'little'},
+                                  'standalone_AN4': 'big or little' if game == 'LB2' else 'big',
+                                  'embedded_AN4_tree': 'little'},
         'hash_namespaces': {
             'source_sha256': 'Digest of the consumed file bytes; not a native resource identifier',
             'skeleton_binding_sha256': 'Digest of decoded native bind identity; not an AN4 field',

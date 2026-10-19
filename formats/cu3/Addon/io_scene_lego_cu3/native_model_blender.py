@@ -38,8 +38,14 @@ def add_vertex_frames(obj, frames, transform):
     bag = action.layers.new('Source vertex frames').strips.new(type='KEYFRAME').channelbag(slot, ensure=True)
     for k, block in enumerate(blocks):
         curve = bag.fcurves.new(data_path=block.path_from_id('value'))
-        curve.keyframe_points.add(len(frames))
-        curve.keyframe_points.foreach_set('co', [c for f in range(len(frames)) for c in (f + 1, float(f == k))])
+        # Constant interpolation needs only the boundaries of this frame.
+        # Avoid a quadratic number of keys for long native frame sequences.
+        points = [(1, 0.0)] if k else []
+        points.append((k + 1, 1.0))
+        if k + 1 < len(frames):
+            points.append((k + 2, 0.0))
+        curve.keyframe_points.add(len(points))
+        curve.keyframe_points.foreach_set('co', [c for point in points for c in point])
         for point in curve.keyframe_points:
             point.interpolation = 'CONSTANT'
     keys.animation_data.action, keys.animation_data.action_slot = action, slot

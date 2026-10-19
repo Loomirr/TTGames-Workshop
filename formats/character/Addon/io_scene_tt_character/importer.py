@@ -99,7 +99,7 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
     if context.mode != 'OBJECT':
         raise FormatError('Switch to Object Mode before importing')
     if game not in ('LB2', 'LB3', 'LMSH1', 'HOBBIT', 'AVENGERS'):
-        raise FormatError('Select LB3, LMSH1, The Hobbit or Avengers')
+        raise FormatError('Select LB2, LB3, LMSH1, The Hobbit or Avengers')
     assets = assets or open_assets(assets_root, game, cache_root=cache)
     resolver = ResourceResolver(assets, game)
     provenance = SourceProvenance(assets)
@@ -335,7 +335,10 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                     from .animation_export import action_fingerprint
                     action['tt_native_pose_fingerprint'] = action_fingerprint(action)
                     action['tt_character_status'] = 'Native skeleton AN4 pose; original root translation retained. Attachment ownership uses source hierarchy and retained resource/root identity; AN4 bind matrices are not encoded. FPS is a preview assumption and events remain separate.'
-                    action['tt_native_profile_identity'] = json.dumps(profile_identity(rig['tt_character_game'],structure_versions={'standalone_AN4':source.version}))
+                    byte_order = 'little' if source.endian == '<' else 'big'
+                    identity = profile_identity(rig['tt_character_game'], structure_versions={'standalone_AN4':source.version})
+                    identity['structure_byte_orders']['standalone_AN4'] = byte_order
+                    action['tt_native_profile_identity'] = json.dumps(identity)
                     item = rig.tt_clips.add()
                     item.name, item.action = action.name, action
                     item.slot = rig.animation_data.action_slot.identifier
@@ -343,7 +346,7 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                     if data is None:rig['tt_native_source_provenance'] = provenance.dumps()
                     report['imported'] += 1
                     report['clips'].append(dict(source=str(path), actor=actor['name'], action=action.name, frames=source.frames,
-                                               an4_version=source.version,byte_order='big'))
+                                               an4_version=source.version,byte_order=byte_order))
                 except (ValueError, OSError, KeyError, RuntimeError) as error:
                     rollback(before)
                     if rig.animation_data:

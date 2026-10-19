@@ -1,7 +1,9 @@
 # PC character compatibility
 
-Current source and package: **0.5.19**. The [October 15 validation report](../../docs/COMPATIBILITY_2026-10-15.md)
-records the current recursive roster audit, original Blender checks and native
+Current source and package: **0.5.21**. The [October 19 PR review](../../docs/PR_REVIEW_2026-10-19.md)
+adds experimental LB2, observed LMSH1 layouts, and LB3 HGOL 15 variants.
+The [October 15 validation report](../../docs/COMPATIBILITY_2026-10-15.md)
+records the previous recursive roster audit, original Blender checks and native
 edited-export checks. Older counts below use different audit coverage and should
 not be compared directly with the current recursive checks.
 

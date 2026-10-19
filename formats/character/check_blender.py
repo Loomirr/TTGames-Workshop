@@ -41,10 +41,15 @@ for case in json.loads(cases_path.read_text()):
         actions = import_animations(bpy.context, rig, [Path(p) for p in case.get('animations', [])])
     if case.get('animations') or case.get('catalog_action'):
         assert actions['imported'], actions
+        if case.get('expected_byte_order'):
+            assert all(c['byte_order'] == case['expected_byte_order'] for c in actions['clips']), actions
         for index in range(len(rig.tt_clips)):
             rig.tt_clip_index = index
             clip = rig.tt_clips[index]
             assert rig.animation_data.action == clip.action
+            if case.get('expected_byte_order'):
+                identity = json.loads(clip.action['tt_native_profile_identity'])
+                assert identity['structure_byte_orders']['standalone_AN4'] == case['expected_byte_order']
             assert bpy.context.scene.frame_end == clip.frames
             for frame in (1, max(1, clip.frames // 2), clip.frames):
                 bpy.context.scene.frame_set(frame)

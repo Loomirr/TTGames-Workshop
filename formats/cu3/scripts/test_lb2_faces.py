@@ -68,6 +68,12 @@ class LB2Faces(unittest.TestCase):
             with self.assertRaisesRegex(FormatError, 'Facial scalar layout'):
                 source.morph_animation(source.actors[1])
 
+    def test_unobserved_reserved_flags_remain_refused(self):
+        for endian, reserved in (('>', 1), ('>', 0x101), ('<', 0x01010000), ('<', 0xffffffff)):
+            source = AnimationFile('f.an4', data=with_face(endian, 2, reserved))
+            with self.subTest(endian=endian, reserved=reserved), self.assertRaisesRegex(FormatError, 'BSA header'):
+                source.morph_animation(source.actors[1])
+
     def test_little_endian_block_needs_its_own_magic(self):
         raw = bytearray(with_face('<', 2))
         at = raw.rfind(b'\0ASB')

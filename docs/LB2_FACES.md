@@ -26,8 +26,9 @@ face shape target. The reader already decoded these for the later games
 - **Reserved word.** 130 big-endian blocks have 0x01010000 and 29 little-endian
   ones 0x00000101: the same four bytes `01 01 00 00` in both byte orders, so
   probably two byte fields. They do not change the block. They are kept as
-  `bsa_reserved` and accepted for LB2 tree versions (1, 2, 4-7) only; newer trees
-  still refuse a nonzero reserved word. Their meaning is unknown.
+  `bsa_reserved`. Only zero and these exact byte patterns are accepted for LB2
+  tree versions (1, 2, 4-7); other values and nonzero words in newer trees are
+  refused. Their meaning is unknown.
 
 ## Checks
 

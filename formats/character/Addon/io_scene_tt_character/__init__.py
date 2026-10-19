@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 5, 19), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 5, 21), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -30,6 +30,7 @@ _catalog_source = None
 
 class TTCHAR_Preferences(bpy.types.AddonPreferences):
     bl_idname = __package__
+    lb2: StringProperty(name='LB2 game / extracted folder', subtype='DIR_PATH')
     lb3: StringProperty(name='LB3 game / extracted folder', subtype='DIR_PATH')
     lmsh1: StringProperty(name='LMSH1 game / extracted folder', subtype='DIR_PATH')
     avengers: StringProperty(name='Avengers game / extracted folder', subtype='DIR_PATH')
@@ -42,7 +43,7 @@ class TTCHAR_Preferences(bpy.types.AddonPreferences):
     cache: StringProperty(name='Optional asset cache', subtype='DIR_PATH')
 
     def draw(self, context):
-        for prop in ('lb3', 'lmsh1', 'hobbit', 'avengers', 'lb1', 'tcs', 'fortnite', 'fortnite_extractor', 'fortnite_settings', 'cache'):
+        for prop in ('lb2', 'lb3', 'lmsh1', 'hobbit', 'avengers', 'lb1', 'tcs', 'fortnite', 'fortnite_extractor', 'fortnite_settings', 'cache'):
             self.layout.prop(self, prop)
 
 

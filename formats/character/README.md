@@ -1,5 +1,9 @@
 # TT Character and Animation Importer
 
+Version 0.5.21 integrates experimental LB2 characters/animations, additional
+observed LMSH1 model layouts, LB3 HGOL 15 variants, RGB surface normals and
+cubemap preview. [Checks and remaining limits](../../docs/PR_REVIEW_2026-10-19.md).
+
 This update includes reviewed classic NU20 version-3 inspection and LSW2 DAT
 index support. [Review and validation](../../docs/GITHUB_HGP_REVIEW_2026-10-15.md).
 
@@ -15,7 +19,7 @@ incomplete inspection modes. [Classic checks and gaps](../../docs/COMPATIBILITY_
 The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, an experimental **LEGO Batman 2 NXG** profile ([details](../../docs/LB2_CHARACTERS.md); [animation sets](../../docs/LB2_ANIMATION.md)), plus a separate static **LEGO Fortnite** export profile. Version **0.5.19**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, an experimental **LEGO Batman 2 NXG** profile ([details](../../docs/LB2_CHARACTERS.md); [animation sets](../../docs/LB2_ANIMATION.md)), plus a separate static **LEGO Fortnite** export profile. Version **0.5.21**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
@@ -27,7 +31,7 @@ named in the native layer table are bound to their joints; LB1 rigid attachments
 can be hidden as unresolved. Variants can overlap, shaders are approximate and
 AN3 playback/native export are unavailable. See [classic instructions](../classic-pc/README.md#blender-inspection).
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.19.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.21.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).

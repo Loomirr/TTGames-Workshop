@@ -59,6 +59,11 @@ def main():
                     imported.append(module.name)
                 addon.register()
                 registered.append(addon)
+                if name == 'io_scene_tt_character':
+                    # Every selectable game must have a saved source-folder field.
+                    fields = addon.TTCHAR_Preferences.bl_rna.properties
+                    for game, _, _ in addon.GAMES:
+                        assert game.lower() in fields, game
                 if name == 'io_scene_lego_cu3':
                     from types import SimpleNamespace
                     for version in (16,17,18):

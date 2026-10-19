@@ -4,6 +4,7 @@ import struct
 import sys
 import types
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 pkg = types.ModuleType('mesh48_frames_fixture')
@@ -40,6 +41,12 @@ def fixture(version=48, *, frames=2, own_position=False, frame_descriptor=(0, 3,
 
 
 class LB2Mesh48Frames(unittest.TestCase):
+    def test_decoded_frame_allocation_is_bounded(self):
+        with patch('mesh48_frames_fixture.native_mesh.MAX_FRAME_VERTICES', 8):
+            with self.assertRaisesRegex(FormatError, 'frame allocation limit'):
+                read_mesh_bytes(fixture(frames=3))
+            self.assertEqual(len(read_mesh_bytes(fixture(frames=2))['parts']), 1)
+
     def test_frames_are_read_and_frame_0_gives_the_positions(self):
         mesh = read_mesh_bytes(fixture(frames=3))
         part = mesh['parts'][0]

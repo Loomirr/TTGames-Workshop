@@ -107,9 +107,12 @@ class AnimationFile:
         if little:
             # These three words are file offsets there, not block sizes.
             header, padded, size = header - at, padded - at, size - at
-        # LB2 sets the reserved word in some blocks (0x01010000 and similar);
-        # it is kept as `bsa_reserved` and does not change the block layout.
-        if header != 20 or (reserved and self.version not in LB2_BIG_ENDIAN + LB2_LITTLE_ENDIAN) or size < 100 \
+        # Only the observed bytes 01 01 00 00 are accepted for LB2 trees.
+        # Keeping the word opaque does not justify accepting arbitrary flags.
+        allowed_reserved = {0}
+        if self.version in LB2_BIG_ENDIAN + LB2_LITTLE_ENDIAN:
+            allowed_reserved.add(0x101 if little else 0x01010000)
+        if header != 20 or reserved not in allowed_reserved or size < 100 \
                 or not size <= padded <= size+4 or at+padded > len(self.data):
             raise FormatError('Standalone BSA header/range is not verified')
         animation = Animation(r, at+header, at+size)

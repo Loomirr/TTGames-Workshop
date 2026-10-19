@@ -92,6 +92,7 @@ VERSIONS = (47, 48, 161, 169, 170, 175)
 # MESH 47 part-record words: the low two bits are the stream count. 0x25 and
 # 0x601 were seen only on depth copies; their other bits are not decoded.
 MESH47_STREAM_WORDS = {1: 1, 2: 2, 0x25: 1, 0x601: 1}
+MAX_FRAME_VERTICES = 2_000_000
 
 
 class MeshReader:
@@ -111,6 +112,7 @@ class MeshReader:
         self.bases = None
         self.parts = []
         self.depth_copies = []
+        self.frame_vertices = 0
 
     def buffer(self, kind):
         c = self.c
@@ -313,6 +315,11 @@ class MeshReader:
                 if variable in attributes:
                     raise FormatError('Duplicate vertex attribute across native streams')
                 attributes[variable] = (start + offset, typ, buffer['stride'])
+        # References may reuse a tiny stream thousands of times. Bound decoded
+        # frame data across the whole model, not just the on-disk allocation.
+        self.frame_vertices += len(part.get('vertex_frames', ())) * part['vertex_count']
+        if self.frame_vertices > MAX_FRAME_VERTICES:
+            raise FormatError('Native vertex animation exceeds the decoded frame allocation limit')
         frame_positions = []
         for stream in part.get('vertex_frames', ()):
             buffer = resolve(stream['buffer'])

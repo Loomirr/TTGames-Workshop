@@ -7,7 +7,7 @@ from package_workshop_gui import markdown_for_package
 from prune_builds import keep_latest
 
 ROOT=Path(__file__).resolve().parents[1]
-VERSION='0.1.2'
+VERSION='0.1.3'
 
 
 def main():

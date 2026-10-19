@@ -7,7 +7,13 @@ later ([LB2_ANIMATION.md](LB2_ANIMATION.md)). CU3 cutscenes are still not decode
 
 ## What changed
 
-- **`profiles.py`:** `LB2` = NXG renderer, `_NXG` models, MESH 48 for both `.ghg` and `.gsc`. MESH 46/47 and
+The initial contribution's checks below describe its original static-import
+scope. Current source accepts MESH 47 and 48 and older definitions; see the
+[combined review results](PR_REVIEW_2026-10-19.md) for independently repeated
+checks and outstanding refusals. MESH 47 geometry support does not establish
+support for its older embedded texture lists (HGXT 7/8 remain refused).
+
+- **Initial `profiles.py`:** `LB2` = NXG renderer, `_NXG` models, MESH 48 for both `.ghg` and `.gsc`. MESH 46/47 and
   other versions are refused by the existing profile check.
 - **Importer and add-on:** `LB2` is accepted by `import_character` and listed in the game menu, marked
   experimental.

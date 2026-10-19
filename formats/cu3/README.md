@@ -114,7 +114,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.28 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.28.zip)
+Download the [0.1.28 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.29.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

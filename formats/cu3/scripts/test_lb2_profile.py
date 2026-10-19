@@ -1,4 +1,4 @@
-"""Experimental LEGO Batman 2 character profile: MESH 48 only, single costume UV pair."""
+"""Experimental LEGO Batman 2 character profile: observed MESH 47/48."""
 import sys
 import types
 import unittest
@@ -12,12 +12,13 @@ from lb2_profile_fixture.cu3 import FormatError
 
 
 class LB2Profile(unittest.TestCase):
-    def test_profile_accepts_only_mesh_48(self):
+    def test_profile_accepts_observed_mesh_47_and_48(self):
         profile=character_profile('LB2')
         self.assertEqual((profile['renderer'],profile['model_suffix']),('NXG','_NXG'))
         validate_profile_model('LB2','chars/minifigs/batman/batman_nxg.ghg',48)
         validate_profile_model('LB2','chars/props/prop_nxg.gsc',48)
-        for version in (47,169,175):
+        validate_profile_model('LB2','chars/props/prop_nxg.ghg',47)
+        for version in (46,49,169,175):
             with self.assertRaises(FormatError):validate_profile_model('LB2','x_nxg.ghg',version)
         with self.assertRaises(FormatError):validate_profile_model('LB2','x_dx11.ghg',48)
 

@@ -1,4 +1,4 @@
-"""Counted HGOL 9/10/12/16/17 model variants observed in original NXG/DX11 bodies.
+"""Counted HGOL 8/9/10/12/15/16/17 variants observed in original NXG/DX11 bodies.
 
 The zero-threshold resource has an identity joint map and no remap to another
 resource. Other records explicitly map its metadata to their own metadata.
@@ -32,8 +32,8 @@ def annotate_variant_group(data, candidates, errors):
         if not 1 <= count <= 64 or count != len(ordered) or ordered[0]['hgol_offset'] != start:
             raise FormatError('Native variant count does not cover every HGOL interpretation')
         version = ordered[0]['version']
-        if version not in (8, 9, 10, 12, 16, 17) or any(c['version'] != version for c in ordered):
-            raise FormatError('Native variant trailer requires observed HGOL 10, 12, 16 or 17 (or LB2 HGOL 9) throughout')
+        if version not in (8, 9, 10, 12, 15, 16, 17) or any(c['version'] != version for c in ordered):
+            raise FormatError('Native variant trailer requires observed HGOL 8/9/10/12/15/16/17 throughout')
         if len({c.get('name_table_offset') for c in ordered}) != 1:
             raise FormatError('Native variants disagree on name-table ownership')
         decoded = []
@@ -64,8 +64,8 @@ def annotate_variant_group(data, candidates, errors):
 def _trailer(data, reader, candidate):
     pos = candidate['end_offset']
     start = pos
-    typed = candidate['version'] in (12,16,17)
-    secondary_map = candidate['version'] in (8,9,10,12)
+    typed = candidate['version'] in (12,15,16,17)
+    secondary_map = candidate['version'] in (8,9,10,12,15)
     def get(fmt, size):
         nonlocal pos
         value = reader.get(fmt, pos)
@@ -286,6 +286,9 @@ def select_variant_base(candidates, *, display, mesh):
             # evidence instead of refused (docs/LB2_VEHICLES.md).
             if (source['kind'] == row['kind'] == 0 and
                     source['joint'] != joint_map[row['joint']]):
+                if (mesh.get('mesh_version'), candidate['version']) not in {
+                        (47, 8), (47, 9), (48, 8), (48, 9), (161, 10), (169, 10)}:
+                    raise FormatError('Native variant remap disagrees with its rigid binding outside observed LB2/LMSH1 layouts')
                 rigid_remaps.append(dict(candidate_offset=candidate['hgol_offset'],base_metadata=index,
                                          variant_metadata=target,base_joint=source['joint'],
                                          variant_joint=row['joint'],variant_joint_in_base=joint_map[row['joint']]))

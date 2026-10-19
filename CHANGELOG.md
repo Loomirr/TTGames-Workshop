@@ -1,5 +1,15 @@
 # Changelog
 
+## Reviewed PR integration — 19 October 2026
+
+- Character 0.5.21, CU3 0.1.29 and Classic PC Inspectors 0.1.3 package the
+  reviewed LB2, LMSH1 and classic-model contributions below.
+- Add the LB2 saved-folder field and correct imported AN4 byte-order reports.
+  Bound expanded vertex frames and keep their Blender key count linear.
+  Restrict variant remaps and BSA reserved words to observed layouts.
+- Accept verified LB3 HGOL 15 variant trailers while preserving malformed
+  bounds refusals. [Validation and remaining issues](docs/PR_REVIEW_2026-10-19.md).
+
 ## LEGO Batman 2 facial animation — 17 October 2026
 
 - AN4 facial (BSA) blocks with 37 channels are read, as are LB2's little-endian

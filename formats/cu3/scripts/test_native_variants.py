@@ -38,7 +38,7 @@ def trailer(version, threshold, mapping):
         return (b'ROTV' if typed else b'')+struct.pack('>I',count)
     raw = array(0)+bytes(8)+struct.pack('>6f',-1,-1,-1,1,1,1)+bytes(12)+struct.pack('>f',threshold)
     raw += array(1)+b'\0'
-    if version in (10,12):
+    if version in (10,12,15):
         raw += array(1)+b'\0'+struct.pack('>f',1)
     return (raw+array(len(mapping))+b''.join(struct.pack('>H',v) for v in mapping)+b'\0'
             +(b'\x23\xc7\x47\x81\0' if version==17 else b''))
@@ -78,7 +78,7 @@ class VariantTests(unittest.TestCase):
         return select_skeleton(scan['candidates'],display=self.display,mesh=self.mesh,**kwargs)
 
     def test_counted_hgol10_and16_choose_explicit_base(self):
-        for version in (10,12,16,17):
+        for version in (10,12,15,16,17):
             with self.subTest(version=version):
                 scan=self.scan(native_group(version))
                 selected=self.select(scan)
@@ -163,8 +163,9 @@ class VariantTests(unittest.TestCase):
             self.select(self.scan(raw))
 
     def test_unknown_group_version_rejected(self):
-        with self.assertRaisesRegex(FormatError,'HGOL 10, 12, 16 or 17'):
-            self.select(self.scan(native_group(15)))
+        raw = native_group(15).replace(b'LOGH'+struct.pack('>I',15), b'LOGH'+struct.pack('>I',18))
+        with self.assertRaises(FormatError):
+            self.select(self.scan(raw))
 
     def test_truncated_and_unknown_trailers_rejected(self):
         raw=native_group();scan=self.scan(raw)
@@ -220,6 +221,34 @@ class VariantTests(unittest.TestCase):
             self.select(self.scan(raw[:end-1]+b'\1'+raw[end:]))
         with self.assertRaises(FormatError):
             self.select(self.scan(raw[:end-2]+raw[end:]))
+
+    def test_hgol15_secondary_map_scale_and_fence_are_required(self):
+        raw = native_group(15)
+        scan = self.scan(raw)
+        self.select(scan)
+        end = scan['candidates'][0]['native_variant']['end_offset']
+        # Empty base metadata map: ROTV+count+terminal, preceded by scale.
+        for changed in (raw[:end-13]+struct.pack('>f', 2)+raw[end-9:],
+                        raw[:-4]+b'NOPE', raw[:-1]):
+            with self.assertRaises(FormatError):
+                self.select(self.scan(changed))
+
+    def test_cross_joint_remap_is_limited_to_observed_layouts(self):
+        from native_variant_fixture.native_variants import select_variant_base
+        for version, mesh_version, accepted in ((10,169,True),(10,161,True),(16,175,False),(10,170,False)):
+            scan=self.scan(native_group(version))
+            for candidate in scan['candidates']:
+                joint=copy.deepcopy(candidate['joints'][0]);joint.update(index=1,name='Other',parent=None)
+                candidate['joints'].append(joint)
+                candidate['native_variant']['joint_map']=[0,1]
+            scan['candidates'][1]['layer_metadata'][0]['joint']=1
+            self.mesh['mesh_version']=mesh_version
+            if accepted:
+                _, evidence=select_variant_base(scan['candidates'],display=self.display,mesh=self.mesh)
+                self.assertEqual(len(evidence['rigid_remap_differences']),1)
+            else:
+                with self.assertRaisesRegex(FormatError,'rigid binding outside'):
+                    select_variant_base(scan['candidates'],display=self.display,mesh=self.mesh)
 
     def test_complete_disjoint_special_and_part_coverage_required(self):
         scan=self.scan();scan['candidates'][1]['layer_metadata'][0]['special']=0

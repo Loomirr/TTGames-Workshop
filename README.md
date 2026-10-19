@@ -13,9 +13,10 @@ game does not mean support for every TT game that uses the same extension.
 
 ## Start here
 
-**Current candidates:** Character **0.5.19**, CU3 **0.1.28**, LSW1 HGP **0.1.5**.
-This pass fixes original LSW1 import feedback and adds reviewed classic archive/model
-coverage. See [validation and remaining gaps](docs/GITHUB_HGP_REVIEW_2026-10-15.md).
+**Current candidates:** Character **0.5.21**, CU3 **0.1.29**, LSW1 HGP **0.1.5**.
+This pass integrates experimental LB2 characters and animation, additional
+LMSH1/LB3 model layouts, classic attachments and material preview fixes.
+See [validation and remaining gaps](docs/PR_REVIEW_2026-10-19.md).
 
 Want to help, including with an AI coding session? Start with
 [contribution instructions](CONTRIBUTING.md) and the
