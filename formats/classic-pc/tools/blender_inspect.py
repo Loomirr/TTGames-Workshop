@@ -49,10 +49,10 @@ def bone_worlds(nu):
         # Refuse these rigs rather than silently stripping native transforms.
         basis=world.to_3x3();metric=basis.transposed() @ basis
         if basis.determinant() <= 0 or max(abs(metric[i][j]-(i==j)) for i in range(3) for j in range(3)) > 0.002:
-            raise ValueError('Classic rig has unsupported rest scale/shear/reflection: '+b['name'])
+            raise ValueError('Classic rig has unsupported rest scale/shear/reflection: '+b['label'])
         residual=world @ row_matrix(b['inverse_bind'])
         if max(abs(residual[i][j] - (i==j)) for i in range(4) for j in range(4))>0.002:
-            raise ValueError('Classic bind and inverse-bind matrices disagree: '+b['name'])
+            raise ValueError('Classic bind and inverse-bind matrices disagree: '+b['label'])
         worlds.append(world)
     return worlds
 
@@ -64,13 +64,13 @@ def skeleton(nu, collection, worlds):
     bpy.context.view_layer.objects.active=rig;rig.select_set(True)
     bpy.ops.object.mode_set(mode='EDIT')
     for b,world in zip(nu.bones,worlds):
-        bone=arm.edit_bones.new(b['name']);bone.matrix=C @ world @ C
+        bone=arm.edit_bones.new(b['label']);bone.matrix=C @ world @ C
         bone.length=0.015
-        if b['parent']>=0:bone.parent=arm.edit_bones[nu.bones[b['parent']]['name']]
+        if b['parent']>=0:bone.parent=arm.edit_bones[nu.bones[b['parent']]['label']]
     bpy.ops.object.mode_set(mode='OBJECT')
     for b in nu.bones:
-        bone=arm.bones[b['name']]
-        bone['native_index']=b['index'];bone['native_bind_local']=b['bind_local']
+        bone=arm.bones[b['label']]
+        bone['native_index']=b['index'];bone['native_name']=b['name'];bone['native_bind_local']=b['bind_local']
         bone['native_inverse_bind']=b['inverse_bind'];bone['native_record_matrix']=b['record_matrix']
     rig['tt_classic_inspection']=True
     rig['tt_classic_source']=str(nu.path)
@@ -111,6 +111,9 @@ def inspect_model(context, path, read_dds, apply_normals, profile=None):
     planned=[]
     planned_vertices=0
     worlds=bone_worlds(nu) if nu.bones else []
+    if nu.repeated_bone_names:
+        report['issues'].append('Repeated native bone names kept as read; Blender bones use name#index for: '
+                                +', '.join(n or '(empty)' for n in nu.repeated_bone_names))
     # TCS only: rigid pieces named by the native character layer table are
     # joint-local; place them with their joint's bind transform. Other games
     # keep the previous behaviour until their own files are checked.
@@ -222,7 +225,7 @@ def inspect_model(context, path, read_dds, apply_normals, profile=None):
             (unbound if unresolved else layer_collections.get(layer_index,collection)).objects.link(obj)
             obj['tt_classic_mesh_index']=source['index'];obj['tt_classic_model_index']=model_id
             if joint is not None:
-                obj['tt_classic_rigid_joint']=nu.bones[joint]['name'];report['rigid_bound_meshes']+=1
+                obj['tt_classic_rigid_joint']=nu.bones[joint]['label'];report['rigid_bound_meshes']+=1
             if uv:
                 layer=mesh.uv_layers.new(name='Native UV')
                 for loop in mesh.loops:
@@ -237,7 +240,7 @@ def inspect_model(context, path, read_dds, apply_normals, profile=None):
             if rig:
                 obj.parent=rig
                 if skin:
-                    groups=[obj.vertex_groups.new(name=b['name']) for b in nu.bones]
+                    groups=[obj.vertex_groups.new(name=b['label']) for b in nu.bones]
                     for vi,row in enumerate(skin):
                         for bi,value in row:groups[bi].add([vi],value,'ADD')
                     mod=obj.modifiers.new('Native skin','ARMATURE');mod.object=rig
