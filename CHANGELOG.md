@@ -24,6 +24,12 @@
   by native layer. LB1 behaviour is unchanged. Distributable ZIPs not rebuilt.
 - Constructed regressions cover the observed layout and malformed tables; see the
   [format notes and evidence](formats/classic-pc/README.md#tcs-character-layer-table).
+## Optional game handedness for character imports — 17 October 2026
+
+- Character import option **Mirror to game handedness** (off by default)
+  mirrors only the imported character object on X, so left and right match the
+  game (issue #1). Native meshes, skeleton, animation and export are unchanged;
+  `check_game_handedness_blender.py` verifies byte-identical export.
 
 ## Attachment dependency integrity — 6 October 2026
 

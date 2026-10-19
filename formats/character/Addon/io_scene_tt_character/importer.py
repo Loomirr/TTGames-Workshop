@@ -95,7 +95,7 @@ def facial_actions(source, actor, child, frames):
         raise
 
 
-def import_character(context, path, assets_root, game, *, definition_path=None, cache=None, attachments=True, assets=None, layer_mode='default', highest_detail=True):
+def import_character(context, path, assets_root, game, *, definition_path=None, cache=None, attachments=True, assets=None, layer_mode='default', highest_detail=True, game_handedness=False):
     if context.mode != 'OBJECT':
         raise FormatError('Switch to Object Mode before importing')
     if game not in ('LB2', 'LB3', 'LMSH1', 'HOBBIT', 'AVENGERS'):
@@ -191,6 +191,12 @@ def import_character(context, path, assets_root, game, *, definition_path=None, 
             return rig
 
         rig = build(model_path, definition, path.stem)
+        if game_handedness:
+            # Native data keeps the source axes (export depends on it). Their
+            # handedness is mirrored on X relative to the games: a character
+            # facing +Y has its Left* bones at +X. Mirror only this object.
+            rig.scale.x = -rig.scale.x
+            rig['tt_game_handedness'] = True
         rig['tt_character_game'] = game
         rig['tt_character_assets_root'] = str(Path(assets_root).resolve())
         rig['tt_character_cache'] = str(Path(cache).resolve()) if cache else ''

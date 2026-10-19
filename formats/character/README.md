@@ -146,6 +146,15 @@ For an already extracted file:
 3. Import. Select the character and press NumPad `.` to frame it. Use Material
    Preview to see textures; the report in Blender's Text Editor lists omissions.
 
+**Mirror to game handedness** (import options and the sidebar's next-import box,
+off by default): native data keeps the source axes, which are mirrored on X
+relative to the games. A character facing +Y has its `Left*` bones at +X, and
+printed text reads backwards (LB3 1966 Robin's chest "R"). The option mirrors
+only the imported character object (`scale.x = -1`, `tt_game_handedness`), so
+left and right match the game while meshes, skeleton, clips and export stay
+native. `check_game_handedness_blender.py` checks the bone sides and that both
+imports export byte-identical files.
+
 A raw **GHG** imports a skeletal model. Supply **Optional matching CD** for its
 costume and native layer choices. Without a CD, all display variants are shown
 for inspection and may overlap. A supported model **GSC** imports static

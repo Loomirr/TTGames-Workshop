@@ -24,6 +24,9 @@ _DEFINITIONS = (
         ('cutscene', 'Cutscene', 'Native cutscene layers'),
         ('authored', 'Authored flags', 'Original definition selection flags')], default='default')),
     ('tt_import_attachments', BoolProperty, dict(name='Import attachments', default=True)),
+    ('tt_game_handedness', BoolProperty, dict(name='Mirror to game handedness', default=False,
+        description='Mirror the imported character object on X so left and right match the game. '
+                    'Native meshes, skeleton, animation and export data are unchanged')),
     ('tt_face_detail', IntProperty, dict(name='Face clipping quality', default=4, min=0, max=4,
         description='Higher values reduce clipping steps but cost more during playback; affects viewing copy only')),
     ('tt_preview_normals', BoolProperty, dict(name='Use normal maps', default=True)),
