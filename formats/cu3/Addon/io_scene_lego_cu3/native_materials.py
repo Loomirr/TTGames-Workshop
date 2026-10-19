@@ -88,8 +88,8 @@ def surface_normal_binding(entry, mesh_version):
     return dict(texture=texture, uv=uv, packed_x_alpha=packed)
 
 
-# LEGO Batman 2: where the texture IDs start (16 slots in 125/126, 18 later).
-LB2_TEXTURES = {125: 346, 126: 346, 127: 390, 128: 389, 129: 389, 130: 389, 132: 389}
+# LEGO Batman 2: where the texture IDs start (16 slots up to 126, 18 later).
+LB2_TEXTURES = {106: 341, 108: 341, 111: 342, 120: 342, 121: 342, 122: 342, 123: 345, 125: 346, 126: 346, 127: 390, 128: 389, 129: 389, 130: 389, 132: 389}
 
 
 def shader_prefix(data, start, version, *, limit=None):
@@ -367,7 +367,7 @@ def read_materials_bytes(data):
                 continue
             fields, texture_at = shader_prefix(data, candidate, version, limit=candidate+name_offset)
             modern = version in (228, 229, 232, 234, 235)
-            slots = 17 if version == 229 else 16 if version in (125, 126) else 18
+            slots = 17 if version == 229 else 16 if version in (106, 108, 111, 120, 121, 122, 123, 125, 126) else 18
             ids = list(r.get(f'{slots}i', texture_at))
             if any(i < -1 or i > 65536 for i in ids):
                 continue

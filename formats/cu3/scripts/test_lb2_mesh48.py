@@ -51,7 +51,7 @@ class LB2Mesh48(unittest.TestCase):
         with self.assertRaises(FormatError):read_mesh_bytes(fixture(169,tagged=False))
 
     def test_other_lb2_versions_stay_unsupported(self):
-        for version in (46,47):
+        for version in (46,):          # MESH 47: test_lb2_mesh47.py
             raw=bytearray(fixture(48,tagged=False));struct.pack_into('>I',raw,4,version)
             with self.assertRaisesRegex(FormatError,'supported native MESH'):read_mesh_bytes(bytes(raw))
 

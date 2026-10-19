@@ -111,12 +111,14 @@ the next record:
 All 15,008 records with a following record fit this layout, under the reader's
 existing checks plus the 0/1 tail. The table has no `ROTV`/`TDML` tail: the last
 footer ends one byte (always 1) before the following `HSCB` section, which holds
-in all 943 files. 120-123 have a shorter footer and stay unsupported.
+in all 943 files. 120-123 have a shorter footer (later added: see
+[LB2_OLDER_VERSIONS.md](LB2_OLDER_VERSIONS.md)).
 
 Lead for the older tables: with the same field order, the trailing flag block is 8 bytes in UMTL 106, 10 in
 108-121, 11 in 122-123 and 12 in 125-132 (each fits every record pair of every file). The length of the
 leading flag block is not determined for 106-123: `colourWriteMask` sits at a fixed distance from the end
-whatever that length is, and those files contain no occluder materials to anchor it. So they stay refused.
+whatever that length is, and those files contain no occluder materials to anchor it. (Same-named materials
+in older and newer tables later settled it: [LB2_OLDER_VERSIONS.md](LB2_OLDER_VERSIONS.md).)
 
 ## Full loads and a Blender check
 
@@ -142,6 +144,9 @@ and after these changes (174 load; the one changed result is an error message
 naming HGOL 9).
 
 ## Still unsupported
+
+MESH 47, DISP 7-10, UMTL 106-123 and the older definition streams were added
+later: see [LB2_OLDER_VERSIONS.md](LB2_OLDER_VERSIONS.md). As first written:
 
 - **MESH 47 (190 files) and MESH 46 (5 editor files).** MESH 47 stores the part
   count without `ROTV` and has a 40-byte part tail (a u32, then nine floats). It

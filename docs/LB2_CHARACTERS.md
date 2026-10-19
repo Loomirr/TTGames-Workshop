@@ -61,6 +61,6 @@ costume path: body front and back, arms, hands, hips, legs and head prints.
 
 - **Capes** lie flat behind the figure: that is their bind pose, which LB2's idle animation would correct.
 - **Faces** show all expression layers, as a plain LMSH1 import does; the existing face previews apply.
-- **Definitions** in stream versions 18-24 (70 of 444 `.cd`) are refused by the existing definition reader.
-- **Older models:** MESH 47 and material tables older than 125 are refused (LB2_GEOMETRY.md).
+- **Definitions** in stream versions 18-24 and **older models** (MESH 47, material tables 106-123) were
+  added later: [LB2_OLDER_VERSIONS.md](LB2_OLDER_VERSIONS.md). Material tables 52-58 stay refused.
 - **Not attempted:** animations, cutscenes, native shading, export back into LB2.
