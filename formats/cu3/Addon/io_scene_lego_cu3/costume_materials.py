@@ -5,10 +5,10 @@ import math
 from pathlib import Path
 import bpy
 from .cu3 import FormatError
-from .material_preview import attach_vertex_albedo, attach_vertex_opacity, attach_normal_map, attach_albedo_glow
+from .material_preview import attach_vertex_albedo, attach_vertex_opacity, attach_normal_map, attach_albedo_glow, cubemap_to_equirect, attach_reflection_cubemap
 from .texture_store import read_texture_store
 from .dds import read_embedded_dds
-from .native_materials import costume_slot, costume_uv_index, surface_normal_binding, read_materials_bytes
+from .native_materials import costume_slot, costume_uv_index, surface_normal_binding, reflection_cubemap_binding, read_materials_bytes
 from .profiles import active_renderer_reference
 from .material_capabilities import material_capability_report
 from .dependencies import find_character_asset
@@ -61,6 +61,45 @@ class CostumeMaterials:
             image.name = label
             self.images[key] = image
         return self.images[key]
+
+    def reflection_image(self, model, index, label):
+        """Resample a native cubemap into one equirectangular image (cached)."""
+        import numpy as np
+        path, texture, data = self.model_texture(model, index)
+        key = (path, index, 'reflection')
+        if key in self.images:
+            return self.images[key]
+        span = read_embedded_dds(data)
+        if span['face_count'] != 6 or span['header_bytes'] != 128 or span['array_size'] != 1:
+            raise FormatError('Reflection binding needs a six-face legacy DDS cubemap')
+        header = bytearray(data[span['offset']:span['offset']+128])
+        header[28:32] = (1).to_bytes(4, 'little')            # one mip
+        header[108:112] = (0x1000).to_bytes(4, 'little')     # plain texture
+        header[112:116] = bytes(4)                           # not a cubemap
+        flags = int.from_bytes(header[8:12], 'little') & ~0x20000
+        header[8:12] = flags.to_bytes(4, 'little')
+        chain = sum(level['bytes'] for level in span['levels'])
+        faces = []
+        for face in range(6):
+            start = span['payload_offset'] + face*chain
+            payload = Path(tempfile.gettempdir())/('tt-face-'+uuid.uuid4().hex+'.dds')
+            try:
+                with payload.open('xb') as stream:
+                    stream.write(bytes(header) + data[start:start+span['levels'][0]['bytes']])
+                face_image = bpy.data.images.load(str(payload), check_existing=False)
+                width, height = face_image.size
+                pixels = np.empty(width*height*4, dtype=np.float32)
+                face_image.pixels.foreach_get(pixels)
+                bpy.data.images.remove(face_image)
+            finally:
+                payload.unlink(missing_ok=True)
+            faces.append(pixels.reshape(height, width, 4)[::-1])
+        equirect = cubemap_to_equirect(faces)
+        image = bpy.data.images.new(label, equirect.shape[1], equirect.shape[0], alpha=False)
+        image.pixels.foreach_set(equirect.ravel())
+        image.pack()
+        self.images[key] = image
+        return image
 
     def model_texture(self, model, index):
         source = Path(model['source'])
@@ -196,6 +235,15 @@ class CostumeMaterials:
                 assigned = textured = True
             except (ValueError, RuntimeError, OSError) as error:
                 self.report.append({'material':entry['name'], 'issue':str(error)})
+        if not assigned:
+            reflection = reflection_cubemap_binding(entry, model['mesh_version'])
+            if reflection:
+                try:
+                    image = self.reflection_image(model, reflection['texture'],
+                                                  Path(model['source']).stem+f' / reflection {reflection["texture"]}')
+                    assigned = attach_reflection_cubemap(material, image)
+                except (ValueError, RuntimeError, OSError) as error:
+                    self.report.append({'material':entry['name'], 'issue':'Reflection cubemap: '+str(error)})
         if not assigned:
             # Earlier attachment shaders expose authored vertex colors but
             # their albedo flags are not decoded. For the observed untextured

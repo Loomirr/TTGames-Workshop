@@ -387,3 +387,20 @@ def read_materials_bytes(data):
     return {'version':version, 'materials':entries,
             'table_offset':marker, 'table_end':limit+4,
             'layout_validation':'Bounded prefix/name/texture/footer spans; name placement remains inferred from the table'}
+
+
+def reflection_cubemap_binding(entry, mesh_version):
+    """LMSH1 materials whose only texture is a slot-8 cubemap, with reflection 1.
+
+    No UV pair can address such a texture, so its colour can only come from a
+    direction lookup. Materials that also declare other textures are not bound:
+    how the game combines them is not established. See docs/REFLECTION_CUBEMAP.md.
+    """
+    if (mesh_version, entry.get('table_version')) not in {(169, 172), (169, 174), (169, 176), (169, 177)}:
+        return None
+    if entry['fields'].get('reflection') != 1:
+        return None
+    ids = entry['texture_ids']
+    if len(ids) <= 8 or ids[8] < 0 or any(t >= 0 for i, t in enumerate(ids) if i != 8):
+        return None
+    return dict(texture=ids[8])

@@ -138,6 +138,15 @@ normal strength, weld vertices or change preview depth bias. Use the
 [read-only material inspector](DIAGNOSTIC_TOOLS.md) to inspect matching model/CD
 declarations without importing a skeleton.
 
+## Follow-up: Hulkbuster's gold hatch
+
+The white back hatch is `LEGO_GoldBlowup:GoldShiny_Shader`, whose only texture
+is the slot-8 cubemap `mordorgold_cubemap` (no UV pair enabled, `reflection` 1).
+Such reflection-only materials now sample their cubemap by reflection direction
+as a labelled preview approximation, and the hatch renders gold. See
+[the evidence and limits](REFLECTION_CUBEMAP.md). The shoulder spot was not
+reproduced in plain front/back/side renders and remains open.
+
 ## Historical LOD and arm-print correction
 
 Character **0.4.3** and CU3 **0.1.10** addressed the reproduced LOD selection and

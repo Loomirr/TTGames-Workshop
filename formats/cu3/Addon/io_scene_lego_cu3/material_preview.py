@@ -82,3 +82,50 @@ def attach_normal_map(material, image, packed_x_alpha=False, flip_green=True, uv
     material['tt_normal_encoding']='X=alpha, Y=green, Z=blue' if packed_x_alpha else 'RGB normal'
     material['tt_normal_green_flipped']=flip_green
     return True
+
+
+def cubemap_to_equirect(faces, width=256):
+    """Resample six D3D-order faces (+X,-X,+Y,-Y,+Z,-Z; top-down RGBA rows) into
+    Blender's equirectangular layout (bottom-up rows). Blender directions are
+    turned into game directions with the importer's +90 degree X rotation."""
+    import numpy as np
+    height = width // 2
+    u = (np.arange(width) + 0.5) / width
+    v = (np.arange(height) + 0.5) / height
+    U, V = np.meshgrid(u, v)
+    phi, theta = (U - 0.5) * 2 * np.pi, (V - 0.5) * np.pi
+    bx, by, bz = -np.cos(theta) * np.cos(phi), np.cos(theta) * np.sin(phi), np.sin(theta)
+    gx, gy, gz = bx, bz, -by
+    ax, ay, az = np.abs(gx), np.abs(gy), np.abs(gz)
+    face = np.where((ax >= ay) & (ax >= az), np.where(gx > 0, 0, 1),
+                    np.where(ay >= az, np.where(gy > 0, 2, 3), np.where(gz > 0, 4, 5)))
+    ma = np.choose(face, [ax, ax, ay, ay, az, az])
+    sc = np.choose(face, [-gz, gz, gx, gx, gx, -gx])
+    tc = np.choose(face, [-gy, -gy, gz, -gz, -gy, -gy])
+    out = np.zeros((height, width, 4), dtype=np.float32)
+    for index, pixels in enumerate(faces):
+        mask = face == index
+        if not mask.any():
+            continue
+        size_y, size_x = pixels.shape[:2]
+        s_ = np.clip(((sc[mask] / ma[mask] + 1) / 2 * size_x).astype(int), 0, size_x - 1)
+        t_ = np.clip(((tc[mask] / ma[mask] + 1) / 2 * size_y).astype(int), 0, size_y - 1)
+        out[mask] = pixels[t_, s_]
+    out[..., 3] = 1
+    return out
+
+
+def attach_reflection_cubemap(material, image):
+    """Base colour from a reflection-direction lookup; native blend and intensity unverified."""
+    tree = material.node_tree; nodes = tree.nodes; links = tree.links
+    principled = next((n for n in nodes if n.type == 'BSDF_PRINCIPLED'), None)
+    if not principled or principled.inputs['Base Color'].is_linked:
+        return False
+    coords = nodes.new('ShaderNodeTexCoord')
+    environment = nodes.new('ShaderNodeTexEnvironment'); environment.image = image
+    environment.label = 'Native reflection cubemap (resampled)'
+    links.new(coords.outputs['Reflection'], environment.inputs['Vector'])
+    links.new(environment.outputs['Color'], principled.inputs['Base Color'])
+    material['tt_reflection_cubemap'] = ('Slot-8 cubemap sampled by reflection direction; '
+                                         'native blend, intensity and face orientation unverified')
+    return True
