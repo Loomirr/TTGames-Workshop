@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 5, 21), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 5, 23), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -16,6 +16,7 @@ from ._core.asset_index import open_assets
 from ._core.geometry_normals import normal_preservation_status
 from .scene_settings import ensure_scene_settings, missing_scene_settings, unregister_scene_settings
 from .preview_identity import linked_child
+from .batch import TTCHAR_OT_batch_import
 
 GAMES = [('LB2', 'LEGO Batman 2', 'Observed PC NXG models (experimental)'), ('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
          ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models'),
@@ -541,6 +542,8 @@ class TTCHAR_PT_tools(bpy.types.Panel):
         if prefs:
             layout.prop(prefs, context.scene.tt_character_game.lower(), text='Game folder')
         layout.operator('import_scene.tt_game_character', text='Browse game characters', icon='VIEWZOOM')
+        if context.scene.tt_character_game != 'FORTNITE':
+            layout.operator('tt_character.batch_import', icon='OUTLINER_COLLECTION')
         if context.scene.tt_character_game in ('LB1','TCS'):
             layout.operator('import_scene.tt_character',text='Inspect classic GHG / GSC')
             layout.label(text='Raw geometry and native rig inspection.')
@@ -687,7 +690,7 @@ class TTCHAR_FH_an4(bpy.types.FileHandler):
                 and IMPORT_ANIM_OT_tt_an4.poll(context))
 
 
-CLASSES = (TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools, TTCHAR_PT_settings, TTCHAR_OT_apply_preview, TTCHAR_OT_restore_settings, TTCHAR_OT_fortnite_extract, TTCHAR_FH_model, TTCHAR_FH_an4)
+CLASSES = (TTCHAR_OT_batch_import, TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools, TTCHAR_PT_settings, TTCHAR_OT_apply_preview, TTCHAR_OT_restore_settings, TTCHAR_OT_fortnite_extract, TTCHAR_FH_model, TTCHAR_FH_an4)
 
 
 def register():

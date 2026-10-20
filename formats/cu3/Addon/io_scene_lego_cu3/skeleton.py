@@ -208,6 +208,21 @@ def scan_skeleton_candidates(path):
     """
     path = Path(path)
     data = path.read_bytes()
+    return scan_skeleton_bytes(data, source=path)
+
+
+def scan_skeleton_bytes(data, *, source=None, compact17=False):
+    """Scan an immutable snapshot; compact HGOL 17 is explicit inspection only.
+
+    File-based importers retain their established layout gates. Standalone
+    inspection can request the observed zero-marker profile paired with
+    modern DX11 MESH and DISP sections; counted ownership is still required.
+    """
+    if not isinstance(data,bytes):
+        raise FormatError('Expected an immutable HGOL source snapshot')
+    path = Path(source) if source is not None else None
+    modern = (compact17 and any(b'HSEM'+v.to_bytes(4,'big') in data for v in (175,200))
+              and any(b'PSID'+v.to_bytes(4,'big') in data for v in (33,34,35)))
     reader = Reader(data)
     source_sha256 = hashlib.sha256(data).hexdigest()
     candidates, errors, name_tables = [], [], []
@@ -234,6 +249,7 @@ def scan_skeleton_candidates(path):
     def parse(at, version, name_table):
         pos, joints, spans = at + 8, [], []
         typed = version in (12, 15, 16, 17)
+        compact = modern and version==17 and data[pos:pos+4]==bytes(4)
         table_offset, names, names_size = name_table if name_table is not None else (None, None, None)
 
         def take(size):
@@ -250,7 +266,7 @@ def scan_skeleton_candidates(path):
 
         def array_count(maximum=65536):
             nonlocal pos
-            if typed and take(4) != b'ROTV':
+            if typed and take(4) != (bytes(4) if compact else b'ROTV'):
                 raise FormatError('Missing HGOL array marker')
             count = reader.get('I', pos)
             pos += 4
@@ -333,12 +349,14 @@ def scan_skeleton_candidates(path):
             take(6)
             layers.append(dict(name=name, metadata_index=mi, rigids=rigids, skins=skins))
         span('layers', start)
-        return dict(source=str(path.resolve()), source_sha256=source_sha256,
+        result = dict(source=str(path.resolve()) if path is not None else None, source_sha256=source_sha256,
                     hgol_offset=at, version=version, byte_order='big', joints=joints,
                     name_table_offset=table_offset, bind_end_offset=bind_end, end_offset=pos,
                     decoded_section_spans=spans,
                     points_of_interest=pois, pre_poi_bytes=pre_poi_bytes, post_poi_bytes=post_poi_bytes,
                     opaque_tail_hex=opaque_tail.hex(), layer_metadata=metadata, layers=layers)
+        if compact:result['array_marker_profile']='compact17'
+        return result
 
     attempts = 0
     for marker_index,at in enumerate(markers(b'LOGH')):
@@ -369,5 +387,5 @@ def scan_skeleton_candidates(path):
                    header_value=reader.get('I', at+4),
                    sha256=hashlib.sha256(data[start:start+size]).hexdigest())
               for at, start, size in name_tables]
-    return dict(source=str(path.resolve()), source_sha256=source_sha256, source_bytes=len(data),
+    return dict(source=str(path.resolve()) if path is not None else None, source_sha256=source_sha256, source_bytes=len(data),
                 attempts=attempts, candidates=candidates, errors=errors, name_tables=tables)

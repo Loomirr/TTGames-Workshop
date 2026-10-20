@@ -50,13 +50,25 @@ Set the installed or extracted root containing `CHARS`, then use **Browse game
 characters**. You can also choose **File > Import > LEGO Character / Model**
 and select a classic PC GHG/GSC with the matching game profile.
 
-This displays raw draws, not a configured character. With the **TCS** profile,
+This displays raw draws with limited definition-based visibility. With the **TCS** profile,
 rigid pieces named in the GHG's native character layer table (heads, hips,
 helmets, hair and droid parts) are placed at their joint and weighted fully to it,
-and each native layer gets its own collection. All layers stay visible, so LOD and
-costume alternatives (for example hair and helmet) still overlap; hide layer
-collections to compare them. The game chooses layers from the character's `.txt`
-`layers_*` lists, which this importer does not read yet. With the LB1 profile, or
+and each native layer gets its own collection. A matching sibling character
+`.txt` now selects initial visibility using its explicit `layers_high` indices.
+For `NAME_PC.GHG`, the match is `NAME.TXT` (case-insensitive). Every native layer,
+mesh and rig is still imported; unselected layer collections are hidden in the
+viewport and render, and can be enabled in the Outliner for inspection. The
+Classic model report records the definition, selected indices and fallback reason.
+No high-detail guess is made from triangle counts or native layer names.
+
+Missing, duplicate, malformed or out-of-range lists leave **all** layers visible
+with an explanation. `txt_file` inheritance, runtime costume switches, alternate
+states, character scale and animation are not assembled. A low-resolution
+`NAME_LR_PC.GHG` needs its own `NAME_LR.TXT`; the base model's indices are not
+applied to a different layer table. Keep the definition beside the loose GHG;
+archive extraction that only supplies a model falls back to raw visibility.
+This source change needs updated addon packages before it is available in a
+previously installed ZIP. With the LB1 profile, or
 when a TCS layer table does not resolve exactly, unresolved rigid pieces are kept
 in the hidden **Unbound rigid pieces / inspect separately** collection and the
 report says why.
@@ -126,6 +138,7 @@ existing bounded implementation. No BactaTank implementation was copied or trans
 ```text
 python formats/classic-pc/tests/test_readers.py
 python formats/classic-pc/tests/test_models.py
+python formats/classic-pc/tests/test_layer_selection.py
 ```
 
 With Blender and your own TCS character GHG, the rigid-piece binding can be
@@ -136,6 +149,21 @@ blender -b --factory-startup --python-exit-code 1 --python formats/classic-pc/te
 ```
 
 See [the review and outstanding work](../../docs/GITHUB_REVIEW_2026-10-09.md).
+
+The 20 October 2026 layer-selection pass checked 782 rigged GHG layer tables in
+the locally modified TCS installation. Of these, 204 had a matching definition
+with a valid explicit `layers_high` list. The remaining 578 kept all layers:
+395 lacked a matching definition, 173 lacked the explicit directive, nine had
+indices/counts outside the native table and one had duplicate directives.
+These are definition/table checks, not complete visual or retail-game coverage.
+Blender 5.2.2 checks on Obi-Wan, Clone Torrent Company, 4-LOM and Yoda Ghost
+preserve every layer and verify visibility and rigid binding on two posed
+frames (maximum evaluated rigid-vertex error below `4.8e-8`). Eight Workbench
+renders were inspected for assembly only; native shader and in-game fidelity
+were not tested. Yoda Ghost exercised an out-of-range definition fallback.
+The parser is independently implemented; the sibling TXT
+workflow was informed by the authorized MIT-licensed
+[Figure Forge review](../../docs/FIGURE_FORGE_REVIEW_2026-10-20.md).
 
 PR [#7](https://github.com/Loomirr/TTGames-Workshop/pull/7) from
 **Gibby / stryderjoe**, reviewed at

@@ -13,10 +13,12 @@ game does not mean support for every TT game that uses the same extension.
 
 ## Start here
 
-**Current candidates:** Character **0.5.21**, CU3 **0.1.29**, LSW1 HGP **0.1.5**.
+**Current candidates:** Character **0.5.23**, CU3 **0.1.30**, LSW1 HGP **0.1.6**, experimental LSW2 HGP **0.2.1**.
 This pass integrates experimental LB2 characters and animation, additional
 LMSH1/LB3 model layouts, classic attachments and material preview fixes.
 See [validation and remaining gaps](docs/PR_REVIEW_2026-10-19.md).
+The [LSW1 feedback pass](docs/LSW1_FEEDBACK_2026-10-20.md) covers complementary
+layers, authored vehicle opacity and the confirmed custom-normal fan defect.
 
 Want to help, including with an AI coding session? Start with
 [contribution instructions](CONTRIBUTING.md) and the
@@ -33,8 +35,8 @@ building the complete model/scene. No row means every asset in that game is veri
 | Game / platform | File types | Support and how to use it |
 | --- | --- | --- |
 | LEGO Star Wars: The Video Game (2005), PC | HGP | [HGP addon](formats/hgp/lsw1/README.md): models, native rigs and textures; observed original PC layouts, including vehicle HGPs. Does not cover LSW2/TCS. |
-| LEGO Star Wars II: The Original Trilogy, PC | DAT -1; AN3, CU2; HGP | [LSW2 notes](games/lsw2/README.md): stored-only DAT indexing; contributor-tested AN3/CU2 inspection. HGP models remain unsupported; no complete Blender import. |
-| LEGO Star Wars: The Complete Saga, PC | DAT -3; NU20 GHG/GSC; CU2, AN3, GIZ | [Classic inspection](formats/classic-pc/README.md): raw models/rigs/textures in the character addon; CU2 static references in the cutscene addon; AN3/GIZ CLI inspection. Rigid pieces in the native layer table are bound to their joints (source change; ZIP not yet rebuilt). Costume/LOD selection, native shaders and animation playback remain incomplete. Installed tree has local mods. |
+| LEGO Star Wars II: The Original Trilogy, PC | DAT -1; AN3, CU2; HGP | Separate experimental [LSW2 HGP addon](formats/hgp/lsw2/README.md): models, rigs, textures, morphs and AN3 import; separate-file HGP export including new bones/parts. Synthetic/Blender integration checks only; original-file retesting and in-game export pending. [Archive/inspection notes](games/lsw2/README.md). |
+| LEGO Star Wars: The Complete Saga, PC | DAT -3; NU20 GHG/GSC; CU2, AN3, GIZ | [Classic inspection](formats/classic-pc/README.md): raw models/rigs/textures; native rigid binding and explicit sibling TXT `layers_high` visibility, retaining every layer. CU2 static references; AN3/GIZ CLI inspection. Costume switches, native shaders, animation playback and native export remain incomplete. Installed test tree has local mods. |
 | LEGO Batman (2008), PC | DAT -2; NU20 GHG/GSC; CU2, AN3, GIZ | Same [classic inspection](formats/classic-pc/README.md), with installed-DAT or extracted character browsing. Raw Blender models and CU2 reference scenes have explicit omissions; no complete character/cutscene or AN3 playback claim. |
 | LEGO Indiana Jones 1, PC | CU2, AN3, GIZ; NU20 GHG/GSC | Same [classic inspection tools](formats/classic-pc/README.md) for reported matching layouts. **No local game validation yet.** Separate from the Xbox prototype. |
 | LEGO Indiana Jones 1, Xbox 360 prototype | GHG, GSC, TEX, FNT, DDS | [DDS extractor](formats/nu20/lij1-xbox360/README.md): supported tiled texture allocations, mips and cubemaps. Does not import character meshes. |
@@ -62,6 +64,8 @@ because their files share these extensions. Unlisted layouts remain unverified.
 back to matching loose source files. General topology, material, skeleton and
 cross-game animation export is not complete. CU3 name editing and face-target
 writing have separate hash/layout guards; see [support notes](docs/SUPPORT.md).
+See [character editing and native export](docs/CHARACTER_EDITING.md) for the
+current limits on adding bones, swapping hair and rebuilding native models.
 
 See the [game index](games/README.md), [format index](formats/README.md),
 [support notes](docs/SUPPORT.md), [project layout](docs/LAYOUT.md) and
@@ -80,6 +84,9 @@ The [community reference review](docs/RESEARCH_REFERENCES_2026-10-07.md) records
 independent material/face/archive checks and separates external project claims
 from our validated coverage. That research review copied no external implementation.
 The separate [classic PC contribution](formats/classic-pc/README.md) retains its MIT attribution.
+The [Figure Forge and fork review](docs/FIGURE_FORGE_REVIEW_2026-10-20.md)
+compares reusable native writers, unmerged LSW2 work and our skeleton-transfer
+tools, with local round-trip results and explicit integration limits.
 The [minifigure issue patch notes](docs/ISSUE_1_MINIFIGS.md) cover the newer
 accessory LOD and LMSH1 arm UV fixes, plus the remaining reported problems.
 

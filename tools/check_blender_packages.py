@@ -22,6 +22,7 @@ PACKAGES = (
     ('TT_Cutscene_Importer_', 'io_scene_lego_cu3', 'formats/cu3/Addon/io_scene_lego_cu3/__init__.py'),
     ('TT_Character_Importer_', 'io_scene_tt_character', 'formats/character/Addon/io_scene_tt_character/__init__.py'),
     ('lsw1_hgp_importer-', 'lsw1_hgp_importer', 'formats/hgp/lsw1/__init__.py'),
+    ('io_lsw2_hgp-', 'io_lsw2_hgp', 'formats/hgp/lsw2/__init__.py'),
 )
 
 
@@ -38,7 +39,7 @@ def main():
                 if len(packages) != 1:
                     raise AssertionError('Build exactly one current package: ' + prefix)
                 with ZipFile(packages[0]) as archive:
-                    destination = extracted / name if name == 'lsw1_hgp_importer' else extracted
+                    destination = extracted / name if name in {'lsw1_hgp_importer','io_lsw2_hgp'} else extracted
                     for member in archive.namelist():
                         target = (destination / member).resolve()
                         if not target.is_relative_to(extracted / name):
@@ -72,7 +73,7 @@ def main():
                     try:addon.assembly_profile(SimpleNamespace(version=30),'AUTO')
                     except ValueError:pass
                     else:raise AssertionError('Unverified assembly version accepted')
-                if name == 'lsw1_hgp_importer':
+                if name in {'lsw1_hgp_importer','io_lsw2_hgp'}:
                     status = None
                 else:
                     core = name + '._core' if name == 'io_scene_tt_character' else name
@@ -103,7 +104,7 @@ def check_drop_handlers(addon):
                 and issubclass(v,bpy.types.FileHandler) and v is not bpy.types.FileHandler]
     expected = {'io_scene_lego_cu3':{'.cu3','.cu2'},
                 'io_scene_tt_character':{'.cd','.ghg','.gsc','.an4'},
-                'lsw1_hgp_importer':{'.hgp'}}[addon.__name__]
+                'lsw1_hgp_importer':{'.hgp'}, 'io_lsw2_hgp':{'.hgp'}}[addon.__name__]
     assert {ext for cls in handlers for ext in cls.bl_file_extensions.split(';')} == expected
     viewport = SimpleNamespace(area=SimpleNamespace(type='VIEW_3D'),mode='OBJECT',object=None)
     for cls in handlers:

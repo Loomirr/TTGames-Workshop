@@ -11,8 +11,9 @@ package = types.ModuleType('native_variant_fixture')
 package.__path__ = [str(Path(__file__).resolve().parents[1] / 'Addon/io_scene_lego_cu3')]
 sys.modules[package.__name__] = package
 from native_variant_fixture.cu3 import FormatError
-from native_variant_fixture.skeleton import scan_skeleton_candidates, select_skeleton, skeleton_identity
+from native_variant_fixture.skeleton import scan_skeleton_candidates, scan_skeleton_bytes, select_skeleton, skeleton_identity
 from native_variant_fixture.skeleton_diagnostics import skeleton_candidate_report
+from native_variant_fixture.native_variants import select_variant_base
 
 I4 = (1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.)
 
@@ -63,6 +64,14 @@ def associations():
     return display,mesh
 
 
+def compact_group(count=2):
+    """Constructed modern counted profile; no proprietary bytes."""
+    old = b'5LVI'+struct.pack('>2I',1,0)+b'ROTV'
+    new = b'5LVI'+struct.pack('>I',2)+bytes(12)
+    raw = native_group(17,count=count).replace(old,new).replace(b'ROTV',bytes(4))
+    return b'HSEM'+struct.pack('>I',175)+b'PSID'+struct.pack('>I',34)+raw
+
+
 class VariantTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -85,6 +94,61 @@ class VariantTests(unittest.TestCase):
                 self.assertEqual(selected['selection']['reason'],'verified_native_variant_base')
                 self.assertEqual(selected['hgol_offset'],scan['candidates'][0]['hgol_offset'])
                 self.assertEqual(scan['candidates'][0]['native_variant']['end_offset'],scan['candidates'][1]['hgol_offset'])
+
+    def test_snapshot_matches_file_scan_and_requires_immutable_bytes(self):
+        raw=native_group();file_scan=self.scan(raw)
+        self.assertEqual(file_scan,scan_skeleton_bytes(raw,source=self.path))
+        snapshot=scan_skeleton_bytes(raw)
+        self.assertIsNone(snapshot['source'])
+        self.assertEqual(snapshot['source_sha256'],file_scan['source_sha256'])
+        with self.assertRaisesRegex(FormatError,'immutable'):
+            scan_skeleton_bytes(bytearray(raw))
+
+    def test_compact_profile_is_explicit_and_layout_gated(self):
+        raw=compact_group()
+        self.assertFalse(self.scan(raw)['candidates'])
+        for changed in (raw.replace(b'HSEM',b'NOPE'),raw.replace(b'PSID',b'NOPE')):
+            self.assertFalse(scan_skeleton_bytes(changed,compact17=True)['candidates'])
+        scan=scan_skeleton_bytes(raw,compact17=True)
+        self.assertFalse(scan['errors'])
+        self.assertEqual([c['native_variant_index'] for c in scan['candidates']],[0,1])
+        self.assertTrue(all(c['array_marker_profile']=='compact17' for c in scan['candidates']))
+        self.assertEqual(self.select(scan)['selection']['reason'],'verified_native_variant_base')
+        single=scan_skeleton_bytes(compact_group(count=1),compact17=True)
+        self.assertEqual(single['candidates'][0]['native_variant_group']['count'],1)
+
+    def test_compact_count_marker_extension_and_fence_guards(self):
+        raw=compact_group();scan=scan_skeleton_bytes(raw,compact17=True)
+        first=scan['candidates'][0];start=first['hgol_offset'];end=first['native_variant']['end_offset']
+        bad_count=bytearray(raw);struct.pack_into('>I',bad_count,start-4,3)
+        bad_marker=bytearray(raw);bad_marker[start+8:start+12]=b'NOPE'
+        cases=(bytes(bad_count),bytes(bad_marker),raw[:end-1]+b'\1'+raw[end:],raw[:-4]+b'NOPE',raw[:-1])
+        for changed in cases:
+            result=scan_skeleton_bytes(changed,compact17=True)
+            with self.subTest(length=len(changed)):
+                self.assertTrue(result['errors'] or any(not c.get('native_variant_group') for c in result['candidates']))
+                with self.assertRaises(FormatError):
+                    select_variant_base(result['candidates'],display=self.display,mesh=self.mesh)
+
+    def test_display_only_scope_does_not_relax_importer_skin_validation(self):
+        scan=scan_skeleton_bytes(compact_group(),compact17=True)
+        self.display['version']=34;self.mesh['mesh_version']=175
+        for candidate,part in zip(scan['candidates'],self.mesh['parts']):
+            candidate['layer_metadata'][0].update(kind=1,joint=255)
+            candidate['layers'][0].update(rigids=0,skins=1)
+            part['vertices']=[dict(weights=[])]
+        with self.assertRaisesRegex(FormatError,'skin palette'):
+            select_variant_base(scan['candidates'],display=self.display,mesh=self.mesh)
+        _,evidence=select_variant_base(scan['candidates'],display=self.display,mesh=self.mesh,check_skin_weights=False)
+        self.assertEqual(evidence['validation_scope'],'display_resources_only')
+        scan['candidates'][1]['native_variant']['metadata_map']=[99]
+        with self.assertRaisesRegex(FormatError,'outside its table'):
+            select_variant_base(scan['candidates'],display=self.display,mesh=self.mesh,check_skin_weights=False)
+        with self.assertRaisesRegex(FormatError,'observed compact'):
+            select_variant_base(self.scan()['candidates'],display=self.display,mesh=self.mesh,check_skin_weights=False)
+        self.display['version']=32
+        with self.assertRaisesRegex(FormatError,'observed compact'):
+            select_variant_base(scan['candidates'],display=self.display,mesh=self.mesh,check_skin_weights=False)
 
     def test_selection_is_not_first_record_order(self):
         scan=self.scan(native_group(base_index=1))

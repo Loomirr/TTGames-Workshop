@@ -7,7 +7,9 @@ will contain game-derived data, so put it under the ignored local/ folder.
 Checks: rigid pieces named by the layer table are bound (vertex group of their
 joint, weight 1, armature modifier) and sit near that joint; posing the joint on
 two frames moves them exactly with it. --render also writes Workbench images of
-both frames. This is not a check of shaders, costume selection or AN3 playback.
+both frames. Also checks layers_high visibility when a matching sibling TXT
+exists, without deleting the alternative layers. This is not a check of native
+shaders, runtime costume switches or AN3 playback.
 """
 import json
 import math
@@ -34,13 +36,33 @@ def main():
     from io_scene_lego_cu3.dds import read_dds
     from io_scene_lego_cu3.geometry_normals import apply_authored_normals
 
+    # The documented --factory-startup invocation includes a cube and camera.
+    # They would obscure the sample and prevent the fixed test camera being made.
+    for obj in list(bpy.context.scene.objects):
+        bpy.data.objects.remove(obj, do_unlink=True)
     collection, report = inspect_model(bpy.context, source, read_dds, apply_authored_normals, profile='TCS')
+    from tools.nu20 import NU20
+    native_layers = NU20(source).character_layers()['layers']
+    children = [c for c in collection.children if 'tt_native_layer' in c]
+    if sorted(c['tt_native_layer'] for c in children) != list(range(len(native_layers))):
+        raise AssertionError('Native layer collections were dropped or duplicated')
+    selected = report['layer_selection']['selected']
+    initial_hidden = {}
+    for child in children:
+        expected_hidden = selected is not None and child['tt_native_layer'] not in selected
+        if child.hide_viewport != expected_hidden or child.hide_render != expected_hidden:
+            raise AssertionError('Layer visibility disagrees with the reported native selection')
+        initial_hidden[child.name] = expected_hidden
+        # Hidden collections intentionally skip dependency-graph evaluation.
+        # Enable all for the separate deformation check, then restore for renders.
+        child.hide_viewport = False
     rig = next(o for o in collection.all_objects if o.type == 'ARMATURE')
     rigid = [o for o in collection.all_objects if 'tt_classic_rigid_joint' in o]
     if not rigid or report['rigid_bound_meshes'] != len(rigid):
         raise AssertionError(f'Expected bound rigid pieces, report says {report["rigid_bound_meshes"]}')
     result = dict(source=source.name, layers=report.get('character_layers'), rigid=len(rigid),
-                  unbound=report['unbound_rigid_meshes'], issues=report['issues'], pieces=[])
+                  unbound=report['unbound_rigid_meshes'], issues=report['issues'], pieces=[],
+                  layer_selection=report['layer_selection'], initial_hidden=initial_hidden)
     for obj in rigid:
         joint = obj['tt_classic_rigid_joint']
         group = obj.vertex_groups.get(joint)
@@ -82,6 +104,8 @@ def main():
             obj.evaluated_get(depsgraph).to_mesh_clear()
         worst[frame] = error
         if render:
+            for child in children:
+                child.hide_viewport = initial_hidden[child.name]
             scene.render.engine = 'BLENDER_WORKBENCH'
             scene.render.resolution_x, scene.render.resolution_y = 640, 800
             if scene.camera is None:
@@ -94,9 +118,13 @@ def main():
                 scene.camera = camera
             scene.render.filepath = str(output / f'frame_{frame:03d}.png')
             bpy.ops.render.render(write_still=True)
+            for child in children:
+                child.hide_viewport = False
     result['max_pose_error'] = worst
     if max(worst.values()) > 1e-4:
         raise AssertionError(f'Rigid pieces do not follow their joints: {worst}')
+    for child in children:
+        child.hide_viewport = initial_hidden[child.name]
     (output / 'report.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
     print(json.dumps(result, indent=2))
 

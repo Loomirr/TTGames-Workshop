@@ -12,7 +12,7 @@ from .importer import import_character, remove_created_data, snapshot_data
 bl_info = {
     'name': 'LEGO Star Wars 1 Character Importer',
     'author': 'LSW1 Importer Contributors',
-    'version': (0, 1, 5),
+    'version': (0, 1, 6),
     'blender': (4, 2, 0),
     'location': 'File > Import > LEGO Star Wars 1 Character (.hgp)',
     'description': 'Original 2005 LSW1 PC meshes, textures, native skeletons and weights',
@@ -36,12 +36,14 @@ class IMPORT_SCENE_OT_lsw1_hgp(bpy.types.Operator, ImportHelper):
     custom_normals: BoolProperty(name='Original Normals', default=True,
         description='Preserve the source normals for smooth LEGO surfaces')
     detail: EnumProperty(name='Detail Layer', default='AUTO', items=[
-        ('AUTO', 'Maximum Detail (Automatic)', 'Use the most detailed native layer, with shared heads and attachments'),
+        ('AUTO', 'Maximum Detail (Automatic)', 'Choose nonempty body detail and observed complementary head, hair and vehicle layers; gameplay variants remain separate'),
         ('0', 'Shared / Default Layer Only', 'Import the default layer; some characters keep their entire body here'),
         ('1', 'Layer 1', 'Shared layer plus native layer 1'),
         ('2', 'Layer 2', 'Shared layer plus native layer 2'),
         ('3', 'Layer 3', 'Shared layer plus native layer 3'),
-        ('4', 'Layer 4', 'Shared layer plus native layer 4')])
+        ('4', 'Layer 4', 'Shared layer plus native layer 4'),
+        *[(str(i), f'Layer {i}', f'Shared layer plus native layer {i}; consult the imported root layer names')
+          for i in range(5, 32)]])
     scale: FloatProperty(name='Scale', default=1.0, min=0.000001, soft_max=10,
         description='Uniform scale applied to the imported character root')
     placement: EnumProperty(name='Place At', default='CURSOR', items=[

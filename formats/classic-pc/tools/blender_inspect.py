@@ -14,6 +14,7 @@ import bpy
 from mathutils import Matrix, Vector
 from .nu20 import NU20
 from .cu2 import Cutscene
+from .layer_selection import configured_layers
 
 C = Matrix(((1,0,0,0),(0,0,1,0),(0,1,0,0),(0,0,0,1)))
 STORES = ('objects','collections','meshes','armatures','materials','images','texts','cameras','scenes')
@@ -123,17 +124,24 @@ def inspect_model(context, path, read_dds, apply_normals, profile=None):
             layers=nu.character_layers()
         except ValueError as error:
             report['issues'].append('Character layer table not used: '+str(error))
+    selection=configured_layers(path,len(layers['layers'])) if layers else None
     rigid=layers['rigid'] if layers else {}
     owner={}
     for layer in (layers['layers'] if layers else []):
         for so in list(layer['rigid'].values())+[layer['skin'],layer['extra']]:
             if so>=0:owner[so]=layer['index']
     if layers:
+        report['layer_selection']=selection
         report['character_layers']=[l['name'] or f'(unnamed {l["index"]})' for l in layers['layers']]
         report['issues'].extend(layers['notes'])
+        if selection['selected'] is not None:
+            report['limitations'][0]=('Matching sibling TXT layers_high controls initial layer visibility only. '
+                                      'Costume switches, alternate states, includes, scale and animation remain unassembled.')
+        else:
+            report['issues'].append('All native layers remain visible: '+selection['reason'])
         report['limitations'][1]=('Rigid GHG pieces named in the TCS character layer table are bound to their joint; '
-                                  'each native layer has its own collection and all layers are shown, so LOD and costume '
-                                  'alternatives still overlap. Other unbound rigid pieces are hidden separately.')
+                                  'every native layer is retained in a collection. Hidden alternatives can be enabled '
+                                  'for inspection. Other unbound rigid pieces are hidden separately.')
     # Keep each declared model-material pairing; do not borrow another draw's material.
     special_models={s['model'] for s in nu.special_objects if s['model']>=0}
     draws=[]
@@ -179,6 +187,10 @@ def inspect_model(context, path, read_dds, apply_normals, profile=None):
         for layer in (layers['layers'] if layers else []):
             child=bpy.data.collections.new(f'Layer {layer["index"]}: '+(layer['name'] or '(unnamed)'))
             collection.children.link(child);child['tt_native_layer']=layer['index']
+            shown=selection['selected'] is None or layer['index'] in selection['selected']
+            child.hide_render=not shown;child.hide_viewport=not shown
+            child['tt_initial_layer_visible']=shown
+            child['tt_layer_visibility_source']=selection['status']
             layer_collections[layer['index']]=child
         materials={};images={}
         def material(index):

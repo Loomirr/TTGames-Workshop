@@ -115,5 +115,7 @@ and a transfer manifest containing rig identities, bone/part mappings, clip
 bindings, root policy, attachments and a change list. Native export profiles
 need separate schema validation and multi-file original-game samples before
 they become public. Reuse existing gated readers and source-format editing
-checks; do not import external tools or engine code. Export loose original
+checks. The authorized [Figure Forge and fork review](FIGURE_FORGE_REVIEW_2026-10-20.md)
+identifies licensed writer candidates and the validation needed before adopting
+them; no external writer is enabled by that review. Export loose original
 source formats into a new directory, following the extracted-game workflow.

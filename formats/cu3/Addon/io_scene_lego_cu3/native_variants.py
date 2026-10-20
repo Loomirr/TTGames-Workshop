@@ -12,12 +12,14 @@ from .cu3 import Reader, FormatError
 
 def annotate_variant_group(data, candidates, errors):
     """Attach a complete counted group, or retain a refusal for its candidates."""
+    compact = bool(candidates) and all(c.get('array_marker_profile')=='compact17' for c in candidates)
+    prefix = b'5LVI\0\0\0\2'+bytes(12) if compact else b'5LVI\0\0\0\1\0\0\0\0ROTV'
     starts = [c['hgol_offset'] for c in candidates
-              if c['hgol_offset'] >= 20 and
-              data[c['hgol_offset']-20:c['hgol_offset']-4] == b'5LVI\0\0\0\1\0\0\0\0ROTV']
+              if c['hgol_offset'] >= len(prefix)+4 and
+              data[c['hgol_offset']-len(prefix)-4:c['hgol_offset']-4] == prefix]
     if not starts:
         return
-    if (len(starts) == len(candidates) == 1 and
+    if (not compact and len(starts) == len(candidates) == 1 and
             Reader(data).get('I', starts[0]-4) == 1):
         # Already-unique skeletons retain their established version/layout
         # gates. This new decoder resolves counted multi-resource ambiguity.
@@ -51,7 +53,7 @@ def annotate_variant_group(data, candidates, errors):
         group = dict(schema='tt.native-hgol-variants.v1', array_offset=start-8,
                      count=count, version=version, end_offset=end,
                      candidate_offsets=[c['hgol_offset'] for c in ordered],
-                     serialized_sha256=hashlib.sha256(data[start-20:end+len(fence)]).hexdigest())
+                     serialized_sha256=hashlib.sha256(data[start-len(prefix)-4:end+len(fence)]).hexdigest())
         for index, (candidate, tail) in enumerate(zip(ordered, decoded)):
             candidate['native_variant'] = tail
             candidate['native_variant_group'] = group
@@ -65,6 +67,7 @@ def _trailer(data, reader, candidate):
     pos = candidate['end_offset']
     start = pos
     typed = candidate['version'] in (12,15,16,17)
+    compact = candidate.get('array_marker_profile')=='compact17'
     secondary_map = candidate['version'] in (8,9,10,12,15)
     def get(fmt, size):
         nonlocal pos
@@ -74,7 +77,7 @@ def _trailer(data, reader, candidate):
     def array(fmt, width, maximum):
         nonlocal pos
         if typed:
-            if data[pos:pos+4] != b'ROTV':
+            if data[pos:pos+4] != (bytes(4) if compact else b'ROTV'):
                 raise FormatError('Native variant array marker missing')
             pos += 4
         count = get('I', 4)
@@ -182,10 +185,14 @@ def _collision(data, reader, pos, joints):
     return groups, pos
 
 
-def select_variant_base(candidates, *, display, mesh):
+def select_variant_base(candidates, *, display, mesh, check_skin_weights=True):
     """Validate the whole native association before returning its unique base."""
     if display is None or mesh is None:
         raise FormatError('Native multi-rig ownership requires decoded mesh and display associations')
+    if not check_skin_weights and not (candidates and
+            all(c.get('array_marker_profile')=='compact17' for c in candidates) and
+            mesh.get('mesh_version') in (175,200) and display.get('version') in (33,34,35)):
+        raise FormatError('Display-only variant inspection requires the observed compact HGOL 17 profile')
     groups = [c.get('native_variant_group') for c in candidates]
     if not groups or groups[0] is None or any(g != groups[0] for g in groups):
         raise FormatError('HGOL candidates do not belong to one complete native variant group')
@@ -252,7 +259,7 @@ def select_variant_base(candidates, *, display, mesh):
                     if not 0 <= part < len(mesh['parts']):
                         raise FormatError('Native variant draw references an absent mesh part')
                     all_parts.add(part)
-                    if rigid is None:
+                    if rigid is None and check_skin_weights:
                         for vertex in mesh['parts'][part]['vertices']:
                             weights = vertex.get('weights',())
                             if (not weights or not any(weight > 0 for _,weight in weights) or
@@ -307,4 +314,5 @@ def select_variant_base(candidates, *, display, mesh):
                     cross_layer_remaps=cross_layers,remap_omissions=omissions)
     if rigid_remaps:
         evidence['rigid_remap_differences'] = rigid_remaps
+    if not check_skin_weights:evidence['validation_scope']='display_resources_only'
     return base, evidence

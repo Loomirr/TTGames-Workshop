@@ -4,7 +4,9 @@ Version 0.5.21 integrates experimental LB2 characters/animations, additional
 observed LMSH1 model layouts, LB3 HGOL 15 variants, RGB surface normals and
 cubemap preview. [Checks and remaining limits](../../docs/PR_REVIEW_2026-10-19.md).
 
-This update includes reviewed classic NU20 version-3 inspection and LSW2 DAT
+This update adds explicit TCS TXT high-layer visibility and expanded shared
+[CD/AS/CPD definition decoding](../../docs/DEFINITION_COMPATIBILITY_2026-10-20.md).
+It also includes reviewed classic NU20 version-3 inspection and LSW2 DAT
 index support. [Review and validation](../../docs/GITHUB_HGP_REVIEW_2026-10-15.md).
 
 An earlier update fixed LMSH1 Arnim Zola's missing torso attachment. It resolves
@@ -19,7 +21,7 @@ incomplete inspection modes. [Classic checks and gaps](../../docs/COMPATIBILITY_
 The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
 
 A separate, lightweight Blender addon for observed PC **LMSH1 NXG** and
-**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, an experimental **LEGO Batman 2 NXG** profile ([details](../../docs/LB2_CHARACTERS.md); [animation sets](../../docs/LB2_ANIMATION.md)), plus a separate static **LEGO Fortnite** export profile. Version **0.5.21**, experimental.
+**LEGO Batman 3 DX11**, **The Hobbit NXG** and **LEGO Marvel's Avengers DX11** characters, an experimental **LEGO Batman 2 NXG** profile ([details](../../docs/LB2_CHARACTERS.md); [animation sets](../../docs/LB2_ANIMATION.md)), plus a separate static **LEGO Fortnite** export profile. Version **0.5.23**, experimental.
 It installs independently of the cutscene addon and needs no external extractor
 for supported companions inside the installed game's archives.
 
@@ -28,10 +30,12 @@ for supported companions inside the installed game's archives.
 **LB1 and TCS are separate inspection profiles.** They expose raw classic PC
 GHG/GSC draws and native rigs, not fully assembled characters. TCS rigid pieces
 named in the native layer table are bound to their joints; LB1 rigid attachments
-can be hidden as unresolved. Variants can overlap, shaders are approximate and
+can be hidden as unresolved. A matching TCS TXT's explicit `layers_high` selects
+initial visibility while retaining every native layer. Without a valid directive,
+all layers remain visible with a diagnostic. Variants can overlap, shaders are approximate and
 AN3 playback/native export are unavailable. See [classic instructions](../classic-pc/README.md#blender-inspection).
 
-Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.21.zip).
+Download [the addon ZIP](../../builds/blender/TT_Character_Importer_0.5.23.zip).
 In Blender 4.4+ open **Edit > Preferences > Add-ons > Install from Disk**, select
 the ZIP and enable **TT Character and Animation Importer**. Expand its
 preferences and set the matching game folder (or extracted asset folder).
@@ -89,6 +93,45 @@ facial preview pass separation. Verified packed normal maps now also work on
 selected Hobbit and LB3 layouts, including their packed UV channels. Reimport
 to apply the changes and create a fresh preview scene. See the
 [face accuracy checks and remaining limits](../../docs/FACE_ACCURACY_0.5.3.md).
+
+For guarded loose definition string edits used when preparing private clones, see
+[the definition patch helper](../../tools/character_clone/README.md). New character
+registration still needs game-specific roster, unlock and localization records;
+this helper is not a complete new-slot creator.
+
+## Batch review galleries
+
+Version **0.5.20** adds **3D View > N sidebar > TT Character > Batch import for
+review**. Set the game and installed/extracted folder first. Choose Characters,
+Vehicle models, All character definitions, All raw models / props, or All
+definitions and models. Filter by a case-insensitive path substring if needed.
+The default imports 20 files; set **Maximum imports to 0** to attempt all matches.
+**Start index** is a zero-based offset into the sorted filtered list, useful for
+reviewing a roster in chunks. Large rosters consume significant memory.
+
+Imports use the current attachment, costume and mesh-detail settings and are
+arranged in a grid from the 3D cursor, with a gap measured between their actual
+bounds. Each batch has its own collection. Escape stops after the current asset;
+completed imports stay in the scene. Failures are rolled back individually and
+recorded in **TT Batch report.json** in Blender's Text Editor. Save that text with
+Blender's Text > Save As to share the logical filenames, failures and material /
+attachment notices. The report also includes the local source folder and detailed
+import reports; review local paths before sharing. No game files are uploaded.
+
+Vehicle mode discovers GHG/GSC files in vehicle/car/boat/plane folders. These are
+**raw model inspections**, not complete vehicle-definition assembly: some wheels,
+attachments, selected variants and native shaders may be missing. Use All raw
+models with a path filter for other locations. All definitions/models deliberately
+includes shared models and duplicate variants; unsupported layouts remain errors
+in the report. Classic LB1/TCS retain their existing inspection limits. Fortnite
+is excluded. This is a way to attempt an entire roster, not a claim that every
+asset already imports correctly. No animations are automatically loaded.
+
+Inspect individual characters using the existing preview buttons for face
+accuracy: the batch grid itself does not install native depth-mask face helpers.
+The first original-file batch check imported LMSH1 Tony Stark, Vulture and the
+ambulance model. Synthetic Blender checks cover layout, failed-import cleanup,
+existing-object preservation and partial cancellation.
 
 ## Import a character
 

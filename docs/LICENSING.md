@@ -3,6 +3,8 @@
 This is a collection of components, not a new license applied to all files.
 
 - The LSW1 importer retains GPL-3.0-or-later and its LICENSE file.
+- The LSW2 HGP contribution by Gibby / stryderjoe retains its
+  [MIT license](../formats/hgp/lsw2/LICENSE) and readable source.
 - The LIJ1 prototype extractor retains its MIT license and third-party notices.
 - The classic PC NU20/CU2/GIZ contribution by Gibby / stryderjoe retains its
   [MIT license](../formats/classic-pc/LICENSE); see its

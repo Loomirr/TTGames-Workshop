@@ -13,6 +13,8 @@ from .colour import diffuse_to_linear
 
 C=Matrix(((1,0,0,0),(0,0,1,0),(0,1,0,0),(0,0,0,1)))
 DATA_TYPES=('objects','meshes','armatures','materials','images','collections')
+OPACITY_ATTRIBUTE='LSW1 vertex opacity'
+PACKED_COLOR_ATTRIBUTE='LSW1 packed color'
 
 
 @contextmanager
@@ -46,6 +48,41 @@ def remove_created_data(context, before):
 
 def matrix(values):
     return Matrix([values[i:i+4] for i in range(0,16,4)]).transposed()
+
+
+def preserve_authored_normals(mesh,normals):
+    """Isolate a failed Blender normal fan only when no other corner regresses.
+
+    Retain all geometry, UVs and requested normal values. A zero source normal
+    continues to request Blender's calculated split-normal fallback.
+    """
+    mesh.normals_split_custom_set(normals)
+    intended=[n.copy() for n in normals]
+    visible={li for p in mesh.polygons if p.area>0 for li in p.loop_indices
+             if intended[li].length>0}
+
+    def inspect():
+        actual=[n.vector.copy() for n in mesh.corner_normals]
+        failed={li for li in visible if (actual[li]-intended[li]).length>.005}
+        return actual,failed
+
+    before,failed_before=inspect()
+    if not failed_before:
+        return dict(isolated_faces=0,remaining=0,rejected=False)
+    selected=[p for p in mesh.polygons if p.use_smooth and any(li in failed_before for li in p.loop_indices)]
+    for polygon in selected:polygon.use_smooth=False
+    mesh.normals_split_custom_set(normals)
+    _,failed_after=inspect()
+    # A smaller total alone is insufficient: an unaffected corner must never
+    # become a new failure as the price of repairing another fan.
+    if failed_after-failed_before or len(failed_after)>=len(failed_before):
+        for polygon in selected:polygon.use_smooth=True
+        mesh.normals_split_custom_set(normals)
+        _,failed_final=inspect()
+        if failed_final!=failed_before:
+            raise ValueError('Blender could not restore the original custom-normal fans')
+        return dict(isolated_faces=0,remaining=len(failed_before),rejected=True)
+    return dict(isolated_faces=len(selected),remaining=len(failed_after),rejected=False)
 
 
 def make_materials(h, label, load_textures):
@@ -86,14 +123,27 @@ def make_materials(h, label, load_textures):
         material['lsw1_effect_id']=source['effect'];material['lsw1_attributes']=source['attributes']
         bsdf=material.node_tree.nodes.get('Principled BSDF');bsdf.inputs['Roughness'].default_value=.38
         texture=source['texture']
+        texture_node=None
         if load_textures and texture is not None:
             if texture>=len(textures):raise ValueError(f'Material {i} references missing texture {texture}')
             node=material.node_tree.nodes.new('ShaderNodeTexImage');node.image=textures[texture]
+            texture_node=node
             material.node_tree.links.new(node.outputs['Color'],bsdf.inputs['Base Color'])
-            if source['attributes'] & 15 in (1,10):
-                material.node_tree.links.new(node.outputs['Alpha'],bsdf.inputs['Alpha'])
-                if hasattr(material,'surface_render_method'):material.surface_render_method='DITHERED'
         else:bsdf.inputs['Base Color'].default_value=(*linear,1)
+        if source['attributes'] & 15 in (1,10):
+            # The packed vertex alpha is independent of texture alpha. Native
+            # glass can be untextured, while facial printing uses both. Raw
+            # vertex RGB remains inspection data rather than an assumed tint.
+            attribute=material.node_tree.nodes.new('ShaderNodeAttribute')
+            attribute.attribute_name=OPACITY_ATTRIBUTE;attribute.label='Original LSW1 vertex opacity'
+            multiply=material.node_tree.nodes.new('ShaderNodeMath');multiply.operation='MULTIPLY'
+            multiply.inputs[1].default_value=1.
+            material.node_tree.links.new(attribute.outputs['Fac'],multiply.inputs[0])
+            if texture_node:
+                material.node_tree.links.new(texture_node.outputs['Alpha'],multiply.inputs[1])
+            material.node_tree.links.new(multiply.outputs[0],bsdf.inputs['Alpha'])
+            if hasattr(material,'surface_render_method'):material.surface_render_method='DITHERED'
+            material['lsw1_vertex_opacity']=True
         normal=source['normal_texture']
         material['lsw1_linked_material']=source['linked_material']
         material['lsw1_normal_texture']=normal if normal is not None else -1
@@ -135,6 +185,9 @@ def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textu
     root['lsw1_source_file']=str(h.path);root['lsw1_bind_inverse_max_error']=max_error
     root['lsw1_layers']=', '.join(h.layers)
     root['lsw1_imported_detail']=str(detail)
+    selected_layers=sorted({part.get('layer',0) for part in parts})
+    root['lsw1_selected_layers']=selected_layers
+    root['lsw1_selected_layer_names']=', '.join(h.layers[i] for i in selected_layers)
     root['lsw1_native_weights']=bool(armature)
     root['lsw1_animation_status']='No game animations imported'
     names=[]
@@ -163,23 +216,48 @@ def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textu
         if not armature and correct_preview_pose and h.path.stem.lower()=='jangofett' and part['rigid_bone'] is not None and h.bones[part['rigid_bone']]['name']=='helmet':
             correction=bind@Matrix.Rotation(math.pi,4,'X')@bind.inverted()
             vertices=[correction@v for v in vertices]
-            normal_matrix=correction.to_3x3()@bind.to_3x3()
-        else:normal_matrix=bind.to_3x3()
+            linear_transform=correction.to_3x3()@bind.to_3x3()
+        else:linear_transform=bind.to_3x3()
+        # A normal is a covector, unlike a vertex or tangent.  The inverse
+        # transpose also preserves perpendicularity for a non-uniform rigid
+        # attachment scale.  The validated original binds are orthonormal,
+        # where this agrees with the previous rotation-only conversion.
+        normal_matrix=linear_transform.inverted().transposed()
         mesh=bpy.data.meshes.new(f'{label} mesh {index:02d}')
         mesh.from_pydata(vertices,[],part['faces']);mesh.update()
         obj=bpy.data.objects.new(f'{label} part {index:02d}',mesh);collection.objects.link(obj)
         obj.parent=root;mesh.materials.append(mats[part['material']])
         obj['lsw1_geometry_offset']=hex(part['geometry']);obj['lsw1_vertex_buffer']=part['buffer']
+        obj['lsw1_layer_index']=part.get('layer',0)
+        obj['lsw1_layer_name']=h.layers[part.get('layer',0)]
         obj['lsw1_attachment_bone']=part['rigid_bone'] if part['rigid_bone'] is not None else -1
         uv=mesh.uv_layers.new(name='Original LSW1 UV')
+        opacity=mesh.attributes.new(OPACITY_ATTRIBUTE,'FLOAT','POINT')
+        packed=mesh.attributes.new(PACKED_COLOR_ATTRIBUTE,'INT','POINT')
+        colors=part.get('colors',[(255,255,255,255)]*len(mesh.vertices))
+        if len(colors)!=len(mesh.vertices):raise ValueError('Native vertex color count differs from geometry')
+        # Creating another CustomData layer can invalidate earlier RNA wrappers.
+        opacity=mesh.attributes[OPACITY_ATTRIBUTE]
+        uv=mesh.uv_layers['Original LSW1 UV']
+        for i,color in enumerate(colors):
+            opacity.data[i].value=color[3]/255.
+            value=int.from_bytes(bytes(color),'little')
+            packed.data[i].value=value if value<0x80000000 else value-0x100000000
         normals=[]
         for polygon in mesh.polygons:
-            polygon.use_smooth=custom_normals
+            # Native strips sometimes contain distinct vertex indices at the
+            # same point. Keep their zero-area faces/topology, but do not let
+            # them join Blender's smooth-normal fans: they otherwise corrupt
+            # authored normals on adjacent, visible triangles.
+            polygon.use_smooth=custom_normals and polygon.area>0
             for li in polygon.loop_indices:
                 vi=mesh.loops[li].vertex_index;u,v=part['uvs'][vi];uv.data[li].uv=(u,1-v)
                 if custom_normals:
                     n=part['normals'][vi];normals.append((normal_matrix@Vector((n[0],n[2],n[1]))).normalized())
-        if custom_normals:mesh.normals_split_custom_set(normals)
+        if custom_normals:
+            status=preserve_authored_normals(mesh,normals)
+            obj['lsw1_normal_fan_isolated_faces']=status['isolated_faces']
+            obj['lsw1_remaining_normal_corners']=status['remaining']
         if armature:
             groups={}
             for vi,weights in enumerate(part['weights']):

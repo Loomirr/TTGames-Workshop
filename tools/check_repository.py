@@ -31,6 +31,11 @@ def main():
     for name in ['test_skeleton_versions.py','test_animation_sources.py','test_tt_deflate.py','test_an4_standalone.py','test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py','test_native_display.py','test_morph_controls.py','test_dependencies.py','test_native_layers.py','test_camera_version_gate.py','test_archive_cc8.py','test_tfa_structure.py','test_archive_assets.py','test_archive_v5.py','test_scene_configuration.py','test_stage_geometry.py']:
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_header_layouts.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_layer_assembly.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_vertex_opacity.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw2/tests/test_synthetic.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_definition_inline.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_layer_selection.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'tools/test_prune_builds.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_readers.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_models.py')],check=True,cwd=ROOT)
@@ -46,6 +51,9 @@ def main():
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_fortnite_backend.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_source_bundle.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_character_audit.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/character/test_batch_catalog.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'tools/character_clone/test_definition_patch.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'tools/character_clone/test_fpk_append.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/character/test_export_inventory.py')],check=True,cwd=ROOT)
     for name in ['test_bundle_output.py','test_pak_preflight.py','test_archive_cli_bounds.py',
                  'test_identity_ownership.py','test_dds.py','test_preview_capabilities.py',

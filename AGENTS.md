@@ -72,6 +72,10 @@ shared behavior changes. Tools have different dependencies and build systems.
 - Public tools take user paths. No personal absolute paths, hidden local caches,
   or dependency on one AI application's runtime. A clean clone must be usable
   within the documented component requirements.
+- Shared tools must include their full readable source. Keep Python code as
+  ordinary source files; do not minify, obfuscate or hide executable code in
+  encoded/compressed payloads. ZIP compression for transport is fine. Provide
+  corresponding readable source with any requested compiled build.
 - Preserve component licenses and attribution. Review licenses before importing
   external code. When independent implementation is requested, references are
   evidence only: do not copy or translate another project's implementation.

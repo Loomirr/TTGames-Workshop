@@ -28,9 +28,11 @@ def main():
     blender=args.blender.resolve()
     builds=ROOT/'builds';addons=builds/'blender';windows=builds/'windows'
     addons.mkdir(parents=True,exist_ok=True);windows.mkdir(exist_ok=True)
-    hgp=ROOT/'formats/hgp/lsw1'
-    subprocess.run([str(blender),'-b','--factory-startup','--command','extension','build',
-                    '--output-dir',str(addons)],cwd=hgp,check=True)
+    for game in ('lsw1','lsw2'):
+        hgp=ROOT/'formats/hgp'/game
+        subprocess.run([str(blender),'-b','--factory-startup','--command','extension','build',
+                        '--output-dir',str(addons)],cwd=hgp,check=True,
+                       creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
     cu3=ROOT/'formats/cu3'
     subprocess.run([sys.executable,str(cu3/'scripts/build_addon.py')],check=True)
     source=ast.parse((cu3/'Addon/io_scene_lego_cu3/__init__.py').read_text())

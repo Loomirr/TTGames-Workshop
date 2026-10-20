@@ -7,6 +7,7 @@ bind matrices, LOD links, primitive palettes and vertex weights are retained.
 from pathlib import Path
 import struct
 import math
+import re
 
 
 class HGP:
@@ -80,35 +81,118 @@ class HGP:
     def floats(self, at, count): return struct.unpack_from(f'<{count}f', self.body, at)
     def string(self, at): return self.body[at:self.body.index(0, at)].decode('ascii')
 
-    def meshes(self, lod='AUTO'):
-        """TT1_HighRes is LOD 1; entry 0 is the exporter's defaultLayer."""
-        if lod == 'AUTO':
-            lod = next((i for i,name in enumerate(self.layers) if any(token in name.lower() for token in ('highres','hires'))), None)
-            if lod is None:
-                # TT1_Hi and TT1_MediumRes are also primary body layers in
-                # original LSW1. defaultLayer can contain only eyes or a head.
-                lod = next((i for i,name in enumerate(self.layers) if name.lower().startswith('tt1_')), None)
-            if lod is None:
-                lod = next((i for i in range(self.layer_count) if any(self.u32(self.lods_at+i*20+field) for field in (4,8,16))), 0)
-        lod = int(lod)
-        if not 0 <= lod < self.layer_count:
-            raise ValueError(f'Layer {lod} is unavailable; this character has {self.layer_count} layers')
+    def layer_meshes(self, layer):
+        """Read exactly one native layer, without adding defaultLayer.
+
+        Layers are visibility/component sets, not necessarily whole-model LODs.
+        An empty exported layer is valid and returns an empty list.
+        """
+        layer = int(layer)
+        if not 0 <= layer < self.layer_count:
+            raise ValueError(f'Layer {layer} is unavailable; this character has {self.layer_count} layers')
         result = []
-        # defaultLayer carries shared rigid helmets/heads/accessories and
-        # skinned facial overlays. It is combined with the desired detail
-        # layer. Battle Droid's complete high-detail body is in layer 0.
-        for layer in ([0] if lod == 0 else [0,lod]):
-            at = self.lods_at + layer * 20
-            rigid_array = self.u32(at+4)
-            if rigid_array:
-                for bone in range(self.count):
-                    obj = self.u32(rigid_array+bone*4)
-                    if obj:
-                        result.extend(self.object_meshes(obj, bone))
-            for field in (8,16):
-                obj=self.u32(at+field)
-                if obj:result.extend(self.object_meshes(obj,None))
-        assert result, self.path.name
+        at = self.lods_at + layer * 20
+        rigid_array = self.u32(at+4)
+        if rigid_array:
+            self.require_range(rigid_array, self.count * 4, 'rigid object table')
+            for bone in range(self.count):
+                obj = self.u32(rigid_array+bone*4)
+                if obj:
+                    result.extend(self.object_meshes(obj, bone))
+        for field in (8,16):
+            obj=self.u32(at+field)
+            if obj:result.extend(self.object_meshes(obj,None))
+        for part in result:
+            part['layer'] = layer
+            part['layer_name'] = self.layers[layer]
+        return result
+
+    @staticmethod
+    def _layer_key(name):
+        name = re.sub(r'^tt\d+[_\s]*', '', name.lower())
+        return re.sub(r'[^a-z0-9]', '', name)
+
+    def selected_layers(self, lod='AUTO'):
+        """Choose an inspection assembly from observed PC layer conventions.
+
+        This does not reconstruct gameplay layer switches. Unknown alternates,
+        broken pieces, goggles and cutscene-only hoses remain explicit choices.
+        An integer retains the original defaultLayer-plus-selected-layer API.
+        """
+        if lod != 'AUTO':
+            layer = int(lod)
+            if not 0 <= layer < self.layer_count:
+                raise ValueError(f'Layer {layer} is unavailable; this character has {self.layer_count} layers')
+            return [0] if layer == 0 else [0, layer]
+        parts = [self.layer_meshes(i) for i in range(self.layer_count)]
+        present = [i for i, meshes in enumerate(parts) if meshes]
+        if not present:
+            raise ValueError('This HGP contains no geometry in its native layers')
+        keys = [self._layer_key(name) for name in self.layers]
+        high = {'highres', 'hires', 'hi'}
+        lower = {'mediumres', 'medres', 'med', 'lowres', 'lores', 'lo',
+                 'verylores', 'vlowres', 'vlores', 'vlo'}
+        primary = next((i for i in present if keys[i] in high), None)
+        if primary is None:
+            primary = next((i for i in present if keys[i] in lower), None)
+            if primary is not None and 0 in present:
+                # Some droids/vehicles keep their complete high detail body in
+                # defaultLayer. The lower-detail table covers the same joints
+                # (or their parents), whereas Boss Nass/Tarpals defaultLayer
+                # covers only the head. Do not overlay two complete bodies.
+                default_parts = parts[0] + [p for i in present if keys[i] == 'light' for p in parts[i]]
+                default_bones = {b for p in default_parts for weights in p['weights'] for b in weights}
+                covered = set(default_bones)
+                for bone in default_bones:
+                    parent = self.bones[bone]['parent']
+                    while parent >= 0:
+                        covered.add(parent)
+                        parent = self.bones[parent]['parent']
+                lower_bones = {b for p in parts[primary] for weights in p['weights'] for b in weights}
+                default_faces = sum(len(p['faces']) for p in default_parts)
+                lower_faces = sum(len(p['faces']) for p in parts[primary])
+                if lower_bones and lower_bones <= covered and default_faces >= lower_faces:
+                    primary = 0
+        if primary is None:
+            # Non-detail component names do not imply a replacement for the
+            # default body. Keep defaultLayer and only known complementary sets.
+            primary = next((i for i in present if self.layers[i].lower().startswith('tt1_')
+                            and not any(token in keys[i] for token in ('broken', 'notused', 'old', 'cutscene'))), None)
+            if primary is None:
+                primary = 0 if 0 in present else present[0]
+        selected = [0] if primary == 0 else [0, primary]
+        for i in present:
+            key = keys[i]
+            # These are literal observed component names, not a rule to merge
+            # every TT layer. OldNips, BrokenBits and costume alternatives stay
+            # available through layer_meshes / explicit numeric selection.
+            complementary = key in {
+                'head', 'heads', 'everythingelse', 'hose', 'hoses',
+                'commonhose', 'alwaysdrawn', 'energybinder', 'energybinders',
+                'light', 'clonetrooper',
+            } or bool(re.fullmatch(r'bits\d*', key))
+            if key == 'himedcommon':
+                complementary = keys[primary] in high | {'mediumres', 'medres', 'med'}
+            if complementary and i not in selected:
+                selected.append(i)
+        # Young Anakin stores hair in an independent detail family. Do not also
+        # add goggles or choose between Padme's mutually exclusive hair/helmet.
+        hair = next((i for i in present if keys[i] in {'hairhi', 'hairhighres', 'hairhires'}), None)
+        if hair is not None and hair not in selected:
+            selected.append(hair)
+        return [i for i in selected if parts[i]]
+
+    def meshes(self, lod='AUTO'):
+        result = []
+        seen = set()
+        for layer in self.selected_layers(lod):
+            for part in self.layer_meshes(layer):
+                identity = (part['geometry'], part['primitive'], part['rigid_bone'])
+                if identity not in seen:
+                    result.append(part)
+                    seen.add(identity)
+        if not result:
+            raise ValueError(f'{self.path.name}: selected layers contain no geometry')
         return result
 
     def textures(self):
@@ -179,12 +263,16 @@ class HGP:
                     assert palette_count <= 15 and all(x < self.count for x in palette)
                 used = sorted(set(indices))
                 remap = {old:new for new,old in enumerate(used)}
-                vertices, normals, uvs, weights = [], [], [], []
+                vertices, normals, uvs, weights, colors = [], [], [], [], []
                 for i in used:
                     offset = i*stride
                     vertices.append(struct.unpack_from('<3f',raw,offset))
                     normals.append(struct.unpack_from('<3f',raw,offset+(12 if vtype==0x59 else 32)))
                     uvs.append(struct.unpack_from('<2f',raw,offset+(28 if vtype==0x59 else 48)))
+                    # Keep the packed native color bytes verbatim. The alpha
+                    # lane drives observed translucent surfaces; RGB semantics
+                    # are not assumed to be a replacement plastic palette.
+                    colors.append(struct.unpack_from('<4B',raw,offset+(24 if vtype==0x59 else 44)))
                     if vtype == 0x59:
                         assert rigid_bone is not None
                         weights.append({rigid_bone:1.0})
@@ -208,7 +296,7 @@ class HGP:
                     faces.append(tuple(remap[x] for x in face))
                 yield dict(geometry=geometry, primitive=primitive, material=material,
                     buffer=buffer_id, vertex_type=vtype, rigid_bone=rigid_bone,
-                    vertices=vertices,normals=normals,uvs=uvs,weights=weights,faces=faces)
+                    vertices=vertices,normals=normals,uvs=uvs,weights=weights,colors=colors,faces=faces)
                 primitive=self.u32(primitive)
             geometry=self.u32(geometry)
 

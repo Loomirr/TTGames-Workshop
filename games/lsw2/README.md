@@ -42,8 +42,12 @@ separate reader; Workshop does not extract classic archives.
 | CU2 (75 version 517 in `cut/`, one version 516 in `levels/episode_v/ending/`) | 76 | All pass the classic CU2 inspector. None has a companion stating `fpsec`, so every rate is the labelled 30 FPS assumption. `cut/episodeii/` holds only four leftover `.txt` scripts with no CU2 |
 | HGP characters | 259 | 255 begin with their own length followed by `NU20`; both the LSW1 HGP reader and the classic NU20 reader refuse them. The other four use the LSW1 layout and read with the LSW1 reader; they look like leftovers (`chars/chewbacca/_chewbacca.hgp`, `chars/yoda/_yoda.hgp`, `chars/palpatine/walk.hgp`, `chars/obiwankenobi/tpm/obiwankenobi.hgp`) |
 
-The LSW2 character model layout is not decoded. Inspector passes are layout
-checks, not skeleton ownership, playback or visual fidelity. Levels (`.nup`,
-`.ter`, `.rtl` and others) were not examined.
+The separate experimental [LSW2 HGP addon](../../formats/hgp/lsw2/README.md)
+now reads this character layout and writes separate source-format copies,
+including added bones/parts. Version 0.2.1 has synthetic and Blender integration
+checks; the upstream original-file counts are separately labelled and have not
+been repeated here. No in-game export validation is claimed. Inspector passes
+are layout checks, not skeleton ownership, playback or visual fidelity.
+Levels (`.nup`, `.ter`, `.rtl` and others) were not examined.
 
 Workshop integration checks exercise the constructed layout and malformed-input tests. LSW2 is not installed on the integration workstation; the original-file counts above have not been independently repeated here.

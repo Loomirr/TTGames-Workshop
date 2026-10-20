@@ -45,8 +45,11 @@ def main():
                 assert tex.type=='TEX_IMAGE' and tex.image.colorspace_settings.name=='sRGB' and tex.image.packed_file
                 textured+=1
                 if source['attributes']&15 in (1,10):
-                    assert bsdf.inputs['Alpha'].links[0].from_node==tex
-                    assert bsdf.inputs['Alpha'].links[0].from_socket.name=='Alpha';alpha+=1
+                    product=bsdf.inputs['Alpha'].links[0].from_node
+                    assert product.type=='MATH' and product.operation=='MULTIPLY'
+                    assert product.inputs[0].links[0].from_node.attribute_name=='LSW1 vertex opacity'
+                    assert product.inputs[1].links[0].from_node==tex
+                    assert product.inputs[1].links[0].from_socket.name=='Alpha';alpha+=1
             if source['normal_texture'] is not None:
                 node=bsdf.inputs['Normal'].links[0].from_node
                 assert node.type=='NORMAL_MAP'

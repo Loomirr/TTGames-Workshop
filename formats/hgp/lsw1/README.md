@@ -4,7 +4,7 @@ Import characters from **LEGO Star Wars: The Video Game (2005), original PC rele
 
 ## Install
 
-Download [lsw1_hgp_importer-0.1.5.zip](../../../builds/blender/lsw1_hgp_importer-0.1.5.zip), or build it using the command below. In Blender, open **Edit > Preferences > Get Extensions**, open the menu in the upper right, and choose **Install from Disk**. Select the ZIP and enable the extension.
+Download [lsw1_hgp_importer-0.1.6.zip](../../../builds/blender/lsw1_hgp_importer-0.1.6.zip), or build it using the command below. In Blender, open **Edit > Preferences > Get Extensions**, open the menu in the upper right, and choose **Install from Disk**. Select the ZIP and enable the extension.
 
 Drag one or more extracted `.hgp` files into the **3D Viewport in Object Mode**,
 review the import options and confirm. **File > Import > LEGO Star Wars 1 Character
@@ -17,8 +17,12 @@ material behavior are unchanged.
 - Original UVs and custom vertex normals.
 - Solid plastic colors converted from the native RGB palette to Blender's linear color inputs, matching the texture color-space convention.
 - Embedded base-colour textures, alpha transparency and linked normal maps, packed into the Blender file.
+- Authored vertex opacity on observed translucent surfaces, including untextured
+  vehicle glass; original packed bytes are retained as mesh inspection data.
 - Normal maps use Non-Color data and a tangent-space Normal Map node. Other auxiliary passes, including reflection textures, are not mistaken for normal maps.
-- Automatic body detail selection, including `TT1_HighRes`, `TT1_Hi` and `TT1_MediumRes` naming variants.
+- Automatic nonempty body detail selection and observed complementary head,
+  hair and vehicle layers, including `TT1_HighRes`, `TT1_Hi` and
+  `TT1_MediumRes` naming variants.
 - Mesh-only import, scale, placement and detail-layer options.
 - Failed imports roll back their own data; successful files in a batch are retained.
 
@@ -29,7 +33,18 @@ new version; existing materials in a saved scene are not changed automatically.
 See [the color notes](docs/COLOURS.md) for the findings and checks. Material
 Preview or Rendered mode displays textures; Solid mode cannot reproduce them.
 
-Materials approximate the original game effects with Principled BSDF. Animation, facial morph playback, gameplay visibility and every shader effect are not reconstructed. Some characters have separate accessory layers. Additional variants can be selected using the Python importer's `variant_layers` argument.
+Materials approximate the original game effects with Principled BSDF. Animation,
+facial morph playback, gameplay visibility and every shader effect are not
+reconstructed. AUTO is an inspection assembly based on observed layer names
+and body coverage, not the game's runtime layer rules. Explicit **Detail Layer**
+choices 0–31 keep defaultLayer plus the requested layer; unavailable indices
+produce a diagnostic. The imported root records all native layer names and the
+selected indices. Python callers can combine explicit `variant_layers` or read
+one exact native set through `HGP.layer_meshes(index)`.
+
+This add-on has no HGP exporter. General bone addition and arbitrary hair/part
+replacement back to a native model remain outside its scope; see the
+[character editing workflow and limits](../../../docs/CHARACTER_EDITING.md).
 
 ## Import multiple models
 
@@ -78,3 +93,20 @@ Bone sticks show the native local axes, not a line aimed at the next child.
 Watto's opposing wing directions match the source bind matrices. No cosmetic
 axis flips were applied. Blender checks cover exact names, zero batch spacing,
 hierarchy and rest transforms on both Yoda files, Watto and Dooku's speeder.
+
+## 0.1.6 feedback fixes
+
+AUTO now includes Young Anakin's independent hair and Bodyguard's head. It skips
+empty high-detail layers, retains observed common vehicle components and avoids
+combining a complete default body with its lower-detail replacement. Broken
+parts, goggles and other runtime alternatives stay separate. No model names are
+used to invent absent geometry or substitute another character's face.
+
+Native strips sometimes include distinct vertex indices at coincident positions.
+Those zero-area faces remain in the mesh but use flat shading; otherwise Blender
+can corrupt adjacent valid custom normals. This reproduced on Panaka, Imperial
+Officer and Clonewalker. UVs, vertex/face order, weights and native rest poses are
+preserved. Authored zero normals continue to request Blender's calculated fallback.
+
+The [feedback report](../../../docs/LSW1_FEEDBACK_2026-10-20.md) distinguishes
+verified fixes, already-working inputs and remaining source/visibility questions.

@@ -20,6 +20,23 @@ assigning Base Color and the material's viewport diffuse color. Original
 texture files/pixels are unchanged, and their image role is explicitly sRGB.
 Normal-map image copies remain Non-Color. Alpha is not gamma-converted.
 
+## Vertex opacity in 0.1.6
+
+The packed four-byte vertex field is retained as the POINT/INT attribute
+`LSW1 packed color`, using its original little-endian bits (read signed values
+as unsigned with `value & 0xffffffff`). Its fourth byte also becomes the
+POINT/FLOAT attribute `LSW1 vertex opacity`, normalized by 255.
+
+Observed material modes 1/10 multiply this opacity with image alpha, or with 1
+when untextured. This restores partially transparent Geonosian Fighter and Gungan
+Bongo canopy surfaces. Blender's alpha surface is an approximation; native glass
+refraction and other shader effects are not reconstructed. Mode 2 includes pod
+energy links and saber effects and is not interpreted as ordinary transparency.
+
+The original RGB lanes commonly contain neutral 72 or zero even on correctly
+colored plastic. Their shading meaning remains unverified. They are preserved
+for inspection and are not multiplied into material/texture colors.
+
 Material metadata retains `lsw1_diffuse_srgb`, `lsw1_diffuse_linear` and
 `lsw1_colour_version` for inspection. Vertex colors are not guessed as plastic
 colors: the inspected buffers include constant gray or black values that are

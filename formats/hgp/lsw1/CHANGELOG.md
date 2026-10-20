@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.6
+
+- Select nonempty native body layers and observed complementary hair, head,
+  vehicle bits, hoses and energy-binder layers. Keep broken/costume alternatives
+  separate; expose explicit layer choices through index 31.
+- Recover Young Anakin's hair and Bodyguard's independent head. Avoid empty
+  high-detail exports and overlapping complete default/lower-detail bodies.
+- Retain native layer identity on imported roots and mesh objects.
+- Preserve packed vertex color bytes and use authored vertex opacity on observed
+  translucent materials, multiplied with texture alpha when present. RGB tint
+  semantics remain unverified and are not applied to the palette.
+- Keep zero-area strip faces and all source topology, but exclude those faces
+  from smooth shading so they cannot corrupt adjacent authored custom normals.
+- Isolate further failed normal fans only when the failed-corner set strictly
+  decreases with no new failures; restore the previous shading flags otherwise.
+- Use the inverse transpose for transformed rigid normals. Native rest poses,
+  bone names, hierarchy, weights and UVs stay unchanged.
+- Add layer-selection, malformed-table, native-rest, skinning and shading checks.
+
 ## 0.1.5
 
 - Default multiple-file spacing to zero and retain exact filename stems.

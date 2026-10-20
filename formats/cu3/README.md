@@ -1,6 +1,8 @@
 # TT Cutscene Importer
 
-This update includes reviewed classic NU20 version-3 inspection and LSW2 DAT
+This update adds explicit TCS TXT high-layer visibility and expanded shared
+[CD/AS/CPD definition decoding](../../docs/DEFINITION_COMPATIBILITY_2026-10-20.md).
+It also includes reviewed classic NU20 version-3 inspection and LSW2 DAT
 index support. [Review and validation](../../docs/GITHUB_HGP_REVIEW_2026-10-15.md).
 
 An earlier update fixed LMSH1 Arnim Zola's missing torso attachment. It resolves
@@ -21,6 +23,13 @@ checks. **The Force Awakens** and **DC Super-Villains** currently support
 reference inspection rather than complete scene import.
 
 **AI was used to help with the code, research and documentation for this project.**
+
+The source reader also exposes opt-in snapshot inspection for the observed
+compact HGOL 17 profile (MESH 175/200, DISP 33/34/35). Its counted resource
+boundaries and complete display ownership can be checked without claiming skin
+deformation support. File-based character/cutscene import keeps its existing
+layout and skin-weight gates. This inspection API is source-only; the public
+addon ZIPs have not been rebuilt for it.
 
 Current source and packaged build: **0.1.28** (experimental).
 
@@ -114,7 +123,7 @@ the remaining reconstruction work.
 
 ## Blender addon
 
-Download the [0.1.28 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.29.zip)
+Download the [0.1.30 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.30.zip)
 or use the source build command below.
 
 1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the

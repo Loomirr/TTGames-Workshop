@@ -1,14 +1,24 @@
 {
   "packages": [
     {
-      "path": "blender/TT_Character_Importer_0.5.21.zip",
-      "bytes": 252851,
-      "sha256": "5953e34096d56bee0ff48b3fbc2804bfe5d8c7ccaa125e050999c785298a083c"
+      "path": "blender/TT_Character_Importer_0.5.23.zip",
+      "bytes": 262420,
+      "sha256": "54f9a944756a474a4550e2a56ab78095c8e87a3cc0bfc182952210cdef5da9b8"
     },
     {
-      "path": "blender/lsw1_hgp_importer-0.1.5.zip",
-      "bytes": 27297,
-      "sha256": "8ef5aa0c52e8622517119fe048bdb896ed7746c4c2e331eac593750eb097cbf7"
+      "path": "blender/TT_Cutscene_Importer_0.1.30.zip",
+      "bytes": 215477,
+      "sha256": "d85518a32407720604d6d1bc3621b3fbc8ef07f9a5582f6ec3033d8a0699c566"
+    },
+    {
+      "path": "blender/io_lsw2_hgp-0.2.1.zip",
+      "bytes": 47399,
+      "sha256": "b83ef20e2ee1443bed05f8df64d3117a927a835ea758addb3aa96842e4414e62"
+    },
+    {
+      "path": "blender/lsw1_hgp_importer-0.1.6.zip",
+      "bytes": 31464,
+      "sha256": "2643dfd5b6d0b4901e4d3029c2cd33c809fef0265eedc4c5eb64d1e1cceb611b"
     },
     {
       "path": "python/BTGA_Texture_Converter_GUI-0.1.2.zip",
@@ -74,11 +84,6 @@
       "path": "windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip",
       "bytes": 45724622,
       "sha256": "b12cc665f9d436b8afb4436e19f9fbdbc1ee5a5b46df0b166540e693c38a558e"
-    },
-    {
-      "path": "blender/TT_Cutscene_Importer_0.1.29.zip",
-      "bytes": 211490,
-      "sha256": "4148dead6a66015e3908b852a64c8f8e7bc113844772dbbf1f94ef6f2b3d5f01"
     }
   ],
   "notes": "Our source-built tools only; no game assets or external extraction programs."

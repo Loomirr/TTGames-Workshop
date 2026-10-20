@@ -10,9 +10,10 @@ below, then use GitHub's **Download raw file** button to save the ZIP.
 
 | Tool | Package | Use |
 | --- | --- | --- |
-| Character and animation importer 0.5.21 | [Blender addon ZIP](blender/TT_Character_Importer_0.5.21.zip) | Experimental LB2; LMSH1/LB3/Hobbit/Avengers, raw LB1/TCS inspection, plus static LEGO Fortnite Paks/export-library browsing; [instructions](../formats/character/README.md) |
-| Original LSW1 HGP importer 0.1.5 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.5.zip) | Native character meshes/rigs, corrected palette colors, textures, alpha and normals |
-| CU3 importer 0.1.29 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.29.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages, with shared older-accessory fixes; TFA/DCSV reference inspection; separate classic CU2 static references |
+| Character and animation importer 0.5.23 | [Blender addon ZIP](blender/TT_Character_Importer_0.5.23.zip) | Experimental LB2; LMSH1/LB3/Hobbit/Avengers, raw LB1/TCS inspection, plus static LEGO Fortnite Paks/export-library browsing; [instructions](../formats/character/README.md) |
+| Original LSW1 HGP importer 0.1.6 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.6.zip) | Native rigs, complementary head/hair/vehicle layers, vertex opacity and custom-normal fixes |
+| LSW2 HGP importer/exporter 0.2.1 | [Blender addon ZIP](blender/io_lsw2_hgp-0.2.1.zip) | Experimental separate-file export, new bones/parts, morphs and textures; [synthetic validation and limits](../formats/hgp/lsw2/README.md). Original-file retesting and in-game export pending. |
+| CU3 importer 0.1.30 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.30.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages, with shared older-accessory fixes; TFA/DCSV reference inspection; separate classic CU2 static references |
 | LIJ1 Xbox 360 prototype extractor 0.1.2 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip) | GHG/GSC/TEX/FNT/DDS inputs; cubemaps, BC5, float and legacy textures |
 | Classic PC inspectors 0.1.3 | [Python CLI ZIP](python/Classic_PC_Inspectors-0.1.3.zip) | Reviewed NU20/CU2/AN3/GIZ CLI readers; [coverage and limits](../formats/classic-pc/README.md). Raw classic inspection also available in the Blender addons. |
 
@@ -51,8 +52,8 @@ The optional [combined toolbox 0.1.10](python/TTGames_Workshop_GUI-0.1.10.zip) i
 tool. The individual downloads above open directly to their own functions.
 
 For the Blender ZIPs, open Preferences and **Install from Disk**, select the ZIP
-and enable the importer. LSW1 requires Blender 4.2+; Character and CU3 require
-4.4+. All three were checked in Blender 5.2.2. Read the component docs for input requirements.
+and enable the importer. LSW1 and LSW2 require Blender 4.2+; Character and CU3 require
+4.4+. All four were checked in Blender 5.2.2. Read the component docs for input requirements.
 
 Character 0.5.15 and CU3 0.1.24 repair the complete-character regressions
 identified after the previous isolated-file checks. These include missing

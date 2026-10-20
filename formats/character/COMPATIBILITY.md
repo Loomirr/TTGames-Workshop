@@ -1,6 +1,8 @@
 # PC character compatibility
 
-Current source and package: **0.5.21**. The [October 19 PR review](../../docs/PR_REVIEW_2026-10-19.md)
+Current source and package: **0.5.23**, including batch import, explicit TCS
+high-layer visibility and [expanded shared definitions](../../docs/DEFINITION_COMPATIBILITY_2026-10-20.md).
+Prior PR integration: **0.5.21**. The [October 19 PR review](../../docs/PR_REVIEW_2026-10-19.md)
 adds experimental LB2, observed LMSH1 layouts, and LB3 HGOL 15 variants.
 The [October 15 validation report](../../docs/COMPATIBILITY_2026-10-15.md)
 records the previous recursive roster audit, original Blender checks and native
