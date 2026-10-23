@@ -58,7 +58,10 @@ produce a diagnostic. The imported root records all native layer names and the
 selected indices. Python callers can combine explicit `variant_layers` or read
 one exact native set through `HGP.layer_meshes(index)`.
 
-This add-on has no HGP exporter. General bone addition and arbitrary hair/part
+This add-on has no Blender HGP exporter. A separate source-tree tool can
+[recolor existing native materials and save an HGP copy](docs/MATERIAL_EXPORT.md).
+Its original-file round trips pass; in-game validation is pending.
+General bone addition and arbitrary hair/part
 replacement back to a native model remain outside its scope; see the
 [character editing workflow and limits](../../../docs/CHARACTER_EDITING.md).
 
