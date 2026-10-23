@@ -10,6 +10,7 @@ from pathlib import Path
 import struct
 
 from check_native_curves import EXE_SHA256
+from alpha_passes import helper_states
 
 
 def observe(path):
@@ -62,9 +63,7 @@ def observe(path):
                     machine.emu_start(entry,scratch+0xff00,count=500)
                     if machine.reg_read(UC_X86_REG_EIP)!=scratch+0xff00:raise AssertionError('Alpha pass did not return')
                     observed.append(list(states))
-                first=[(15,0)] if alpha_mode==1 else [(15,1),(25,(1,8,2,4,3,7,5,6)[alpha_mode]),(24,reference*2)]
-                second=[] if alpha_mode==1 else [(25,(8,1,7,5,6,2,4,3)[alpha_mode])]+(
-                    [(168,0),(14,0)],[(14,0)],[(168,0),(14,1)],[(168,7),(14,0)])[secondary]
+                first,second=helper_states(attributes,secondary)
                 if observed!=[first,second]:raise AssertionError((alpha_mode,secondary,observed))
                 alpha_passes.append(dict(attributes=hex(attributes),secondary_mode=secondary,first=first,second=second))
     # Check the complete material-state routine, not just its blend branch.

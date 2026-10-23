@@ -685,3 +685,17 @@ binding; the intended final appearance still needs a matched native game frame.
 Qui-Gon's original Walk ANI frame 8 was rendered and inspected with the existing
 reviewed binding and no manually keyed facial targets. This is decoded body
 motion under the lab's declared lighting, not proof of native facial playback.
+
+The reusable `alpha_passes.py` reference now emits those two helper state lists;
+the native checker compares them against 96 original-code executions. Its
+restricted ordered-fragment experiment demonstrates low-alpha color blending
+without depth writes, invisible depth writes in secondary mode 2, and RGB-only
+writes in mode 3. Five asset-free tests include complementary comparisons over
+all 256 alpha inputs. This is a per-fragment reference, not an implemented
+Blender depth compositor: draw order, rasterized depth and quantized alpha are
+explicit inputs. Out-of-range doubled alpha references are refused by that
+experiment because device behavior has not been established.
+
+For decoded facial frames rather than manual shape-key examples, use
+the new [BSA preview workflow](FACE_PLAYBACK.md). It retains ordinary authored
+normals on a fixed body; native depth ordering and shadows remain unfinished.

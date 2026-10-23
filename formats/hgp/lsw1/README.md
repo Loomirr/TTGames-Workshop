@@ -61,6 +61,8 @@ one exact native set through `HGP.layer_meshes(index)`.
 This add-on has no Blender HGP exporter. A separate source-tree tool can
 [recolor existing native materials and save an HGP copy](docs/MATERIAL_EXPORT.md).
 Its original-file round trips pass; in-game validation is pending.
+Another source-tree tool can [replace existing embedded DDS textures](docs/TEXTURE_EXPORT.md)
+while preserving the HGP's other bytes and native padding.
 General bone addition and arbitrary hair/part
 replacement back to a native model remain outside its scope; see the
 [character editing workflow and limits](../../../docs/CHARACTER_EDITING.md).
@@ -102,8 +104,10 @@ Animation format research is available separately in the
 existing channels. Explicitly reviewed ANI/HGP pairs can also produce a baked
 Blender playback scene using the source-tree research renderer. The current
 examples include Clone and Qui-Gon walking and Yoda idling. This requires an
-explicit binding with source hashes; automatic clip selection and facial playback
-are unfinished. Game-animation browsing is not yet available in this Blender addon.
+explicit binding with source hashes. A separate [decoded BSA facial preview](docs/FACE_PLAYBACK.md)
+now supports reviewed model/clip pairings with ordinary facial materials and a
+fixed body. Automatic clip selection and game-animation browsing are not yet
+available in this Blender addon.
 
 The separate [shader comparison renderer](docs/SHADERS.md#face-and-clothing-lighting-bump-only-comparison)
 can also produce before/after images and Blender scenes using recovered lighting

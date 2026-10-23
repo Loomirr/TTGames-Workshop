@@ -33,6 +33,8 @@ def main():
     parser.add_argument('--specular-matrix', type=Path, help='Explicit JSON four-row matrix hypothesis; enables effect-129 lookup test')
     parser.add_argument('--animation', type=Path, help='ANI for an explicitly bound research playback example')
     parser.add_argument('--binding', type=Path, help='Reviewed source hashes, bone mapping and preview rate JSON')
+    parser.add_argument('--face-animation', type=Path, help='Original BSA with an explicit reviewed facial binding')
+    parser.add_argument('--face-binding', type=Path, help='BSA/HGP source hashes, native layers, preview rate and evidence JSON')
     parser.add_argument('--frame', type=int, default=1, help='Integer native sample shown in the render')
     parser.add_argument('--legacy-plastic', action='store_true', help='Enable observed effect-145 ordinary fallback, with advanced lighting disabled')
     parser.add_argument('--bump', action='store_true', help='Enable effect-135 bump comparison; combines reflections when a reflection profile is supplied')
@@ -52,6 +54,10 @@ def main():
         raise ValueError('Live face preview needs a target and a fixed body; do not combine with a body ANI')
     if bool(args.animation) != bool(args.binding) or (args.animation and args.preview_pose):
         raise ValueError('Animation needs a binding and must not be combined with preview-pose corrections')
+    if bool(args.face_animation) != bool(args.face_binding):
+        raise ValueError('Decoded facial playback needs both --face-animation and --face-binding')
+    if args.face_animation and (args.animation or args.preview_pose or args.face_target is not None or args.face_preview_animation):
+        raise ValueError('Decoded facial shader preview needs a fixed body and no manual face pose')
     reflection_profile = None
     reflection_environment = None
     lighting_profile = None
@@ -95,6 +101,19 @@ def main():
     if any(abs(b.matrix_basis.to_quaternion().angle)>1e-6 for b in rig.pose.bones):
         raise ValueError('Shader lab supports translation-only preview poses')
     source = HGP(Path(rig['lsw1_source_file']))
+    facial_playback = None
+    if args.face_animation:
+        from bake_face_preview import load_binding as load_face_binding, bake as bake_face
+        face_clip, face_binding = load_face_binding(source, args.face_animation, args.face_binding)
+        # Static authored normals are verified for ordinary facial materials.
+        # Bump/reflection paths need per-frame vertex inputs and remain refused.
+        if any(source.materials()[p['material']]['effect'] != 0
+               for layer in face_binding['layers'] for p in source.layer_meshes(layer) if p.get('morph')):
+            raise ValueError('Decoded facial shader playback currently requires ordinary face materials')
+        facial_playback = bake_face(list(rig.children), source, face_clip, face_binding, bpy.context.scene)
+        if not 1 <= args.frame <= facial_playback['frames']:
+            raise ValueError('Requested frame is outside decoded facial playback')
+        bpy.context.scene.frame_set(args.frame)
     if args.face_target is not None:
         matches=0
         for obj in rig.children:
@@ -133,7 +152,7 @@ def main():
     points = []
     scene = bpy.context.scene
     preview_frame = scene.frame_current
-    bounds_frames = range(1, playback['frames']+1) if playback else range(1,18) if args.face_preview_animation else (preview_frame,)
+    bounds_frames = range(1, playback['frames']+1) if playback else range(1, facial_playback['frames']+1) if facial_playback else range(1,18) if args.face_preview_animation else (preview_frame,)
     for frame in bounds_frames:
         scene.frame_set(frame)
         graph = bpy.context.evaluated_depsgraph_get()
@@ -311,7 +330,12 @@ def main():
             scene.frame_set(frame);scene.render.filepath=str(output/f'face-frame-{frame:03d}.png')
             bpy.ops.render.render(write_still=True)
         scene.frame_set(1)
-    report = dict(model=args.model.name, detail=args.detail, preview_pose=args.preview_pose, playback=playback,
+    if facial_playback:
+        for frame in sorted({1, facial_playback['frames']//2 + 1, facial_playback['frames']}):
+            scene.frame_set(frame); scene.render.filepath = str(output / f'decoded-face-{frame:03d}.png')
+            bpy.ops.render.render(write_still=True)
+        scene.frame_set(args.frame)
+    report = dict(model=args.model.name, detail=args.detail, preview_pose=args.preview_pose, playback=playback, facial_playback=facial_playback,
                   sampled_frame=args.frame, legacy_plastic=args.legacy_plastic, bump=args.bump, color_space=args.color_space,
                   native_culling=args.native_culling,
                   native_tangents=args.native_tangents,
@@ -325,7 +349,7 @@ def main():
                   bump_basis=('Native single-strip last-triangle assignment; external normalization contract' if args.native_tangents else 'MikkTSpace in source coordinates/UVs; native tangent generation unverified') if args.bump else None,
                   ambient=ambient, lights=lights, camera_direction=camera_direction, specular_matrix_hypothesis=specular_rows,
                   changed=changed, retained=retained,
-                  scope='Fixed body-pose shader arithmetic experiment; ordinary face targets can animate with authored normals retained, but native facial clips are not decoded; importer-preview retains any baked research action. Weighted normal transforms and generated tangents are shader-input hypotheses. Effect 129 uses the older texture-specular candidate; effect 145 uses its ordinary fallback; effect 135 optionally uses the bump-only candidate. Effects 145 and nonzero-strength 135 optionally use verified reflection arithmetic with an explicit DDS cube or equirectangular environment and player-position hypothesis; native cube filtering and runtime inputs remain unverified. Chosen lights; raw DDS samples; declared display hypothesis. No proof of runtime selection, vertex preparation, texture filtering, color-space state, native blending space, shadows or reflection fidelity. Unsupported materials retain the importer preview.')
+                  scope='Fixed body-pose shader arithmetic experiment; ordinary face targets can animate with authored normals retained, with optional explicitly bound decoded BSA playback; importer-preview retains any baked research action. Weighted normal transforms and generated tangents are shader-input hypotheses. Effect 129 uses the older texture-specular candidate; effect 145 uses its ordinary fallback; effect 135 optionally uses the bump-only candidate. Effects 145 and nonzero-strength 135 optionally use verified reflection arithmetic with an explicit DDS cube or equirectangular environment and player-position hypothesis; native cube filtering and runtime inputs remain unverified. Chosen lights; raw DDS samples; declared display hypothesis. No proof of runtime selection, vertex preparation, texture filtering, color-space state, native blending space, shadows or reflection fidelity. Unsupported materials retain the importer preview.')
     (output / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print('SHADER_COMPARISON', len(changed), 'parts changed;', len(retained), 'retained', flush=True)
 
