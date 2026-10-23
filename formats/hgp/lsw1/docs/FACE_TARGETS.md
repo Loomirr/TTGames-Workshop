@@ -108,3 +108,32 @@ python formats/hgp/lsw1/tests/check_face_channels.py
 This is decoded game data, not a hand-keyed animation example. Final mapping
 from these layer components to rendered morph targets remains unverified, so
 native facial clip playback and export are still unavailable in the addon.
+
+## Original target accumulation experiment
+
+The renderer routine at `0x0052C340` reads the geometry's morph ID table. For
+each populated target it fetches that ID from the layer's decoded component
+array (after its eight-byte runtime header) and accumulates weighted XYZ deltas.
+Zero weights are skipped. It does not recompute normals or rename expressions.
+
+The new original-code checker executes `0x0052C397..0x0052C4C4`, supplying an
+output buffer instead of locking a GPU buffer. An explicit pairing of original
+Qui-Gon HGP and `combo1_2b.bsa` passed ten part/frame cases with zero float32
+difference. This covers both visible facial parts and five sampled clip times.
+Inputs with missing target channels or more than 2,000 part vertices are refused
+by this experiment. It does not infer padding beyond the clip's component count.
+
+```text
+python formats/hgp/lsw1/tools/check_native_face_deltas.py path/to/LEGOSTAR.EXE path/to/model.hgp path/to/clip.bsa path/to/new-report.json
+```
+
+This establishes the target-ID lookup and accumulation for the explicit research
+pairing. Automatic clip ownership, gameplay timing, native ordered depth passes
+and general addon facial playback remain unfinished.
+
+A fixed-body Blender 5.2.2 LTS research scene was baked from all 18 original
+`combo1_2b.bsa` frame samples for this pairing. Frames 1, 5, 9, 13 and 18 were
+rendered and inspected; the brows and mouth visibly change. The shader lab keeps
+the authored normals. Reopening the saved scene verifies all 576 target/frame
+values against the decoder. The example uses a declared preview playback rate,
+not recovered gameplay timing, and is not a native game render comparison.
