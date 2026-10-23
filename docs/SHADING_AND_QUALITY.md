@@ -1,5 +1,15 @@
 # Shading and mesh quality
 
+The [per-game shader and facial checklist](VISUAL_AND_FACE_COVERAGE.md) tracks
+1:1 rendering, face reconstruction, facial playback and native export as separate
+completion requirements. The evidence below describes partial progress.
+
+For Early Classic, [LSW1 shader research](../formats/hgp/lsw1/docs/SHADERS.md)
+records original compiled shader inspection and the native additive blend-state
+check. LSW1 **0.1.9** removes the opaque backing behind ordinary pod effects in
+Cycles and Eevee. Native lighting, reflections and full visual matching remain
+separate work.
+
 Character **0.5.9** and CU3 **0.1.18** preserve valid authored vertex normals
 when another vertex in the part has no usable direction. Only those missing
 directions use Blender's automatic-normal fallback; one unused zero direction
@@ -64,7 +74,8 @@ Correcting the former does not resolve every facial shading or expression issue.
 
 ## N sidebar settings
 
-Expand **TT Character > Import and preview settings**.
+In **TT Character**, expand **Import options / batch import** for mesh
+and costume choices, or **Preview quality (advanced)** for viewing settings.
 
 - **Mesh detail** defaults to **Highest detail**. File imports and the character
   browser use the nearest verified native LOD for the body and attachments.

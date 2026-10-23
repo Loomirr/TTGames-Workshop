@@ -1,5 +1,11 @@
 # LEGO Batman 2 PC: animation sets (AN4 trees 1-7, ANI-B)
 
+Character 0.5.29 adds experimental ANI-B/ANI-D animation export in both byte
+orders, preserving reduced-detail tracks. Batman's walk and run passed Blender
+edit/export/reload tests; in-game testing is still needed. See the current
+[animation support guide](ANIMATION_SUPPORT.md) and
+[export validation](../formats/character/EXPORT_VALIDATION.md).
+
 Builds on [LB2_CHARACTERS.md](LB2_CHARACTERS.md) and
 [LB2_OLDER_VERSIONS.md](LB2_OLDER_VERSIONS.md). The standalone AN4 reader (`an4.py`)
 now reads LEGO Batman 2's animation trees. The shared animation-block decoder
@@ -112,7 +118,7 @@ background, original files from the extracted tree:
 - `formats/cu3/scripts/test_lb2_an4.py`, constructed two-node trees:
   - big-endian versions 2 and 4-7 and little-endian 1 and 2 sample exactly as the
     same tree with ANI-D;
-  - versions 3 and 8, little-endian 3 and a size mismatch are refused (a
+  - versions 3 and 9, little-endian 3 and a size mismatch are refused (a
     little-endian tree with no facial pointer has no facial block).
 
 - **9-curve clips, Blender 5.2.2:** Catwoman (`catwoman.cd`) with `idle3`

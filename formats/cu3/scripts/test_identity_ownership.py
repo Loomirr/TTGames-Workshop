@@ -399,7 +399,16 @@ class CatalogOwnershipTests(AssetTreeFixture):
         report=self.read_catalog(sets,'Main',game='LOTR')
         self.assertEqual(report['entries'][0]['source_logical_path'],'Declared.AN4')
         self.assertEqual(report['entries'][1]['source'],'')
-        self.assertIn('unverified',report['entries'][1]['status'])
+        self.assertEqual(report['entries'][1]['status'],'Missing source')
+
+    def test_lotr_resolves_observed_nxg_bank_without_enabling_model_import(self):
+        sets={'Main.AS':self.animation_set('Main.AS',files=['Idle'])}
+        self.file('Main_AN4_NXG.PAK',bank(['Idle_DEF_NXG.AN4']))
+        report=self.read_catalog(sets,'Main',game='LOTR')
+        self.assertEqual(report['entries'][0]['member'],'Idle_DEF_NXG.AN4')
+        self.assertEqual(report['profile_identity']['support_scope'],'reference_inspection_only')
+        self.assertEqual(report['issues'],[])
+        with self.assertRaises(FormatError):character_profile('LOTR')
 
 
 def skeleton(name):

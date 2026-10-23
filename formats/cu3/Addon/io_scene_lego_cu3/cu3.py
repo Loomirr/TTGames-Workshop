@@ -37,7 +37,7 @@ class Reader:
 
 
 class Animation:
-    """Scalar sampler for the verified embedded-constant Euler layout.
+    """Scalar sampler for observed ANI-D Euler and constant-table layouts.
 
     Other layouts retain their header and raw data; they are explicitly rejected
     for pose application, rather than receiving guessed curves.
@@ -84,9 +84,14 @@ class Animation:
             raise FormatError('ANI-E sampling is not yet verified; structural inventory only')
         if self.descriptors is not None:
             return
-        # LMSH1/LB3 faces have 53 channels; LEGO Batman 2's have 37
-        # (docs/LB2_FACES.md).
-        if morph_channels and (self.nodes != 1 or self.curves not in (37, 53) or self.flags not in (0xa4, 0xac)
+        # LMSH1/LB3 faces have 53 channels; LEGO Batman 2's have 37.
+        # Observed Hobbit attachments and Avengers faces also use a 54th
+        # scalar in big-endian ANI-D/A4 blocks. It can animate (Bombur's
+        # fall-and-land clip), so retain it rather than dropping/padding it.
+        facial_count = self.curves in (37, 53) or (
+            self.curves == 54 and self.variant == 'ANID' and
+            self.endian == '>' and self.flags == 0xa4)
+        if morph_channels and (self.nodes != 1 or not facial_count or self.flags not in (0xa4, 0xac)
                                or tuple(self.node_flags) != (0,) or self.magic != b'DINA'):
             raise FormatError('Facial scalar layout not verified for this animation')
         if (not scene_channels and not morph_channels and (self.curves != 6 or self.flags & 0xe0 != 0xe0)) or self.flags & 1:
@@ -97,6 +102,12 @@ class Animation:
             raise FormatError('Invalid compressed animation timing')
         descriptors, key_cursor, scale_cursor = [], 0, self.at + self.offsets[0]
         r = self.reader
+        embedded_types = bool(self.flags & 0x20)
+        step_at = self.at + self.offsets[2] + self.nodes * self.curves * 2
+        if not embedded_types:
+            step_end = step_at + self.nodes * self.curves
+            if step_end > min(self.limit, self.at + self.offsets[3], self.at + self.offsets[4]):
+                raise FormatError('ANI-D channel-control table overlaps keys or exceeds its block')
         # Observed LB3 actor-control tracks: six absent transform channels,
         # visibility followed by discrete resource-control fields. These are
         # not a scale triplet. Retain the extra integers without interpreting
@@ -125,10 +136,13 @@ class Animation:
         self.discrete_scene_controls = discrete_scene
         for node in range(self.nodes):
             for channel in range(self.curves):
-                kind = self.types[node * self.curves + channel] & 0x7fff
+                channel_index = node * self.curves + channel
+                type_word = self.types[channel_index]
+                kind = type_word & 0x7fff if embedded_types else type_word
                 active = (True if morph_channels or attachment_controls or discrete_scene and channel>=6 else bool(self.node_flags[node] & 8) if self.curves in (9,10) and 6<=channel<9 else
                           True if self.curves == 1 or channel >= 6 else bool(self.node_flags[node] & (2 if channel < 3 else 1)))
-                desc = dict(kind=kind, active=active, step=bool(self.types[node * self.curves + channel] & 0x8000))
+                step = bool(type_word & 0x8000) if embedded_types else bool(r.get('B', step_at + channel_index) & 1)
+                desc = dict(kind=kind, active=active, step=step)
                 if active and kind in (6, 7):
                     desc['key_offset'] = key_cursor
                     desc['scale'], desc['minimum'] = r.get('2f', scale_cursor, self.endian)
@@ -138,15 +152,19 @@ class Animation:
                     desc['key_offset'] = key_cursor
                     key_cursor += 4
                     desc['step'] = True
-                elif active and kind >= 16 and not self.flags & 0x20:
-                    # Indexed integer constants precede the aligned float pool.
-                    # A visibility table with two integers adds four bytes;
-                    # a skeletal table with none starts directly with floats.
-                    float_start = (self.integer_constant_count * 2 + 3) & ~3
-                    constant_at = self.at + self.offsets[1] + float_start + (kind - 16) * 4
-                    if constant_at + 4 > self.at + self.offsets[2]:
-                        raise FormatError('Float constant index outside its table')
-                    desc['constant'] = r.get('f', constant_at, self.endian)
+                elif active and kind >= 16 and not embedded_types:
+                    # 0x10 selects float32 constants. Without it the pool uses
+                    # quantized uint16 values. 0x20 instead embeds the value in
+                    # the type word and also embeds its step bit there.
+                    pool = self.at + self.offsets[1] + self.integer_constant_count * 2
+                    floating = bool(self.flags & 0x10)
+                    width = 4 if floating else 2
+                    if floating:pool = (pool + 3) & ~3
+                    constant_at = pool + (kind - 16) * width
+                    if constant_at + width > min(self.limit, self.at + self.offsets[2]):
+                        raise FormatError('ANI-D constant index outside its table')
+                    value = r.get('f' if floating else 'H', constant_at, self.endian)
+                    desc['constant'] = value if floating else value * self.scale + self.minimum
                 elif active and kind < 16 and kind not in (14, 15):
                     raise FormatError(f'Unsupported skeletal curve type {kind}')
                 descriptors.append(desc)

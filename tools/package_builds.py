@@ -35,7 +35,7 @@ def main():
                        creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
     cu3=ROOT/'formats/cu3'
     subprocess.run([sys.executable,str(cu3/'scripts/build_addon.py')],check=True)
-    source=ast.parse((cu3/'Addon/io_scene_lego_cu3/__init__.py').read_text())
+    source=ast.parse((cu3/'Addon/io_scene_lego_cu3/__init__.py').read_text(encoding='utf-8'))
     info=next(ast.literal_eval(n.value) for n in source.body if isinstance(n,ast.Assign)
               and any(isinstance(t,ast.Name) and t.id=='bl_info' for t in n.targets))
     version='.'.join(map(str,info['version']))

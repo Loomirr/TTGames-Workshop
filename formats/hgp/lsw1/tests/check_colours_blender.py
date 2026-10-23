@@ -36,16 +36,24 @@ def main():
             expected=Color(source['diffuse']).from_srgb_to_scene_linear()
             assert max(abs(mat.diffuse_color[i]-expected[i]) for i in range(3))<2e-6,(path.name,mat.name)
             bsdf=mat.node_tree.nodes.get('Principled BSDF')
+            if bsdf:
+                color=bsdf.inputs['Base Color']
+                product=bsdf.inputs['Alpha'].links[0].from_node if bsdf.inputs['Alpha'].is_linked else None
+            else:
+                assert source['attributes']&15==2 and source['effect']==0
+                assert not source['linked_material'] and source['normal_texture'] is None
+                emission=next(n for n in mat.node_tree.nodes if n.type=='EMISSION')
+                color=emission.inputs['Color']
+                product=emission.inputs['Strength'].links[0].from_node.inputs[0].links[0].from_node
             if source['texture'] is None:
-                assert not bsdf.inputs['Base Color'].is_linked
-                assert max(abs(bsdf.inputs['Base Color'].default_value[i]-expected[i]) for i in range(3))<2e-6
+                assert not color.is_linked
+                assert max(abs(color.default_value[i]-expected[i]) for i in range(3))<2e-6
                 colored+=any(abs(v-1)>1e-6 for v in source['diffuse'])
             else:
-                tex=bsdf.inputs['Base Color'].links[0].from_node
+                tex=color.links[0].from_node
                 assert tex.type=='TEX_IMAGE' and tex.image.colorspace_settings.name=='sRGB' and tex.image.packed_file
                 textured+=1
-                if source['attributes']&15 in (1,10):
-                    product=bsdf.inputs['Alpha'].links[0].from_node
+                if source['attributes']&15 in (1,10) or bsdf is None:
                     assert product.type=='MATH' and product.operation=='MULTIPLY'
                     assert product.inputs[0].links[0].from_node.attribute_name=='LSW1 vertex opacity'
                     assert product.inputs[1].links[0].from_node==tex

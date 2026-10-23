@@ -1,7 +1,7 @@
 bl_info = {
     'name': 'LEGO CU3 Cutscene Importer (Experimental)',
     'author': 'Loomirr',
-    'version': (0, 1, 30),
+    'version': (0, 1, 37),
     'blender': (4, 4, 0),
     'location': 'File > Import > LEGO CU3 cutscene',
     'description': 'Assemble supported cutscene actors, attachments, materials and cameras from native companion assets',
@@ -60,27 +60,41 @@ class IMPORT_SCENE_OT_lego_cu3(bpy.types.Operator, ImportHelper):
     source_visibility: BoolProperty(name='Use source visibility', default=True, description='Hide shot-specific character instances and their children according to source tracks')
     asset_root: StringProperty(name='Game or extracted asset folder', subtype='DIR_PATH')
     static_environment: BoolProperty(name='Recovered static environment (experimental)', default=True, description='Build bounded static stage draws from declared level resources; visibility, nested scenes and source lighting remain incomplete')
-    game_profile: EnumProperty(name='Game / asset format', items=[('AUTO','Detect from CU3','Detect the verified LMSH1/LB3 versions; other games remain reference-only'),('LB3','LEGO Batman 3 PC DX11','Observed DX11 models'),('LMSH1','LEGO Marvel Super Heroes PC NXG','Observed NXG models')], default='AUTO')
+    game_profile: EnumProperty(name='Game (PC)', items=[('AUTO','Detect supported game','Detect supported Marvel Super Heroes / Batman 3 CU3 versions; other games require reference inspection'),('LB3','LEGO Batman 3','PC DX11 models with NXG animations'),('LMSH1','LEGO Marvel Super Heroes','PC NXG models and animations')], default='AUTO')
     cameras: BoolProperty(name='Import source cameras', default=False, description='Import observed source camera tracks and shot markers into the current scene')
 
     def draw(self, context):
         layout = self.layout
-        layout.prop(self, 'mode')
+        box = layout.box()
+        box.label(text='1. Choose what to import', icon='SCENE_DATA')
+        box.prop(self, 'mode', text='Task')
         if self.mode in ('ASSEMBLE','DEPENDENCIES'):
-            layout.prop(self, 'game_profile')
-            layout.prop(self, 'asset_root')
-            if self.mode=='ASSEMBLE':layout.prop(self,'static_environment')
-            layout.label(text='Blank uses the saved folder for the detected game.')
-            layout.label(text='Checks declared character companion files.' if self.mode=='DEPENDENCIES' else 'Creates a new scene and a missing-assets report.', icon='INFO')
-            layout.label(text='Stage visibility, props, lighting, audio and effects still need work.')
+            box = layout.box()
+            box.label(text='2. Choose the game and files')
+            box.prop(self, 'game_profile')
+            box.prop(self, 'asset_root', text='Game folder')
+            box.label(text='Blank folder: use the saved game folder.')
+            box = layout.box()
+            if self.mode=='ASSEMBLE':
+                box.prop(self,'static_environment', text='Include stage geometry (experimental)')
+                box.label(text='Creates a separate scene.')
+                box.label(text='Lighting, props and effects are incomplete.')
+            else:
+                box.label(text='Checks files without creating meshes.')
         elif self.mode != 'INSPECT':
-            layout.prop(self, 'skeleton_path')
-            layout.prop(self, 'actor_filter')
-            layout.prop(self, 'record_index')
-            layout.prop(self, 'place_in_scene')
-            layout.prop(self, 'source_visibility')
+            box = layout.box()
+            box.label(text='Advanced: match a source rig')
+            box.prop(self, 'skeleton_path')
+            box.prop(self, 'actor_filter')
+            box.prop(self, 'record_index')
+            box.prop(self, 'place_in_scene')
+            box.prop(self, 'source_visibility')
             if self.mode == 'SELECTED':
-                layout.prop(self, 'copy_rig')
+                box.prop(self, 'copy_rig')
+        else:
+            layout.label(text='Creates markers and a text report.')
+            layout.label(text='No character meshes in this mode.')
+            layout.label(text='Use this for Force Awakens / DC Super-Villains.')
         if self.mode not in ('ASSEMBLE','DEPENDENCIES'):layout.prop(self, 'cameras')
 
     def invoke(self, context, event):

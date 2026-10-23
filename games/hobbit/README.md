@@ -19,3 +19,9 @@ source-hash, native-part and run-structure validation. Decoded checks cover 48
 cached face assets; modified targets have not been tested in-game. General
 topology, material and skeleton encoding remain unfinished. Read the addon
 instructions before editing.
+
+## Shader and facial completion
+
+This edition must separately pass **1:1 shader matching, face reconstruction,
+facial animation and native facial/material export**. These remain open goals;
+see the [per-game checklist and required evidence](../../docs/VISUAL_AND_FACE_COVERAGE.md).

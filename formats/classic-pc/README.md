@@ -7,7 +7,15 @@ The character and cutscene addons also bundle **raw model inspection** and
 playback, AN3 binding and native export are not available.
 These readers do not modify games or bind animations to guessed skeletons.
 
-## Use
+## Import models into Blender
+
+For The Complete Saga or LEGO Batman 1, [download and install the Blender addon](../character/README.md#install),
+then follow [the classic model import steps](../character/README.md#lego-batman-1-and-the-complete-saga).
+You can view models and rigs; animation playback and edited model export are
+not available in these modes. For creating classic characters, see
+[BactaTank Classic](https://github.com/AlubJ/BactaTank-Classic).
+
+## Command-line file tools
 
 Python 3.10+ is sufficient. Run from the repository root with extracted files:
 
@@ -44,10 +52,10 @@ AN4 is deliberately excluded from this AN3 reader.
 
 ## Blender inspection
 
-In Character 0.5.16, select **LEGO Batman 1 (raw model inspection)** or
-**LEGO Star Wars TCS (raw model inspection)** in the TT Character sidebar.
-Set the installed or extracted root containing `CHARS`, then use **Browse game
-characters**. You can also choose **File > Import > LEGO Character / Model**
+In the Character addon, select **LEGO Batman 1 — models only** or
+**LEGO Star Wars: The Complete Saga — models only** in the TT Character sidebar.
+Set the installed or extracted root containing `CHARS`, then use **Browse
+characters...**. You can also choose **File > Import > LEGO Character / Model**
 and select a classic PC GHG/GSC with the matching game profile.
 
 This displays raw draws with limited definition-based visibility. With the **TCS** profile,
@@ -67,8 +75,8 @@ states, character scale and animation are not assembled. A low-resolution
 `NAME_LR_PC.GHG` needs its own `NAME_LR.TXT`; the base model's indices are not
 applied to a different layer table. Keep the definition beside the loose GHG;
 archive extraction that only supplies a model falls back to raw visibility.
-This source change needs updated addon packages before it is available in a
-previously installed ZIP. With the LB1 profile, or
+Update the addon and reimport to use this layer selection in an older project.
+With the LB1 profile, or
 when a TCS layer table does not resolve exactly, unresolved rigid pieces are kept
 in the hidden **Unbound rigid pieces / inspect separately** collection and the
 report says why.
@@ -85,7 +93,7 @@ diffuse RGB/vertex colors are an approximation, not native shader reconstruction
 Texture alpha is preserved as data but not automatically treated as opacity.
 Do not use this mode as a character fidelity or animation/export test.
 
-In Cutscene 0.1.25, use **File > Import > LEGO CU2 references (classic PC;
+In the Cutscene addon, use **File > Import > LEGO CU2 references (classic PC;
 inspection only)**. This creates a separate scene with actor/object placements,
 camera reference empties and shot markers where present. It does not assemble
 meshes, environments, animated cameras, lens settings or animation playback.

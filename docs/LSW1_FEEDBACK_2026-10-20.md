@@ -30,7 +30,7 @@ weights, source positions, topology and UVs are not cosmetically rewritten.
 | --- | --- |
 | Wookie, Geonosian, Destroyer, Droid Starfighter, Darth Sidious fail | These original files import in the current reader. The observed header variants were enabled in 0.1.5; the old unsupported-header message is not reproduced. |
 | Clonewalker lies down | The checked original stands upright with the current native bind assembly. No pose correction was introduced. |
-| Clone / EP3 variants / Stormtrooper hands | Native geometry appears once, weights normalize and the Blender rest/evaluated mesh matches the source. No incorrect bone mapping was demonstrated; the reported visual difference remains open. |
+| Clone / EP3 variants / Stormtrooper hands | Follow-up in 0.1.10: rendered wrist intrusion is confirmed. A reversible preview pose uses the longer hand translations observed in Clone animation records and the Sand Trooper bind. Source bind data remains unchanged. See [hand evidence and limits](../formats/hgp/lsw1/docs/HAND_PREVIEW.md). |
 | Clone ARC missing section | The supplied original imports its selected native geometry. The expected missing section is not independently identified; animation/visibility assembly is not reconstructed. |
 | Clone EP3 Sand UVs | Imported loop UVs match the original `(u, 1-v)` within float32 rounding, exactly in the audited Sand sample. No guessed UV shift was applied. |
 | Geonosian Fighter missing texture | Both declared embedded DDS images load and are connected. The other ten material slots are natively untextured; canopy opacity was the confirmed omission. |

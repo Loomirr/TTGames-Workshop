@@ -11,6 +11,11 @@ from .tt_deflate import decompress
 # and nodes (the same node fields up to +36). Records are 80 bytes in both.
 LB2_BIG_ENDIAN = (2, 4, 5, 6, 7)
 LB2_LITTLE_ENDIAN = (1, 2)
+# Original LOTR clips use trees 8/11; supplied Dimensions clips use tree 17.
+# Their tree/node/record fields match the 72/72/80-byte big-endian profile.
+# This admits structural reading and the separately gated ANI-D sampler; it
+# does not establish export, rig ownership, or unobserved intermediate versions.
+BIG_ENDIAN_TREES = (*LB2_BIG_ENDIAN, 8, 11, 13, 14, 15, 16, 17, 18, 19, 20)
 
 
 class AnimationFile:
@@ -31,10 +36,10 @@ class AnimationFile:
         if len(raw) >= 8 and r.get('I', 0, '<') in LB2_LITTLE_ENDIAN and r.get('I', 4, '<') == len(raw):
             version, size = r.get('2I', 0, '<')
             endian, head = '<', 44
-        elif version not in (*LB2_BIG_ENDIAN, 13, 14, 15, 16, 18, 19, 20):
+        elif version not in BIG_ENDIAN_TREES:
             size = -1
         if size != len(raw) or size < head:
-            raise FormatError('Standalone AN4 requires a verified big-endian v2/4-7/13-16/18-20 tree or a '
+            raise FormatError('Standalone AN4 requires a verified big-endian v2/4-8/11/13-20 tree or a '
                               'little-endian LB2 v1/2 tree; ANI-E is inspection only.')
         self.endian, self.header_size = endian, head
         get = lambda fmt, at: r.get(fmt, at, endian)

@@ -20,3 +20,9 @@ and material/face limits. The current CU3 0.1.18 download has separate scene/ani
 The portable AN4 subset has narrower coverage than the private research
 pipeline. Character-specific rigs, animation galleries, audio, suit work and
 retargeting drafts stay local. See [the local guide](../../docs/LOCAL_WORKSPACE.md).
+
+## Shader and facial completion
+
+This edition must separately pass **1:1 shader matching, face reconstruction,
+facial animation and native facial/material export**. These remain open goals;
+see the [per-game checklist and required evidence](../../docs/VISUAL_AND_FACE_COVERAGE.md).

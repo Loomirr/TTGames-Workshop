@@ -82,16 +82,28 @@ def main():
             assert max_uv_error<1e-6 and deform_error<2e-5
             records=h.materials()
             for obj,part in zip(meshes,parts):
-                mat=obj.data.materials[0];record=records[part['material']];bsdf=mat.node_tree.nodes['Principled BSDF']
-                if record['attributes']&15 in (1,10):
-                    product=bsdf.inputs['Alpha'].links[0].from_node
+                mat=obj.data.materials[0];record=records[part['material']];bsdf=mat.node_tree.nodes.get('Principled BSDF')
+                if bsdf:
+                    color=bsdf.inputs['Base Color']
+                    product=bsdf.inputs['Alpha'].links[0].from_node if bsdf.inputs['Alpha'].is_linked else None
+                else:
+                    assert record['attributes']&15==2 and record['effect']==0
+                    assert not record['linked_material'] and record['normal_texture'] is None
+                    assert mat.surface_render_method=='BLENDED'
+                    surface=mat.node_tree.nodes['Material Output'].inputs['Surface'].links[0].from_node
+                    assert surface.type=='ADD_SHADER' and surface.inputs[0].links[0].from_node.type=='BSDF_TRANSPARENT'
+                    emission=surface.inputs[1].links[0].from_node
+                    assert emission.type=='EMISSION'
+                    color=emission.inputs['Color']
+                    product=emission.inputs['Strength'].links[0].from_node.inputs[0].links[0].from_node
+                if record['attributes']&15 in (1,10) or bsdf is None:
                     assert product.type=='MATH' and product.operation=='MULTIPLY'
                     assert product.inputs[0].links[0].from_node.attribute_name==OPACITY_ATTRIBUTE
                     if record['texture'] is not None:
                         assert product.inputs[1].links[0].from_socket.name=='Alpha'
                     else:assert not product.inputs[1].is_linked and product.inputs[1].default_value==1.
                 if record['texture'] is not None:
-                    image=bsdf.inputs['Base Color'].links[0].from_node.image
+                    image=color.links[0].from_node.image
                     assert image.packed_file and image.colorspace_settings.name=='sRGB'
                 if record['normal_texture'] is not None:
                     image=bsdf.inputs['Normal'].links[0].from_node.inputs['Color'].links[0].from_node.image

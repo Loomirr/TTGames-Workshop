@@ -12,9 +12,9 @@ from .importer import import_character, remove_created_data, snapshot_data
 bl_info = {
     'name': 'LEGO Star Wars 1 Character Importer',
     'author': 'LSW1 Importer Contributors',
-    'version': (0, 1, 6),
+    'version': (0, 1, 10),
     'blender': (4, 2, 0),
-    'location': 'File > Import > LEGO Star Wars 1 Character (.hgp)',
+    'location': 'File > Import > LEGO Star Wars 1 Character (.hgp / .txt)',
     'description': 'Original 2005 LSW1 PC meshes, textures, native skeletons and weights',
     'category': 'Import-Export',
 }
@@ -26,7 +26,7 @@ class IMPORT_SCENE_OT_lsw1_hgp(bpy.types.Operator, ImportHelper):
     bl_options = {'UNDO'}
     filename_ext = '.hgp'
 
-    filter_glob: StringProperty(default='*.hgp;*.HGP', options={'HIDDEN'})
+    filter_glob: StringProperty(default='*.hgp;*.HGP;*.txt;*.TXT', options={'HIDDEN'})
     files: CollectionProperty(type=bpy.types.OperatorFileListElement, options={'HIDDEN', 'SKIP_SAVE'})
     directory: StringProperty(subtype='DIR_PATH', options={'HIDDEN', 'SKIP_SAVE'})
     import_armature: BoolProperty(name='Original Skeleton and Weights', default=True,
@@ -37,6 +37,9 @@ class IMPORT_SCENE_OT_lsw1_hgp(bpy.types.Operator, ImportHelper):
         description='Preserve the source normals for smooth LEGO surfaces')
     detail: EnumProperty(name='Detail Layer', default='AUTO', items=[
         ('AUTO', 'Maximum Detail (Automatic)', 'Choose nonempty body detail and observed complementary head, hair and vehicle layers; gameplay variants remain separate'),
+        *[(f'GAME_{name.upper()}', f'Definition: {name.title()}',
+           f'Use the exact layers_{name} list from the same-named character TXT; no extra layers are added')
+          for name in ('special','high','medium','low','dead')],
         ('0', 'Shared / Default Layer Only', 'Import the default layer; some characters keep their entire body here'),
         ('1', 'Layer 1', 'Shared layer plus native layer 1'),
         ('2', 'Layer 2', 'Shared layer plus native layer 2'),
@@ -51,8 +54,8 @@ class IMPORT_SCENE_OT_lsw1_hgp(bpy.types.Operator, ImportHelper):
         ('ORIGIN', 'World Origin', 'Place the first character at the world origin')])
     spacing: FloatProperty(name='Multiple Character Spacing', default=0.0, min=0,
         description='Spacing along X when importing several selected files')
-    correct_preview_pose: BoolProperty(name='Face Jango Helmet Forward', default=True,
-        description='Correct the known Jango helmet facing with a pose rotation; preserve its native bind data')
+    correct_preview_pose: BoolProperty(name='Correct Known Preview Poses', default=True,
+        description='Apply reversible Jango helmet and known Clone hand display poses; disable for native bind inspection or animation')
 
     @classmethod
     def poll(cls, context):
@@ -65,6 +68,7 @@ class IMPORT_SCENE_OT_lsw1_hgp(bpy.types.Operator, ImportHelper):
         layout.prop(self,'scale');layout.prop(self,'placement');layout.prop(self,'spacing')
         layout.prop(self,'correct_preview_pose')
         layout.label(text='Original LSW1 PC character files only', icon='INFO')
+        layout.label(text='TXT uses Definition: Special by default')
 
     def invoke(self, context, event):
         if self.filepath:
@@ -104,7 +108,7 @@ class LSW1_FH_hgp(bpy.types.FileHandler):
     bl_idname = 'LSW1_FH_hgp'
     bl_label = 'LEGO Star Wars 1 HGP'
     bl_import_operator = 'import_scene.lsw1_hgp'
-    bl_file_extensions = '.hgp'
+    bl_file_extensions = '.hgp;.txt'
 
     @classmethod
     def poll_drop(cls, context):
@@ -112,7 +116,7 @@ class LSW1_FH_hgp(bpy.types.FileHandler):
 
 
 def menu_import(self, context):
-    self.layout.operator(IMPORT_SCENE_OT_lsw1_hgp.bl_idname,text='LEGO Star Wars 1 Character (.hgp)')
+    self.layout.operator(IMPORT_SCENE_OT_lsw1_hgp.bl_idname,text='LEGO Star Wars 1 Character (.hgp / .txt)')
 
 
 def register():

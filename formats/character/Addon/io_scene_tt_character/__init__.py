@@ -1,6 +1,6 @@
 """Direct native character and animation import, independent of the CU3 addon."""
 bl_info = {'name': 'TT Character and Animation Importer', 'author': 'Loomirr and contributors',
-           'version': (0, 5, 23), 'blender': (4, 4, 0), 'category': 'Import-Export',
+           'version': (0, 5, 31), 'blender': (4, 4, 0), 'category': 'Import-Export',
            'location': 'File > Import; 3D View > Sidebar > TT Character',
            'description': 'PC character and animation browsing, constrained native editing and experimental face preview'}
 
@@ -17,13 +17,14 @@ from ._core.geometry_normals import normal_preservation_status
 from .scene_settings import ensure_scene_settings, missing_scene_settings, unregister_scene_settings
 from .preview_identity import linked_child
 from .batch import TTCHAR_OT_batch_import
+from .ui_guidance import game_guidance, note
 
 GAMES = [('LB2', 'LEGO Batman 2', 'Observed PC NXG models (experimental)'), ('LB3', 'LEGO Batman 3', 'Observed DX11 models'), ('LMSH1', 'LEGO Marvel Super Heroes', 'Observed NXG models'),
          ('HOBBIT', 'LEGO The Hobbit', 'Observed PC NXG models'),
          ('AVENGERS', "LEGO Marvel's Avengers", 'Observed PC DX11 characters'),
-         ('LB1', 'LEGO Batman 1 (raw model inspection)', 'Classic PC geometry/rig inspection; incomplete costume and rigid-part assembly; no AN3 playback'),
-         ('TCS', 'LEGO Star Wars TCS (raw model inspection)', 'Classic PC geometry/rig inspection; incomplete costume and rigid-part assembly; no AN3 playback'),
-         ('FORTNITE', 'LEGO Fortnite', 'Static models from exported LEGO recipes/baked meshes; no animations')]
+         ('LB1', 'LEGO Batman 1 — models only', 'PC classic models and rigs; incomplete costume assembly; no animation playback or game export'),
+         ('TCS', 'LEGO Star Wars: The Complete Saga — models only', 'PC classic models and rigs; incomplete costume assembly; no animation playback or game export'),
+         ('FORTNITE', 'LEGO Fortnite — static models', 'Exported LEGO recipes/baked meshes; no animation or game export; reported import issue awaiting investigation')]
 _catalog = []
 _catalog_assets = None
 _catalog_source = None
@@ -44,8 +45,14 @@ class TTCHAR_Preferences(bpy.types.AddonPreferences):
     cache: StringProperty(name='Optional asset cache', subtype='DIR_PATH')
 
     def draw(self, context):
-        for prop in ('lb2', 'lb3', 'lmsh1', 'hobbit', 'avengers', 'lb1', 'tcs', 'fortnite', 'fortnite_extractor', 'fortnite_settings', 'cache'):
-            self.layout.prop(self, prop)
+        note(self.layout, context, 'Choose a game folder in the TT Character sidebar to get started. Saved folders are listed below.')
+        for game, label, _ in GAMES:
+            self.layout.prop(self, game.lower(), text=label.split(' — ')[0])
+        box = self.layout.box()
+        box.label(text='Optional Fortnite extraction setup')
+        box.prop(self, 'fortnite_extractor')
+        box.prop(self, 'fortnite_settings')
+        self.layout.prop(self, 'cache')
 
 
 def preferences(context):
@@ -192,6 +199,27 @@ class IMPORT_SCENE_OT_tt_character(bpy.types.Operator, ImportHelper):
         ('AUTHORED', 'Authored binding', 'Inspect the original display binding without LOD override')], default='HIGHEST')
     layers: EnumProperty(name='Costume layers', items=[('default', 'Default costume', 'Use native default character layers'),
         ('cutscene', 'Cutscene costume', 'Use native cutscene layers'), ('authored', 'Authored selection flags', 'Original reader selection flags')], default='default')
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text='Character / Model import', icon='OUTLINER_OB_ARMATURE')
+        layout.prop(self, 'game')
+        game_guidance(layout, context, self.game)
+        layout.prop(self, 'assets')
+        if self.game in ('LB1', 'TCS'):
+            note(layout, context, 'Choose a GHG or GSC model from this game.')
+        elif self.game == 'FORTNITE':
+            note(layout, context, 'Use Browse game characters in the TT Character sidebar for Fortnite exports.')
+        else:
+            layout.label(text='CD: assemble its declared character parts.')
+            layout.label(text='GHG / GSC: open an individual model.')
+            layout.prop(self, 'definition')
+            layout.prop(self, 'attachments')
+            layout.prop(self, 'mesh_detail')
+            layout.prop(self, 'layers')
+            layout.prop(self, 'game_handedness')
+        layout.separator()
+        note(layout, context, 'After import: press N in the 3D Viewport and open TT Character.')
 
     def invoke(self, context, event):
         ensure_scene_settings()
@@ -385,6 +413,90 @@ class TTCHAR_OT_load_animation(bpy.types.Operator):
         return {'FINISHED'} if report['imported'] else {'CANCELLED'}
 
 
+class TTCHAR_OT_custom_clip(bpy.types.Operator):
+    bl_idname = 'tt_character.custom_clip'
+    bl_label = 'Create custom animation copy'
+    bl_options = {'REGISTER', 'UNDO'}
+    clip_name: StringProperty(name='Clip name', default='Custom animation')
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def execute(self, context):
+        from .custom_animation import create_custom_clip
+        rig = find_rig(context.object)
+        if rig is None:return {'CANCELLED'}
+        try:create_custom_clip(rig,self.clip_name)
+        except (ValueError, KeyError, RuntimeError) as error:
+            self.report({'ERROR'},str(error));return {'CANCELLED'}
+        self.report({'INFO'},'Custom copy ready. Keep the native rig and clip length; export replaces the template clip.')
+        return {'FINISHED'}
+
+
+class TTCHAR_OT_load_custom(bpy.types.Operator, ImportHelper):
+    bl_idname = 'tt_character.load_custom'
+    bl_label = 'Load custom AN4 / PAK for selected action'
+    bl_options = {'REGISTER', 'UNDO'}
+    filter_glob: StringProperty(default='*.AN4;*.an4;*.PAK;*.pak', options={'HIDDEN'})
+
+    def execute(self, context):
+        from .custom_animation import load_custom_clip
+        rig = find_rig(context.object)
+        if rig is None or not 0 <= rig.tt_animation_asset_index < len(rig.tt_animation_assets):
+            self.report({'ERROR'},'Select a declared character action first');return {'CANCELLED'}
+        try:
+            entry=json.loads(rig.tt_animation_assets[rig.tt_animation_asset_index].payload)
+            report=load_custom_clip(context,rig,self.filepath,entry)
+        except (ValueError, OSError, KeyError, RuntimeError) as error:
+            self.report({'ERROR'},str(error));return {'CANCELLED'}
+        self.report({'WARNING'} if report['issues'] else {'INFO'},
+                    report['issues'][0] if report['issues'] else 'Custom animation loaded for preview')
+        return {'FINISHED'} if report['imported'] else {'CANCELLED'}
+
+
+class TTCHAR_OT_animation_details(bpy.types.Operator):
+    """Explain which facial tracks loaded for the selected animation"""
+    bl_idname = 'tt_character.animation_details'
+    bl_label = 'Animation details'
+
+    @classmethod
+    def poll(cls, context):
+        rig = find_rig(context.object)
+        return bool(rig and rig.animation_data and rig.animation_data.action)
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self, width=640)
+
+    def draw(self, context):
+        import textwrap
+        rig = find_rig(context.object)
+        action = rig.animation_data.action
+        layout = self.layout
+        layout.label(text=action.name, icon='ACTION')
+        data = json.loads(action.get('tt_facial_playback', '{}'))
+        if not data:
+            layout.label(text='Load this clip again to see its facial playback details.')
+            return
+        layout.label(text=f'Face tracks loaded: {data["mesh_tracks"]}; moving: {data["animated_mesh_tracks"]}')
+        if data['status'] == 'static':
+            layout.label(text='The loaded expression weights stay constant throughout this clip.')
+        elif data['status'] == 'absent':
+            layout.label(text='No facial tracks loaded. Check the character includes its face attachment.')
+        for note in data.get('notices', []):
+            box = layout.box()
+            box.label(text=note.get('attachment', 'Face'), icon='INFO')
+            for line in textwrap.wrap(note.get('reason', ''), width=82):
+                box.label(text=line)
+        layout.separator()
+        layout.label(text='Edited facial tracks cannot currently be exported back to AN4.')
+        if action.get('tt_animation_report'):
+            layout.label(text='Full report in Blender Text Editor:')
+            layout.label(text=action['tt_animation_report'])
+
+    def execute(self, context):
+        return {'FINISHED'}
+
+
 class TTCHAR_OT_preview(bpy.types.Operator):
     bl_idname = 'tt_character.preview'
     bl_label = 'Create character preview scene'
@@ -416,12 +528,25 @@ class TTCHAR_OT_preview(bpy.types.Operator):
 
 class TTCHAR_OT_export_sources(bpy.types.Operator):
     bl_idname = 'tt_character.export_sources'
-    bl_label = 'Export loose native files / supported edits'
+    bl_label = 'LEGO model edits (game files)'
+    bl_description = 'Write supported edits to a new folder; keep the original meshes, bones and materials'
     directory: StringProperty(name='New export folder', subtype='DIR_PATH')
     face_edits: BoolProperty(name='Write supported existing face target edits', default=True,
         description='Write existing targets while preserving facial Basis and topology')
     mesh_edits: BoolProperty(name='Write supported vertex and skin edits', default=True,
         description='Positions, UVs, colors, normals and existing palette weights; preserve topology, bounds and skeleton')
+
+    @classmethod
+    def poll(cls, context):
+        if find_character(context.object) is None:
+            cls.poll_message_set('Select a character imported with source export support')
+            return False
+        return True
+
+    def draw(self, context):
+        note(self.layout, context, 'Write separate game files to a new folder. Existing mesh and face edits only; no new bones or parts.')
+        self.layout.prop(self, 'mesh_edits', text='Include mesh edits')
+        self.layout.prop(self, 'face_edits', text='Include face shape edits')
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -445,22 +570,53 @@ class TTCHAR_OT_export_sources(bpy.types.Operator):
 
 class TTCHAR_OT_export_action(bpy.types.Operator, ExportHelper):
     bl_idname = 'tt_character.export_action'
-    bl_label = 'Export active AN4 clip (experimental)'
+    bl_label = 'LEGO animation (.an4 / .pak)'
+    bl_description = 'Export the selected character\'s active native clip; supported edits only'
     filename_ext = '.AN4'
     filter_glob: StringProperty(default='*.AN4', options={'HIDDEN'})
+    rebuild_bank: BoolProperty(name='Rebuild source PAK bank', default=False,
+        description='For clips imported from a bank: write a separate PAK, preserving the other clips and original order. Requires a fresh clip import')
     omit_auxiliary: BoolProperty(name='Omit unsupported events / auxiliary tables', default=False,
-        description='Explicitly allow pose-only export when original ANI-D has auxiliary tables; gameplay cues will need separate setup')
+        description='Discard extra tables for a pose-only draft; leave off to preserve supported native detail tracks')
+
+    @classmethod
+    def poll(cls, context):
+        rig = find_rig(context.object)
+        action = rig.animation_data.action if rig and rig.animation_data else None
+        if not action or not action.get('tt_native_pose_fingerprint'):
+            cls.poll_message_set('Select an imported character and load a native animation first')
+            return False
+        return True
+
+    def draw(self, context):
+        note(self.layout, context, 'Export edits to an existing body animation. Keep its original bones and duration.')
+        self.layout.prop(self, 'rebuild_bank', text='Write PAK with the other source clips')
+        note(self.layout, context, 'On: write a separate PAK bank. Off: write this AN4 clip only.')
+        box = self.layout.box()
+        box.label(text='Advanced: pose-only draft')
+        box.prop(self, 'omit_auxiliary', text='Discard unsupported extra tables')
+        note(box, context, 'Leave this off to preserve supported game data. A draft may not play correctly in-game.')
+
+    def check(self, context):
+        self.filename_ext = '.PAK' if self.rebuild_bank else '.AN4'
+        self.filter_glob = '*.PAK' if self.rebuild_bank else '*.AN4'
+        previous = self.filepath
+        if Path(self.filepath).suffix.lower() in ('.an4', '.pak'):
+            self.filepath = str(Path(self.filepath).with_suffix(self.filename_ext))
+        return ExportHelper.check(self, context) or self.filepath != previous
 
     def execute(self, context):
         from .animation_export import export_action
         rig = find_rig(context.object)
         if rig is None:return {'CANCELLED'}
         try:
-            report = export_action(context, rig, self.filepath, omit_auxiliary=self.omit_auxiliary)
+            report = export_action(context, rig, self.filepath, omit_auxiliary=self.omit_auxiliary,
+                                   rebuild_bank=self.rebuild_bank)
         except (ValueError, OSError, KeyError, RuntimeError, OverflowError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
-        self.report({'WARNING'}, 'Separate AN4 written and decoded; experimental, no PAK/DAT writing or in-game validation')
+        self.report({'INFO'}, 'Separate PAK bank written; other clips preserved. See the export report.' if self.rebuild_bank
+                    else 'Separate AN4 written and decoded. See the export report for limits.')
         return {'FINISHED'}
 
 
@@ -493,13 +649,16 @@ class TTCHAR_OT_restore_settings(bpy.types.Operator):
 
 
 class TTCHAR_PT_settings(bpy.types.Panel):
-    bl_label = 'Import and preview settings'
+    bl_label = 'Preview quality (advanced)'
     bl_idname = 'TTCHAR_PT_settings'
-    bl_parent_id = 'TTCHAR_PT_tools'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'TT Character'
     bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return getattr(context.scene, 'tt_show_advanced', False) and context.scene.tt_workflow == 'ANIMATE'
 
     def draw(self, context):
         layout = self.layout; scene = context.scene
@@ -507,13 +666,8 @@ class TTCHAR_PT_settings(bpy.types.Panel):
             layout.label(text='Some settings are unavailable.', icon='ERROR')
             layout.operator('tt_character.restore_settings', icon='FILE_REFRESH')
             return
-        if scene.tt_character_game != 'FORTNITE':
-            box = layout.box(); box.label(text='Next character import')
-            box.prop(scene, 'tt_mesh_detail'); box.prop(scene, 'tt_costume_layers')
-            box.prop(scene, 'tt_import_attachments'); box.prop(scene, 'tt_game_handedness')
-            box.label(text='Change detail/costume, then reimport.')
         box = layout.box(); box.label(text='Viewing scene')
-        if scene.tt_character_game != 'FORTNITE':
+        if scene.tt_character_game not in ('LB1', 'TCS', 'FORTNITE'):
             box.prop(scene, 'tt_face_detail')
             if not normal_preservation_status()['supported']:
                 box.label(text='Facial preview normals are approximate.', icon='ERROR')
@@ -528,74 +682,214 @@ class TTCHAR_PT_settings(bpy.types.Panel):
         box.label(text='Create a preview, then apply changes.')
 
 
+class TTCHAR_PT_navigation(bpy.types.Panel):
+    bl_label = 'Model tools'
+    bl_idname = 'TTCHAR_PT_navigation'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'TT Character'
+    bl_options = {'HIDE_HEADER'}
+
+    def draw(self, context):
+        if missing_scene_settings():
+            self.layout.operator('tt_character.restore_settings', icon='FILE_REFRESH')
+            return
+        self.layout.prop(context.scene, 'tt_workflow', expand=True)
+        self.layout.prop(context.scene, 'tt_show_advanced')
+
+
 class TTCHAR_PT_tools(bpy.types.Panel):
-    bl_label = 'TT Character'
+    bl_label = 'Import'
     bl_idname = 'TTCHAR_PT_tools'
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_category = 'TT Character'
 
+    @classmethod
+    def poll(cls, context):
+        return getattr(context.scene, 'tt_workflow', 'IMPORT') == 'IMPORT'
+
     def draw(self, context):
         layout = self.layout
-        layout.prop(context.scene, 'tt_character_game', text='Game')
+        game = context.scene.tt_character_game
+        layout.label(text='Game for the next import')
+        layout.prop(context.scene, 'tt_character_game', text='')
+        game_name = next(label.split(' — ')[0] for key, label, _ in GAMES if key == game)
+        if len(game_name) > 28:
+            note(layout, context, game_name)
+        if context.scene.tt_show_advanced:
+            game_guidance(layout, context, game)
+        elif game in ('LB1', 'TCS', 'FORTNITE'):
+            note(layout, context, 'Models only. No animation or game export.')
         prefs = preferences(context)
         if prefs:
-            layout.prop(prefs, context.scene.tt_character_game.lower(), text='Game folder')
-        layout.operator('import_scene.tt_game_character', text='Browse game characters', icon='VIEWZOOM')
-        if context.scene.tt_character_game != 'FORTNITE':
-            layout.operator('tt_character.batch_import', icon='OUTLINER_COLLECTION')
-        if context.scene.tt_character_game in ('LB1','TCS'):
-            layout.operator('import_scene.tt_character',text='Inspect classic GHG / GSC')
-            layout.label(text='Raw geometry and native rig inspection.')
-            layout.label(text='Rigid attachment/costume assembly incomplete.')
-            layout.label(text='AN3 playback and native export not enabled.')
-            return
-        if context.scene.tt_character_game == 'FORTNITE':
+            layout.label(text='Game / extracted folder')
+            layout.prop(prefs, game.lower(), text='')
+        else:
+            note(layout, context, 'Enable the addon in Preferences to save game folders. You can still open an extracted file below.')
+        browse = layout.column()
+        browse.enabled = bool(prefs and getattr(prefs, game.lower(), ''))
+        browse.operator('import_scene.tt_game_character', text='Browse characters...', icon='VIEWZOOM')
+        if not browse.enabled:
+            note(layout, context, 'Choose the game folder to browse its characters.')
+        if game == 'FORTNITE':
             from .fortnite_importer import find_fortnite
-            character = find_fortnite(context.object)
-            if character:
-                layout.label(text=character.name, icon='MESH_DATA')
-                layout.operator('tt_character.preview', text='Create static character preview scene', icon='SCENE_DATA')
-            layout.label(text='Static models, source colors, printing and normals.')
-            layout.label(text='Game/Paks folder or existing export library.')
-            layout.label(text='Facial atlas and special shaders remain approximate.')
+            if find_fortnite(context.object):
+                layout.operator('tt_character.preview', text='Create static viewing scene', icon='SCENE_DATA')
             if prefs and prefs.fortnite_extractor and prefs.fortnite_settings:
-                layout.operator('tt_character.fortnite_extract', text='Refresh installed LEGO outfit index').index_only=True
+                layout.operator('tt_character.fortnite_extract', text='Refresh outfit list').index_only = True
             return
-        layout.operator('import_scene.tt_character', text='Import character / model')
-        layout.operator('import_anim.tt_an4', text='Import AN4 animations')
+        layout.operator('import_scene.tt_character', text='Open model file...' if game in ('LB1', 'TCS') else 'Open character / model...', icon='FILE_FOLDER')
+        if context.scene.tt_show_advanced:
+            note(layout, context, 'GHG / GSC: individual model.' if game in ('LB1', 'TCS') else 'CD: character with its parts. GHG / GSC: individual model.')
+
+
+class TTCHAR_PT_import_options(bpy.types.Panel):
+    bl_label = 'Import options / batch import'
+    bl_idname = 'TTCHAR_PT_import_options'
+    bl_parent_id = 'TTCHAR_PT_tools'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'TT Character'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return (context.scene.tt_character_game != 'FORTNITE' and
+                context.scene.tt_workflow == 'IMPORT' and context.scene.tt_show_advanced)
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+        if missing_scene_settings():
+            layout.operator('tt_character.restore_settings', icon='FILE_REFRESH')
+            return
+        if scene.tt_character_game not in ('LB1', 'TCS'):
+            layout.prop(scene, 'tt_mesh_detail')
+            layout.prop(scene, 'tt_costume_layers')
+            layout.prop(scene, 'tt_import_attachments')
+            layout.prop(scene, 'tt_game_handedness')
+            note(layout, context, 'These settings apply to the next import.')
+        layout.operator('tt_character.batch_import', text='Import several models...', icon='OUTLINER_COLLECTION')
+
+
+class TTCHAR_PT_animations(bpy.types.Panel):
+    bl_label = 'Animate'
+    bl_idname = 'TTCHAR_PT_animations'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'TT Character'
+
+    @classmethod
+    def poll(cls, context):
+        return getattr(context.scene, 'tt_workflow', 'IMPORT') == 'ANIMATE'
+
+    def draw(self, context):
+        layout = self.layout
         rig = find_rig(context.object)
         if rig:
             layout.label(text=rig.name, icon='ARMATURE_DATA')
-            layout.operator('tt_character.preview', icon='SCENE_DATA')
-            layout.label(text='Use camera view in the preview for facial masking.')
-            layout.operator('tt_character.preview', text='Create composed face preview', icon='RENDER_STILL').composed_faces=True
+            layout.operator('import_anim.tt_an4', text='Load a separate AN4 file')
+            layout.label(text='Find an animation')
             layout.prop(rig, 'tt_animation_search', text='', icon='VIEWZOOM')
             layout.operator('tt_character.refresh_animations')
             if rig.tt_animation_assets:
                 layout.label(text=f'{len(rig.tt_animation_assets)} declared actions')
                 layout.template_list('TTCHAR_UL_animation_assets', '', rig, 'tt_animation_assets', rig, 'tt_animation_asset_index', rows=6)
                 layout.operator('tt_character.load_animation', icon='IMPORT')
-            layout.label(text='Loaded clips')
-            layout.template_list('TTCHAR_UL_clips', '', rig, 'tt_clips', rig, 'tt_clip_index', rows=5)
-            layout.operator('screen.animation_play', text='Play / Pause', icon='PLAY')
-            layout.operator('tt_character.export_sources', icon='EXPORT')
-            if rig.animation_data and rig.animation_data.action:
-                layout.operator('tt_character.export_action', icon='EXPORT')
-            layout.label(text='Select a clip; Space plays the timeline.')
+            if rig.tt_clips:
+                layout.label(text='Loaded clips')
+                layout.template_list('TTCHAR_UL_clips', '', rig, 'tt_clips', rig, 'tt_clip_index', rows=5)
+            else:
+                note(layout, context, 'No clips loaded. Find an animation above or open a separate AN4 file.')
+            active = rig.animation_data.action if rig.animation_data else None
+            if active and active.get('tt_facial_playback'):
+                faces = json.loads(active['tt_facial_playback'])
+                status = faces['status']
+                label = {
+                    'animated': f'Face: {faces["animated_mesh_tracks"]} moving parts',
+                    'static': 'Face: this clip holds a fixed expression',
+                    'absent': 'Face: no expression tracks loaded',
+                    'unavailable': 'Face: could not load expression tracks',
+                }.get(status, 'Face: see TT AN4 report')
+                layout.label(text=label, icon='INFO' if status != 'unavailable' else 'ERROR')
+                if any(note['status']=='unavailable' for note in faces.get('notices', [])):
+                    layout.label(text='Missing face parts: see TT AN4 report.')
+                layout.operator('tt_character.animation_details', icon='INFO')
+            playback = layout.row()
+            playback.enabled = active is not None
+            playback.operator('screen.animation_play', text='Play / Pause', icon='PLAY')
         else:
             if find_character(context.object):
-                layout.operator('tt_character.preview', icon='SCENE_DATA')
-                layout.operator('tt_character.preview', text='Create composed face preview', icon='RENDER_STILL').composed_faces=True
-                layout.operator('tt_character.export_sources', icon='EXPORT')
+                layout.operator('tt_character.preview', text='Create viewing scene', icon='SCENE_DATA')
+                layout.operator('tt_character.preview', text='Create face render preview', icon='RENDER_STILL').composed_faces = True
+                note(layout, context, 'This model has no supported body animation rig.')
+            elif context.scene.tt_character_game in ('LB1', 'TCS', 'FORTNITE'):
+                note(layout, context, 'The selected game has model import only; animation playback is unavailable.')
             else:
-                layout.label(text='Select an imported character or its rig.')
-        layout.label(text='Experimental materials and face preview.')
+                note(layout, context, 'Select an imported character or its rig to browse animations. Then load a clip and press Play.')
+
+
+class TTCHAR_PT_animation_options(bpy.types.Panel):
+    bl_label = 'Custom clips / viewing scenes'
+    bl_idname = 'TTCHAR_PT_animation_options'
+    bl_parent_id = 'TTCHAR_PT_animations'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'TT Character'
+    bl_options = {'DEFAULT_CLOSED'}
+
+    @classmethod
+    def poll(cls, context):
+        return (find_rig(context.object) is not None and context.scene.tt_workflow == 'ANIMATE'
+                and context.scene.tt_show_advanced)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator('tt_character.custom_clip', text='Copy active clip for editing', icon='DUPLICATE')
+        layout.operator('tt_character.load_custom', text='Load replacement AN4 / PAK...', icon='FILE_FOLDER')
+        note(layout, context, 'Load a native clip before copying it. For a replacement file, select its action in the game animation list.')
+        layout.separator()
+        layout.operator('tt_character.preview', text='Create viewing scene', icon='SCENE_DATA')
+        layout.operator('tt_character.preview', text='Create face render preview', icon='RENDER_STILL').composed_faces = True
+        note(layout, context, 'For face masks, use camera view in the viewing scene.')
+
+
+class TTCHAR_PT_export(bpy.types.Panel):
+    bl_label = 'Export'
+    bl_idname = 'TTCHAR_PT_export'
+    bl_space_type = 'VIEW_3D'
+    bl_region_type = 'UI'
+    bl_category = 'TT Character'
+    @classmethod
+    def poll(cls, context):
+        return getattr(context.scene, 'tt_workflow', 'IMPORT') == 'EXPORT'
+
+    def draw(self, context):
+        layout = self.layout
+        character = find_character(context.object)
+        if character:
+            note(layout, context, 'Export selected: ' + character.name)
+        elif context.scene.tt_character_game in ('LB1', 'TCS', 'FORTNITE'):
+            note(layout, context, 'Game export is unavailable for this game in this addon.')
+        else:
+            note(layout, context, 'Select an imported character first. For animation export, also load a native clip.')
+        layout.operator('tt_character.export_sources', text='Export model edits...', icon='EXPORT')
+        layout.operator('tt_character.export_action', text='Export animation (AN4 / PAK)...', icon='EXPORT')
+        note(layout, context, 'Existing parts and clips only. Writes separate files.')
+        if context.scene.tt_show_advanced:
+            note(layout, context, 'New bones, parts and animation slots are not supported here. Installing exports in the game is a separate step.')
+
 
 
 def menu_import(self, context):
     self.layout.operator(IMPORT_SCENE_OT_tt_character.bl_idname)
     self.layout.operator(IMPORT_ANIM_OT_tt_an4.bl_idname)
+
+
+def menu_export(self, context):
+    self.layout.operator(TTCHAR_OT_export_sources.bl_idname)
+    self.layout.operator(TTCHAR_OT_export_action.bl_idname)
 
 
 _fortnite_job = False
@@ -690,7 +984,7 @@ class TTCHAR_FH_an4(bpy.types.FileHandler):
                 and IMPORT_ANIM_OT_tt_an4.poll(context))
 
 
-CLASSES = (TTCHAR_OT_batch_import, TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_tools, TTCHAR_PT_settings, TTCHAR_OT_apply_preview, TTCHAR_OT_restore_settings, TTCHAR_OT_fortnite_extract, TTCHAR_FH_model, TTCHAR_FH_an4)
+CLASSES = (TTCHAR_OT_batch_import, TTCHAR_Preferences, TTCHAR_Clip, TTCHAR_AnimationAsset, IMPORT_SCENE_OT_tt_character, IMPORT_SCENE_OT_tt_game_character, IMPORT_ANIM_OT_tt_an4, TTCHAR_UL_clips, TTCHAR_UL_animation_assets, TTCHAR_OT_refresh_animations, TTCHAR_OT_load_animation, TTCHAR_OT_custom_clip, TTCHAR_OT_load_custom, TTCHAR_OT_animation_details, TTCHAR_OT_preview, TTCHAR_OT_export_sources, TTCHAR_OT_export_action, TTCHAR_PT_navigation, TTCHAR_PT_tools, TTCHAR_PT_import_options, TTCHAR_PT_animations, TTCHAR_PT_animation_options, TTCHAR_PT_export, TTCHAR_PT_settings, TTCHAR_OT_apply_preview, TTCHAR_OT_restore_settings, TTCHAR_OT_fortnite_extract, TTCHAR_FH_model, TTCHAR_FH_an4)
 
 
 def register():
@@ -704,9 +998,11 @@ def register():
     bpy.types.Scene.tt_character_game = EnumProperty(name='Game', items=GAMES, default='LB3')
     ensure_scene_settings()
     bpy.types.TOPBAR_MT_file_import.append(menu_import)
+    bpy.types.TOPBAR_MT_file_export.append(menu_export)
 
 
 def unregister():
+    bpy.types.TOPBAR_MT_file_export.remove(menu_export)
     bpy.types.TOPBAR_MT_file_import.remove(menu_import)
     del bpy.types.Object.tt_clip_index
     del bpy.types.Object.tt_clips

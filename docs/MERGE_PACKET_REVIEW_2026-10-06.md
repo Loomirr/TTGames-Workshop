@@ -90,14 +90,12 @@ Keep Character 0.5.6 / CU3 0.1.15 installed until these regressions are resolved
 The workstation rule to install the newest validated addon does not make a
 candidate with failed original character imports a validated replacement.
 
-## Independent exporter plan
+## Classic character creation
 
-[BACTATANK_INTEROP.md](BACTATANK_INTEROP.md) remains a research plan, not an
-implemented exporter. Start with an independently authored static `.bmesh`
-subset and independent strip decoder, then prove destination `.barm` identity,
-axes, palette/weight budgets and target capacities before skinned export.
-Replacement/save/reopen and in-game checks are separate gates. No BactaTank
-code, addon, executable or strip algorithm was copied or translated.
+The earlier interoperability proposal has been removed. For creating characters
+for PC TCS, LEGO Batman or LEGO Indiana Jones, use
+[BactaTank Classic](https://github.com/AlubJ/BactaTank-Classic) as the recommended
+starting point. Workshop's classic import tools remain for inspection in Blender.
 
 Private logs, original identities, copied specimens and fresh outputs are under
 ignored `local/validation/astra-merge-20261006/` in the main checkout. Package hashes

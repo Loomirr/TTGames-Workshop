@@ -1,34 +1,64 @@
-# Download builds
+# Downloads
 
-The current Blender builds integrate experimental LB2 characters/animations,
-additional observed model layouts and material preview fixes. Native export
-remains constrained to supported edits.
-[Validation and remaining gaps](../docs/PR_REVIEW_2026-10-19.md).
+Pick your game or task below. Click its ZIP link, then the **Download button
+(down-arrow icon) at the top right** of GitHub's file view.
 
-These packages are built from our tools in this repository. Click a package
-below, then use GitHub's **Download raw file** button to save the ZIP.
+## Blender addons
 
-| Tool | Package | Use |
+Keep the ZIP zipped. In Blender, go to **Edit > Preferences > Get Extensions**,
+click the **drop-down arrow at the top right**, then select **Install from Disk**.
+Choose the ZIP and enable the addon under **Add-ons**. Star Wars 1 and II ZIPs
+can also be dragged into the Blender window to install them.
+
+The Star Wars 1 and II addons need Blender 4.2 or newer; the other Blender
+downloads need 4.4 or newer. After installation, go to **File > Import**.
+These steps follow Blender's [installation guide](https://docs.blender.org/manual/en/4.4/editors/preferences/extensions.html).
+
+| Game or task | Download | What you can do / first steps |
 | --- | --- | --- |
-| Character and animation importer 0.5.23 | [Blender addon ZIP](blender/TT_Character_Importer_0.5.23.zip) | Experimental LB2; LMSH1/LB3/Hobbit/Avengers, raw LB1/TCS inspection, plus static LEGO Fortnite Paks/export-library browsing; [instructions](../formats/character/README.md) |
-| Original LSW1 HGP importer 0.1.6 | [Blender addon ZIP](blender/lsw1_hgp_importer-0.1.6.zip) | Native rigs, complementary head/hair/vehicle layers, vertex opacity and custom-normal fixes |
-| LSW2 HGP importer/exporter 0.2.1 | [Blender addon ZIP](blender/io_lsw2_hgp-0.2.1.zip) | Experimental separate-file export, new bones/parts, morphs and textures; [synthetic validation and limits](../formats/hgp/lsw2/README.md). Original-file retesting and in-game export pending. |
-| CU3 importer 0.1.30 | [Blender addon ZIP](blender/TT_Cutscene_Importer_0.1.30.zip) | Supported LB3/LMSH1 actors, materials, cameras and experimental static stages, with shared older-accessory fixes; TFA/DCSV reference inspection; separate classic CU2 static references |
-| LIJ1 Xbox 360 prototype extractor 0.1.2 | [Windows x64 ZIP](windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip) | GHG/GSC/TEX/FNT/DDS inputs; cubemaps, BC5, float and legacy textures |
-| Classic PC inspectors 0.1.3 | [Python CLI ZIP](python/Classic_PC_Inspectors-0.1.3.zip) | Reviewed NU20/CU2/AN3/GIZ CLI readers; [coverage and limits](../formats/classic-pc/README.md). Raw classic inspection also available in the Blender addons. |
+| LEGO Star Wars 1, PC | [Download ZIP · 0.1.10](blender/lsw1_hgp_importer-0.1.10.zip) | Import models, rigs, textures, facial shape keys and character layer lists. [Start here](../formats/hgp/lsw1/README.md). |
+| LEGO Star Wars II, PC | [Download ZIP · 0.2.1](blender/io_lsw2_hgp-0.2.1.zip) | Import models, rigs, textures, face shapes and animations. Model export is experimental and needs in-game checks. [Start here](../formats/hgp/lsw2/README.md). |
+| The Complete Saga / LEGO Batman 1, PC | [Download ZIP · 0.5.31](blender/TT_Character_Importer_0.5.31.zip) | Import models and rigs; costume assembly is incomplete. No animation playback or edited model export. [Start here](../formats/character/README.md#lego-batman-1-and-the-complete-saga). |
+| LEGO Batman 2 / Marvel Super Heroes / Batman 3 / The Hobbit / Marvel's Avengers, PC | [Download ZIP · 0.5.31](blender/TT_Character_Importer_0.5.31.zip) | Import characters and view supported animations. Some parts and materials need work; export is limited. [Start here](../formats/character/README.md). |
+| Marvel Super Heroes / Batman 3 cutscenes, PC | [Download ZIP · 0.1.37](blender/TT_Cutscene_Importer_0.1.37.zip) | Import supported actors, cameras and some stage geometry. Lighting, effects and other scene features remain incomplete. [Start here](../formats/cu3/README.md#blender-addon). |
 
-Only the newest version of each tool is kept in this download folder. Older
-packages are archived locally; Git history remains available. Packaging scripts
-apply this policy automatically. Checksums and sizes are in [manifest.json](manifest.json).
+The two model rows using version 0.5.31 share **TT Character and Animation
+Importer**. Install it once, press **N** in the 3D Viewport, open **TT Character**,
+and select your game. Its separate [LEGO Fortnite workflow](../formats/fortnite/README.md)
+imports static models; a reported import failure is awaiting investigation.
 
-## Install
+Check the linked instructions for supported games and export limits. Opening a
+model does not mean every part or animation can be exported back to the game.
 
-### Separate GUI downloads
+## Game families
 
-Each ZIP below is independent. Extract it and open **Launch.pyw** to go straight
-to that tool's window. Python 3.10+ with Tcl/Tk is required; only the BTGA tool
-needs Pillow. These packages contain their own required Python backends, so
-users do not need the toolbox, Blender, or a full repository checkout.
+These labels help explain which tools belong together. Select the actual game
+in Blender: support depends on its platform and file version too.
+
+| Family | Where to start |
+| --- | --- |
+| Early Classic — LEGO Star Wars 1 and II | Separate addons above, because their HGP model layouts differ. |
+| Classic — The Complete Saga, LEGO Batman 1, LEGO Indiana Jones 1 | TCS/LB1 model import is in the shared download above. For creating characters, start with [BactaTank Classic](https://github.com/AlubJ/BactaTank-Classic). Workshop also has [file inspection tools](../formats/classic-pc/README.md); Indiana Jones 1 has no locally validated Blender workflow here. |
+| NXG — including Batman 2, Marvel Super Heroes and The Hobbit | Use the shared character download for those games. Other NXG games do not automatically work; consult [game support](../README.md#game-and-file-support). |
+| DX11 — including Batman 3 and Marvel's Avengers | Use the shared character download for those two games. Later DX11 games such as DC Super-Villains do not yet have a complete character importer here. |
+| NTT — The Skywalker Saga | No supported Workshop character importer or exporter yet. |
+
+Games can mix families: Batman 3 uses DX11 models and NXG animations. Sharing a
+download lets the tools reuse readers while keeping checks for each game and
+layout. Separate era names alone would not make those files interchangeable.
+
+## Other file tools
+
+| Task | Download | Instructions |
+| --- | --- | --- |
+| Extract textures from LEGO Indiana Jones 1 Xbox 360 prototype files | [Windows x64 ZIP · 0.1.2](windows/LIJ1_360_Texture_Extractor-0.1.2-win64.zip) | [Texture extractor](../formats/nu20/lij1-xbox360/README.md) |
+| Examine classic PC model, cutscene and animation data from a command line | [Python ZIP · 0.1.3](python/Classic_PC_Inspectors-0.1.3.zip) | [Classic file tools](../formats/classic-pc/README.md) |
+
+## Separate GUI downloads
+
+These tools run in their own window, outside Blender. Extract the ZIP and open
+**Launch.pyw**. Most need Python 3.10 or newer with Tcl/Tk (included in the usual
+The BTGA converter also needs Pillow.
 
 | GUI | Download |
 | --- | --- |
@@ -43,56 +73,16 @@ users do not need the toolbox, Blender, or a full repository checkout.
 | PC DAT index 0.1.2 (nine explicit game profiles) | [ZIP](python/PC_DAT_Index_GUI-0.1.2.zip) |
 | CU3 name editor | [ZIP](python/CU3_Name_Editor_GUI-0.1.1.zip) |
 
-The LIJ1 extractor above already has its own independent Windows GUI.
-To rebuild these packages: `python tools/package_individual_guis.py`.
+Each tool works by itself. The optional [combined toolbox](python/TTGames_Workshop_GUI-0.1.10.zip)
+puts several utilities in one window, but is not required.
 
-The Python GUI downloads are small source distributions, not self-contained
-Windows EXEs. See each ZIP's README for its inputs, format limits and requirements.
-The optional [combined toolbox 0.1.10](python/TTGames_Workshop_GUI-0.1.10.zip) is a separate
-tool. The individual downloads above open directly to their own functions.
+For the Windows extractor, extract its ZIP and run
+**LIJ1_360_Texture_Extractor.exe**. It needs no separate .NET installation.
+The Classic PC inspectors are command-line tools; use the Character addon
+if you want to inspect supported classic models in Blender.
 
-For the Blender ZIPs, open Preferences and **Install from Disk**, select the ZIP
-and enable the importer. LSW1 and LSW2 require Blender 4.2+; Character and CU3 require
-4.4+. All four were checked in Blender 5.2.2. Read the component docs for input requirements.
-
-Character 0.5.15 and CU3 0.1.24 repair the complete-character regressions
-identified after the previous isolated-file checks. These include missing
-costume textures/faces, face and cape LOD validation, Hobbit/Avengers variant
-trailers and a Blender custom-normal crash on native repeated-index triangles.
-See the [recovery results and limits](../docs/RECOVERY_2026-10-07.md).
-
-These builds retain the shared older-accessory reader fixes.
-They also correct nearest-detail accessory LOD selection and LMSH1 arm print
-UV choice; see [the partial issue #1 resolution](../docs/ISSUE_1_MINIFIGS.md).
-The latest builds also preserve evaluated normals through supported Blender
-facial helpers and correct verified LMSH1 head-print mapping. The character
-sidebar exposes import and preview quality settings; see
-[usage and limits](../docs/SHADING_AND_QUALITY.md).
-Standalone facial clip linking remains a character-addon feature. Face GUI
-0.1.4 decoder and 0.1.3 writer packages include the current shared mesh readers without expanding target
-layouts. Dependency GUI 0.1.6, TFA index GUI 0.1.6, DCSV index GUI 0.1.7 and
-toolbox 0.1.10 include the updated bounded archive/identity readers used by their backends.
-BTGA 0.1.2 retains its strict raw PICA payload-length checks. GUI backend import
-checks are separate from interactive Tk window validation.
-
-CU3 now defaults to **Assemble available scene assets**. Select an extracted
-CU3 file and choose its LB3/LMSH1 game folder once; the addon remembers a folder
-for each game. Needed companions are cached outside the installation using
-the addon's Python readers. **Recovered static environment (experimental)**
-also defaults on, loading supported static geometry from declared level GSCs.
-Stage visibility and render passes remain approximate; nested scenes, props,
-original lighting, audio and effects remain incomplete. TFA reference
-inspection does not import character meshes or materials.
-
-For the Windows ZIP, extract it and run `LIJ1_360_Texture_Extractor.exe`, or
-drag your files onto that EXE. It is unsigned and self-contained; no separate
-.NET installation is needed. Its required framework licenses are included.
-
-You supply your own game files. No package contains game models, textures,
-audio, Blender scenes, character projects, LOTDK mapper, Fortnite tools or
-external extraction programs. The Windows package contains our own EXE and
-documentation/license notices. Dependencies built into that EXE are the
-standard .NET Windows desktop runtime, not another game extraction tool.
+Only the newest download of each tool is shown.
+[Checksums and sizes](manifest.json) are available for verification.
 
 ## Build from source
 
@@ -103,8 +93,5 @@ already freshly published Windows extractor:
 python tools/package_builds.py --blender path/to/blender --dotnet-root path/to/installed/dotnet
 ```
 
-The script only picks the fixed extractor output from this repo's source build.
-It does not collect external programs or game inputs. Source builds remain
-available separately under `formats/`.
-
-The classic NU20/CU2/AN3/GIZ ZIP contains read-only command-line tools. The character and cutscene addon ZIPs separately bundle the classic Blender inspection backend and its MIT license.
+Source code is under `formats/`. To rebuild the separate desktop tools, run
+`python tools/package_individual_guis.py`.

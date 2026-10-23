@@ -183,9 +183,13 @@ class HGP:
         return [i for i in selected if parts[i]]
 
     def meshes(self, lod='AUTO'):
+        return self.meshes_for_layers(self.selected_layers(lod))
+
+    def meshes_for_layers(self, layers):
+        """Use exactly the declared component set, without adding layer zero."""
         result = []
         seen = set()
-        for layer in self.selected_layers(lod):
+        for layer in layers:
             for part in self.layer_meshes(layer):
                 identity = (part['geometry'], part['primitive'], part['rigid_bone'])
                 if identity not in seen:
@@ -232,6 +236,52 @@ class HGP:
                     material['normal_texture']=auxiliary['texture']
         return result
 
+    def morph_targets(self, geometry, vertex_type, vertex_count):
+        """Observed PC position deltas, indexed by the full source buffer.
+
+        Target IDs are native ordinal IDs, not expression names. The final
+        record word is retained without assigning an unverified meaning.
+        """
+        self.require_range(geometry, 0x40, 'geometry morph pointer')
+        at = self.u32(geometry + 0x3c)
+        if not at:
+            return None
+        if vertex_type != 0x5d:
+            raise ValueError('Unsupported HGP morph vertex layout')
+        self.require_range(at, 20, 'morph record')
+        count, table, ids_at, data_at, unknown = struct.unpack_from('<5I', self.body, at)
+        # Resource limits, not a claim that these are the format's maxima.
+        if not 1 <= count <= 256 or not 1 <= vertex_count or count * vertex_count > 1_000_000:
+            raise ValueError('Unsupported HGP morph target/vertex count')
+        self.require_range(table, count * 4, 'morph pointer table')
+        self.require_range(ids_at, count * 4, 'morph ID table')
+        pointers = struct.unpack_from(f'<{count}I', self.body, table)
+        ids = struct.unpack_from(f'<{count}I', self.body, ids_at)
+        if ids != tuple(range(count)):
+            raise ValueError('Unsupported HGP morph target IDs')
+        if ids_at != table + count * 4 or at != ids_at + count * 4:
+            raise ValueError('Unsupported HGP morph table layout')
+        cursor = data_at
+        size = vertex_count * 12
+        # Validate the complete layout before allocating decoded target arrays.
+        for pointer in pointers:
+            if pointer:
+                if pointer != cursor:
+                    raise ValueError('Unsupported HGP morph delta layout')
+                self.require_range(pointer, size, 'morph deltas')
+                cursor += size
+        if not data_at or cursor != table:
+            raise ValueError('Unsupported HGP morph data extent')
+        targets = []
+        for target_id, pointer in zip(ids, pointers):
+            deltas = None
+            if pointer:
+                deltas = tuple(struct.iter_unpack('<3f', self.body[pointer:pointer + size]))
+                if not all(math.isfinite(v) for delta in deltas for v in delta):
+                    raise ValueError('Non-finite HGP morph delta')
+            targets.append(dict(id=target_id, deltas=deltas))
+        return dict(offset=at, unknown_word=unknown, targets=targets)
+
     def object_meshes(self, obj, rigid_bone):
         geometry = self.u32(obj+12)
         seen = set()
@@ -245,6 +295,7 @@ class HGP:
             raw = self.buffers[buffer_id-1]
             stride = 36 if vtype == 0x59 else 56
             assert len(raw) % stride == 0
+            morph = self.morph_targets(geometry, vtype, len(raw) // stride)
             primitive = self.u32(geometry+48)
             prim_seen = set()
             while primitive:
@@ -296,6 +347,12 @@ class HGP:
                     faces.append(tuple(remap[x] for x in face))
                 yield dict(geometry=geometry, primitive=primitive, material=material,
                     buffer=buffer_id, vertex_type=vtype, rigid_bone=rigid_bone,
+                    source_vertex_indices=used,
+                    morph=None if morph is None else dict(
+                        offset=morph['offset'], unknown_word=morph['unknown_word'],
+                        targets=[dict(id=t['id'], deltas=None if t['deltas'] is None
+                                      else tuple(t['deltas'][i] for i in used))
+                                 for t in morph['targets']]),
                     vertices=vertices,normals=normals,uvs=uvs,weights=weights,colors=colors,faces=faces)
                 primitive=self.u32(primitive)
             geometry=self.u32(geometry)

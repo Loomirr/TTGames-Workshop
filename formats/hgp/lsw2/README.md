@@ -5,13 +5,20 @@ Import and export character and vehicle models (`.hgp`) of **LEGO Star Wars II: 
 By **Gibby**, MIT licence.
 
 Separate from the [LSW1 importer](../lsw1/README.md): the two games use different HGP layouts, and no code
-is shared. No game files come with this add-on: extract the models from your own `lego_data/game.dat` (an
+is shared. Extract models from `lego_data/game.dat` (an
 index -1 archive, see [LSW2 notes](../../../games/lsw2/README.md)); they are under `chars/` and `cut/`.
 
 ## Install
 
-In this folder run `blender --command extension build` (or zip the folder's files), then in Blender:
-**Edit > Preferences > Get Extensions**, the menu at the top right, **Install from Disk**.
+1. Click [Download ZIP · 0.2.1](../../../builds/blender/io_lsw2_hgp-0.2.1.zip), then the **Download button (down-arrow icon) at the top right** of GitHub's file view. Keep the ZIP zipped.
+2. In Blender 4.2 or newer, drag the ZIP from your file browser into the Blender window and confirm installation.
+3. Alternatively, go to **Edit > Preferences > Get Extensions**, click the **drop-down arrow at the top right**, then select **Install from Disk** and choose the ZIP.
+4. Enable the addon under **Add-ons** if it is not already enabled. The import entry appears under **File > Import**.
+
+These are Blender's [standard extension installation methods](https://docs.blender.org/manual/en/4.4/editors/preferences/extensions.html).
+
+**Developers only:** after editing this addon's source, run `blender --command extension build`
+from `formats/hgp/lsw2`, then install the generated ZIP using the same steps.
 
 ## Import
 

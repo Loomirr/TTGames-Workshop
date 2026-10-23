@@ -10,12 +10,41 @@ import errno
 import os
 import secrets
 import struct
+from collections import OrderedDict
 from .cu3 import FormatError
 from .archive_compression import decode_entry
 from .archive_paths import safe_path, validate_paths
 
 MAX_ENTRY_BYTES = 256 * 1024 * 1024
 MAX_TOTAL_BYTES = 1024 * 1024 * 1024
+_INDEX_CACHE = OrderedDict()
+_INDEX_CACHE_ENTRIES = 250000
+
+
+def _cached_index(archive, profile, stamp, reader):
+    """Reuse parsed metadata only while the complete archive identity matches.
+
+    Each provider still owns its extraction budgets, events and mutable entries.
+    This is a bounded process cache, never a trusted on-disk index sidecar.
+    """
+    key = (archive, profile, stamp)
+    cached = _INDEX_CACHE.get(key)
+    if cached is not None:
+        _INDEX_CACHE.move_to_end(key)
+        return [dict(entry) for entry in cached]
+    entries = reader(archive)
+    if _path_archive_stamp(archive) != stamp:
+        raise FormatError('Archive changed while its index was loaded')
+    # Drop stale versions of the same archive rather than retaining their data.
+    for prior in list(_INDEX_CACHE):
+        if prior[:2] == key[:2]:
+            del _INDEX_CACHE[prior]
+    if len(entries) <= _INDEX_CACHE_ENTRIES:
+        while _INDEX_CACHE and (len(_INDEX_CACHE) >= 8 or
+                sum(len(value) for value in _INDEX_CACHE.values()) + len(entries) > _INDEX_CACHE_ENTRIES):
+            _INDEX_CACHE.popitem(last=False)
+        _INDEX_CACHE[key] = tuple(dict(entry) for entry in entries)
+    return entries
 
 
 def _cache_io_error(error, target):
@@ -195,7 +224,7 @@ class ArchiveAssetIndex:
             from .archive_cc import index
             reader = index
         for archive in archives:
-            for entry in reader(archive):
+            for entry in _cached_index(archive, profile, self._archive_stats[archive], reader):
                 if PurePosixPath(entry['path']).suffix.casefold() in ('.ghg','.gsc','.cd','.tex','.nxg_textures','.cu3','.an4','.as','.pak','.txt','.led','.cu2','.an3','.giz'):
                     self.files.setdefault(PurePosixPath(entry['path']).name.casefold(), []).append((archive, entry))
         self.profile, self.archive_count = profile, len(archives)

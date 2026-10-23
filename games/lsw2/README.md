@@ -51,3 +51,9 @@ are layout checks, not skeleton ownership, playback or visual fidelity.
 Levels (`.nup`, `.ter`, `.rtl` and others) were not examined.
 
 Workshop integration checks exercise the constructed layout and malformed-input tests. LSW2 is not installed on the integration workstation; the original-file counts above have not been independently repeated here.
+
+## Shader and facial completion
+
+This edition must separately pass **1:1 shader matching, face reconstruction,
+facial animation and native facial/material export**. These remain open goals;
+see the [per-game checklist and required evidence](../../docs/VISUAL_AND_FACE_COVERAGE.md).

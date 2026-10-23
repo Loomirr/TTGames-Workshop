@@ -44,7 +44,7 @@ class BatchRun:
             source = self.assets.find_exact(path)
             if self.game in ('LB1', 'TCS'):
                 from . import import_classic_model
-                _, details = import_classic_model(context, source)
+                _, details = import_classic_model(context, source, self.game)
             else:
                 _, details = import_character(context, source, self.assets.root, self.game,
                     assets=self.assets, cache=self.cache, **self.options)

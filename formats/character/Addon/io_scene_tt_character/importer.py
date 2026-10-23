@@ -58,11 +58,15 @@ def write_report(name, report):
     return text.name
 
 
-def facial_actions(source, actor, child, frames):
+def facial_actions(source, actor, child, frames, *, diagnostics=None):
     """Link one verified BSA atomically, without changing existing key data."""
     morph = source.morph_animation(actor)
-    if morph is None:return []
     faces = [o for o in child.children if o.type=='MESH' and o.data.shape_keys]
+    if morph is None:
+        if diagnostics is not None and faces:
+            diagnostics.append(dict(attachment=child.name, status='absent',
+                reason='The matched animation actor has no facial track'))
+        return []
     # Some LB3 BSA blocks retain one extra end sample (106 vs 105 frames).
     # Sample the body clip's original range without stretching facial time.
     if len(actor['records']) != 1 or morph.frames not in (frames, frames+1) or not faces:
@@ -80,9 +84,21 @@ def facial_actions(source, actor, child, frames):
         from .animation_export import action_fingerprint
         for obj in faces:
             action = animate_shape_keys(obj, morph, frames)
+            changing = False
+            # Inspect the generated weight keys, not body/camera movement.
+            # A correctly loaded constant expression should not be described
+            # as missing animation just because it does not change over time.
+            for layer in action.layers:
+                for strip in layer.strips:
+                    for bag in strip.channelbags:
+                        for curve in bag.fcurves:
+                            points = curve.keyframe_points
+                            if points and any(abs(point.co.y - points[0].co.y) > 1e-6 for point in points):
+                                changing = True
             result.append(dict(object=obj.name, action=action.name,
                                slot=obj.data.shape_keys.animation_data.action_slot.identifier,
-                               fingerprint=action_fingerprint(action)))
+                               fingerprint=action_fingerprint(action),
+                               facial_status='animated' if changing else 'static'))
         return result
     except Exception:
         rollback(before)
@@ -256,6 +272,7 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
     skeleton = json.loads(rig['tt_character_skeleton'])
     original_action = rig.animation_data.action if rig.animation_data else None
     original_slot = rig.animation_data.action_slot if rig.animation_data else None
+    provenance_assets = None
     for path in paths:
         try:
             source = AnimationFile(path, fps=fps, data=data)
@@ -278,11 +295,12 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                     action.name = path.stem + ' / ' + record['name']
                     if data is None:
                         action['tt_native_animation_source'] = str(path.resolve())
-                        provenance_assets=open_assets(rig['tt_character_assets_root'],rig['tt_character_game'],
-                                                     rig.get('tt_character_cache') or None)
+                        if provenance_assets is None:
+                            provenance_assets=open_assets(rig['tt_character_assets_root'],rig['tt_character_game'],
+                                                         rig.get('tt_character_cache') or None)
                         provenance=SourceProvenance.loads(rig.get('tt_native_source_provenance'),provenance_assets)
                         provenance.record(path,'animation',digest=source.sha256)
-                    attachment_actions, face_tracks = [], []
+                    attachment_actions, face_tracks, face_notices = [], [], []
                     children = [child for child in rig.children_recursive if child.type=='ARMATURE' and child.get('tt_character_skeleton')]
                     child_names = {child.name for child in children}
                     instances = []
@@ -298,7 +316,12 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                     report['issues'].extend(f'{record["name"]} / {issue["attachment"]}: {issue["issue"]}' for issue in ownership_issues)
                     for child in children:
                         selected = matches.get(child.name)
-                        if selected is None:continue
+                        has_face_targets = any(o.type=='MESH' and o.data.shape_keys for o in child.children)
+                        if selected is None:
+                            if has_face_targets:
+                                face_notices.append(dict(attachment=child.name, status='unavailable',
+                                    reason='No verified matching attachment actor/clip; see attachment ownership notices'))
+                            continue
                         child_skeleton = json.loads(child['tt_character_skeleton'])
                         a, i, r = selected['actor'],selected['record_index'],selected['record']
                         attachment_before = snapshot()
@@ -319,9 +342,11 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                             # channels. Preserve the native target IDs and sample
                             # only when the actor and clip duration agree.
                             try:
-                                face_tracks.extend(facial_actions(source, a, child, r['animation'].frames))
+                                face_tracks.extend(facial_actions(source, a, child, r['animation'].frames,
+                                                                 diagnostics=face_notices))
                             except (ValueError, KeyError, RuntimeError) as error:
                                 report['issues'].append(f'{record["name"]} / {child.name} facial targets: {error}')
+                                face_notices.append(dict(attachment=child.name, status='unavailable', reason=str(error)))
                         except (ValueError, KeyError, RuntimeError) as error:
                             rollback(attachment_before)
                             if child.animation_data:
@@ -329,11 +354,14 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                                 if previous:
                                     child.animation_data.action_slot = previous_slot
                             report['issues'].append(f'{record["name"]} / {child.name}: {error}')
+                            if has_face_targets:
+                                face_notices.append(dict(attachment=child.name, status='unavailable', reason=str(error)))
                     source.frames = record['animation'].frames
                     action['tt_attachment_actions'] = json.dumps(attachment_actions)
                     action['tt_facial_actions'] = json.dumps(face_tracks)
-                    from .animation_export import action_fingerprint
+                    from .animation_export import action_fingerprint,bone_fingerprints
                     action['tt_native_pose_fingerprint'] = action_fingerprint(action)
+                    action['tt_native_bone_fingerprints'] = json.dumps(bone_fingerprints(action,rig))
                     action['tt_character_status'] = 'Native skeleton AN4 pose; original root translation retained. Attachment ownership uses source hierarchy and retained resource/root identity; AN4 bind matrices are not encoded. FPS is a preview assumption and events remain separate.'
                     byte_order = 'little' if source.endian == '<' else 'big'
                     identity = profile_identity(rig['tt_character_game'], structure_versions={'standalone_AN4':source.version})
@@ -345,8 +373,17 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
                     item.frames, item.fps = source.frames, fps
                     if data is None:rig['tt_native_source_provenance'] = provenance.dumps()
                     report['imported'] += 1
+                    animated_faces = sum(track['facial_status']=='animated' for track in face_tracks)
+                    facial_status = ('animated' if animated_faces else 'static' if face_tracks else
+                                     'unavailable' if any(n['status']=='unavailable' for n in face_notices) else 'absent')
+                    facial_playback = dict(status=facial_status, mesh_tracks=len(face_tracks),
+                                           animated_mesh_tracks=animated_faces,
+                                           static_mesh_tracks=len(face_tracks)-animated_faces,
+                                           notices=face_notices)
+                    action['tt_facial_playback'] = json.dumps(facial_playback)
                     report['clips'].append(dict(source=str(path), actor=actor['name'], action=action.name, frames=source.frames,
-                                               an4_version=source.version,byte_order=byte_order))
+                                               an4_version=source.version,byte_order=byte_order,
+                                               facial_playback=facial_playback))
                 except (ValueError, OSError, KeyError, RuntimeError) as error:
                     rollback(before)
                     if rig.animation_data:
@@ -362,7 +399,10 @@ def import_animations(context, rig, paths, actor_name='', fps=30, *, data=None, 
         rig.animation_data.action = original_action
         if original_action:
             rig.animation_data.action_slot = original_slot
-    write_report('TT AN4 report', report)
+    report_name = write_report('TT AN4 report', report)
+    rig['tt_animation_report'] = report_name
+    for clip in report['clips']:
+        bpy.data.actions[clip['action']]['tt_animation_report'] = report_name
     return report
 
 
@@ -382,5 +422,7 @@ def import_catalog_entry(context, rig, entry):
     report = import_animations(context, rig, [path], entry['actor'], 30, data=payload, clip_name=entry['clip'])
     if report['imported']:
         rig.tt_clips[rig.tt_clip_index].action['tt_authored_action'] = json.dumps(entry)
-        if bank:rig['tt_native_source_provenance'] = provenance.dumps()
+        if bank:
+            rig.tt_clips[rig.tt_clip_index].action['tt_animation_bank_sha256'] = hashlib.sha256(bank.data).hexdigest()
+            rig['tt_native_source_provenance'] = provenance.dumps()
     return report

@@ -1,5 +1,43 @@
 # Changelog
 
+## 0.1.10
+
+- Correct the preview hand/wrist overlap in the six verified Clone-family rigs.
+  Use reversible pose translations; preserve native source and rest data. The
+  complete skeleton fingerprint excludes Sand Trooper, other rigs and edits.
+- Rename the existing option to **Correct Known Preview Poses**. Turn it off for
+  source bind inspection or before loading a complete animation.
+- Add source-preservation, mesh-only parity and changed-rig rejection checks.
+
+## 0.1.9
+
+- Fix the opaque backing behind ordinary additive pod effects using the
+  original PC blend-state branch as evidence. Preserve texture and vertex alpha.
+- Use Eevee's Blended path so zero-coverage additive color remains visible.
+- Keep auxiliary bump/reflection passes separate from the ordinary effect fix.
+- Add numerical Cycles/Eevee render checks and executable-based shader inventory
+  and blend-state research tools. Full shader lighting/fidelity remains open.
+
+## 0.1.8
+
+- Open a character TXT and its same-named HGP together. Choose the exact
+  Special, High, Medium, Low or Dead layer list from that definition.
+- Keep nested animation overrides separate. Refuse invalid declarations and
+  missing layers without adding guessed replacement parts.
+- Check 506 original definition sets in Blender; report 14 invalid original
+  sets separately. Direct HGP imports retain their existing automatic selection.
+- Add source-tree ANI/BSA scalar sampling with original lookup masks and cubic
+  interpolation. Compare 340,724 samples against the isolated native evaluator.
+  This does not yet enable body or facial clip playback in Blender.
+
+## 0.1.7
+
+- Import observed native PC facial position targets as zeroed Blender shape keys.
+- Preserve empty target slots, native IDs and per-primitive vertex mapping.
+- Validate morph ranges, layout, resource limits and finite deltas. Unrecognized
+  morph layouts are refused; game facial clip playback/export remain unavailable.
+- Add synthetic guard tests and original-file Blender verification.
+
 ## 0.1.6
 
 - Select nonempty native body layers and observed complementary hair, head,

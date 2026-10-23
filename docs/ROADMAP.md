@@ -1,39 +1,32 @@
-# Next steps
+# Development order
 
-The [support notes](SUPPORT.md) records the
-reproduced attachment rollback problem and the P1 dependency-revision fixes.
-The [validation review](MERGE_PACKET_REVIEW_2026-10-06.md) adds shared-source conflict
-rejection, staged publication, bounded archives, explicit resource/skeleton
-identity and stronger DDS/weight diagnostics. The 0.5.9 follow-up resolves the supplied native body variant arrays and
-Avengers index extension; see [the accuracy review](CHARACTER_ACCURACY_0.5.9.md).
-The next gate is fresh complete-character/cutscene regression and visual work. The [read-only diagnostic tools](DIAGNOSTIC_TOOLS.md) now
-collect exact candidate/span and archive-suffix evidence without permitting an
-unverified import. [Issue #1](ISSUE_1_MINIFIGS.md) also tracks missing material
-remaps and the newer Hulkbuster, Vulture and Alfred rendering reports.
+Work through **Early Classic → NXG → DX11 → NTT → Classic**, completing and
+testing each game's formats and editing workflow before expanding support.
+This is the project strategy, independent of the Blender UI.
 
-See the [workflow audit and milestones](WORKFLOW.md) for the current public
-readers, remaining mesh-extraction dependencies and native editing limits.
-The [5 October tool review](TOOL_REVIEW_2026-10-05.md) records the latest checks
-and a more specific order of work. Current-game faces, materials, attachments
-and cutscene completeness come before adding more game profiles.
+The [era development plan](ERA_DEVELOPMENT.md) defines completion criteria,
+evidence and remaining work. **Early Classic is active: LSW1 PC first, then
+LSW2 PC. No era is complete yet.**
 
-- Improve native CU3 meshes, faces, materials, environments and shot playback.
-- Extend verified cutscene character/object replacement and investigate custom
-  animation writing without losing native skeleton or event semantics.
-- Expand DCSV coverage with explicit version gates and original-file checks.
-- Consolidate reusable model/texture readers as their layouts are verified.
-- Extend the [skeleton transfer planner](../tools/skeleton_transfer/README.md)
-  with measured grip calibration and Blender preview jobs. Native transfer
-  exporters need independently validated format profiles and target-game tests;
-  see [the pipeline](SKELETON_TRANSFER.md).
+For every game, complete the [shader, face, facial-animation and native-export
+requirements](VISUAL_AND_FACE_COVERAGE.md). The goal includes 1:1 recreation;
+current approximations stay explicitly incomplete.
 
-The early LEGO Fortnite profile now accepts user-selected exported recipes and
-baked models, with an optional installed-game extraction bridge. Broaden its
-replacement-part and material coverage, recover source display names and finish
-static facial atlas rendering. Roster discovery does not establish import or
-visual accuracy. Keep character experiments, LOTDK mapping and external readers
-private/separate; see [Fortnite coverage](../formats/fortnite/README.md).
+Immediate work:
 
-The [BactaTank interoperability study](BACTATANK_INTEROP.md) describes a separate
-independent `.bmesh` exporter proposal. It does not enable classic-game GHG
-writing or reuse that project's implementation.
+1. Reconcile the full LSW1 release inventory with extracted samples.
+2. Build on the [LSW1 ANI/BSA record reader and preserving editor](../formats/hgp/lsw1/docs/ANIMATION_RECORDS.md):
+   prove ownership, track mapping and interpolation before native playback.
+   Preserve the distinction from later AN3/AN4 families.
+3. Resolve remaining model fields, assembly and visual issues, including native
+   shaders, face geometry/targets, depth masks and facial playback.
+4. Implement and validate native model/animation editing and export, including
+   bone additions, part replacement, facial edits and material settings.
+5. Repeat the complete audit for LSW2, with original-file and in-game tests.
+
+Existing later-era tools remain available. Regression fixes can continue;
+new compatibility expansion follows the era order. Fortnite work is deferred.
+
+Historical [workflow notes](WORKFLOW.md), [support reports](SUPPORT.md),
+[LSW1 feedback](LSW1_FEEDBACK_2026-10-20.md) and
+[animation coverage](ANIMATION_SUPPORT.md) remain evidence, not completion claims.

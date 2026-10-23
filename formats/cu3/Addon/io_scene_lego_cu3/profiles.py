@@ -24,13 +24,13 @@ CHARACTER_PROFILES = {
 }
 
 # Existing standalone inspection is separate from character-import capability.
-# The previous catalog guessed DX11 animation names for LOTR. Its bank/member
-# naming needs original evidence; explicit AN4 paths can still be inventoried.
+# LOTR's observed animation sets declare NXG banks and members. This enables
+# reference discovery, independently of character model/rig support.
 INSPECTION_PROFILES = {
     'TFA': {'renderer':'DX11','model_suffix':'_DX11','animation_suffix':'DX11'},
     'DCSV': {'renderer':'DX11','model_suffix':'_DX11','animation_suffix':'DX11'},
     'LMSH2': {'renderer':'DX11','model_suffix':'_DX11','animation_suffix':'DX11'},
-    'LOTR': {'renderer':'NXG','model_suffix':'_NXG','animation_suffix':None},
+    'LOTR': {'renderer':'NXG','model_suffix':'_NXG','animation_suffix':'NXG'},
 }
 
 

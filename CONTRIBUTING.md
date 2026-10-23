@@ -7,6 +7,15 @@ For a ready-to-paste task, use the [AI contribution guide](docs/AI_CONTRIBUTING.
 
 ## Choose a concrete task
 
+Follow the [era development order](docs/ERA_DEVELOPMENT.md) for new compatibility
+work. Early Classic is active; regressions in existing later-era tools can still
+be fixed. Record exact game/platform/release/layout evidence before calling a
+format or workflow complete.
+
+Include the [shader and facial completion items](docs/VISUAL_AND_FACE_COVERAGE.md)
+in every game record. Report shader accuracy, face assembly, facial playback and
+native export separately; an approximate preview does not establish 1:1 support.
+
 Pick one reproducible bug or one clearly identified format layout. Check existing
 issues and PRs before duplicating work. Include the game, platform, tool version,
 input's logical filename, expected result and actual result. For a visual bug,

@@ -66,6 +66,16 @@ The bytes `DINA` represent the numeric ANI-D magic in these PC embedded blocks.
 Standalone gameplay AN4 files in our prior LMSH1 work were big endian, so
 reusing that file reader unchanged is incorrect.
 
+Standalone LB2 gameplay trees also use little-endian 44-byte tree/node headers
+(versions 1/2) or big-endian 72-byte headers (2/4–7), with ANI-B or ANI-D body
+blocks. The writer retains the tree's byte order and the original block tag.
+LOTR trees 8/11 and Dimensions tree 17 share the observed big-endian 72-byte
+tree and 80-byte record layout. Intermediate unobserved versions remain gated.
+Reduced-detail tables in the checked LB2 files use the same count/reserved/
+relative-pointer fields in the block's byte order. Child family, byte order,
+timing and channel count must match; nested auxiliaries are still refused.
+See [animation coverage](../../../docs/ANIMATION_SUPPORT.md).
+
 For the supported pose layout:
 
 - Six channels per node: translation XYZ and Euler rotation XYZ in radians.
@@ -73,9 +83,13 @@ For the supported pose layout:
 - Active translation/rotation groups use node-flag bits 0x02/0x01.
 - Type 6 stores four interpolated quarter samples in a 32-bit packed group;
   type 7 uses eight bytes and 12-bit interpolation values.
-- Type 14 is zero, 15 is one; observed embedded-constant types >=16 use the
-  header minimum/scale when flag 0x20 is set. The research scalar path also
-  supports referenced float constants when that flag is absent.
+- Type 14 is zero and 15 is one. Types >=16 use the header minimum/scale
+  directly on the type value when flag 0x20 is set. Without 0x20 they index a
+  constant pool: flag 0x10 selects float32; otherwise values are uint16 scaled
+  by the header minimum/scale. An absent 0x20 does not imply floating point.
+- With 0x20 set, type bit 15 controls stepped interpolation and the remaining
+  bits hold the type/value. With 0x20 clear, the full type word is used and one
+  control byte per channel follows the entire type table; bit 0 controls steps.
 - Explicit compression timing at +72/+76 gives ratio and first source frame.
 - Scalar interpolation is kept for translation. Rotation endpoint samples
   become quaternions, are harmonized, linearly blended and normalized. This
@@ -84,9 +98,20 @@ For the supported pose layout:
 The research scalar path allows 1, 3, 6, 7, 9 and 10 channels with flag 0x80,
 including type-8 step values. Type 8 stores byte indices into a signed 16-bit
 integer constant pool, not literal visibility values. The integer count is
-the header byte at +17. With external constants, the float pool begins after
-that integer pool rounded up to four-byte alignment; assuming an unconditional
-four-byte prefix reads the wrong floats.
+the header byte at +17. With external float constants (0x10), their pool begins
+after that integer pool rounded up to four-byte alignment. External uint16
+constants instead follow the integer entries immediately. Header byte +16 is
+the native end-frame adjustment, not a constant count. These distinctions were
+checked against the LMSH1 native evaluator after a rebaked game idle failed;
+see [the export correction](../../character/EXPORT_VALIDATION.md#collapsed-idle-correction-0527).
+
+LMSH1 native loading additionally depends on table extents, not just pointers:
+the float constant pool ends at the type-table start, and scale pairs occupy
+the complete range from the scale pointer to the key pointer. The loader swaps
+32-bit values through that scale range. Writer output must keep constants and
+types outside it: constants, types/control bytes, aligned scale pairs, keys,
+then node flags. A pointer-based offline round trip alone misses this failure.
+See [loading and channel preservation](../../character/EXPORT_VALIDATION.md#native-loading-and-inactive-channels-0528).
 
 Nine-channel tracks have scale XYZ in channels
 6–8, activated by node flag 0x08. Some other layouts remain unsupported.
@@ -95,6 +120,11 @@ translation and Blender basis conversion. Bone bind flag 0x20 and the ANI
 header's constant-layout flag 0x20 belong to separate flag fields. Parent
 scale cancellation prevents the inflated parts seen in earlier imports.
 Scalar decoding alone doesn't establish scene meaning.
+
+Facial scalar profiles include the existing 37/53-channel layouts and an
+observed 54-channel big-endian ANI-D profile with flags 0xA4, one node and zero
+node flags. Its final scalar can animate and must be retained. This is not
+permission to infer a target mapping or accept arbitrary facial channel counts.
 
 ## Scene movement and visibility
 

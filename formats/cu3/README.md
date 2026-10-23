@@ -1,141 +1,38 @@
-# TT Cutscene Importer
+# Cutscenes for Blender
 
-This update adds explicit TCS TXT high-layer visibility and expanded shared
-[CD/AS/CPD definition decoding](../../docs/DEFINITION_COMPATIBILITY_2026-10-20.md).
-It also includes reviewed classic NU20 version-3 inspection and LSW2 DAT
-index support. [Review and validation](../../docs/GITHUB_HGP_REVIEW_2026-10-15.md).
+Import supported cutscenes from **LEGO Marvel Super Heroes** and **LEGO Batman
+3: Beyond Gotham**, PC. The addon loads supported characters, animations,
+cameras and some stage geometry into Blender.
 
-An earlier update fixed LMSH1 Arnim Zola's missing torso attachment. It resolves
-the same-directory armour model when its declared rig-family model is absent,
-and reads the observed skinned MESH 161 / UMTL 168 layout. His screen texture
-and highest-detail armour import; the older glass shader uses approximate
-transparency. Native refraction and screen animation are not verified.
+**Version 0.1.37 — experimental. Requires Blender 4.4 or newer.**
 
-Classic PC raw model inspection and CU2 reference import remain separate,
-incomplete inspection modes. [Classic checks and gaps](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
+| Game / input | What to expect |
+| --- | --- |
+| Marvel Super Heroes / Batman 3 CU3 | Partial scene import. Some characters, faces and materials need work. Stage visibility is approximate; original lighting, audio, effects, nested scenes and some props are missing. |
+| The Force Awakens / DC Super-Villains CU3 | Scene reference inspection: markers, names and reports. No complete animated scene. |
+| Supported classic PC CU2 | Static placements and camera references. No character meshes or cutscene playback. [Classic details](../classic-pc/README.md#blender-inspection). |
 
-The latest build recovers verified additive reactor masks and untextured vertex-color glow for sampled LMSH1/LB3 layouts, plus Hulkbuster packed normals. Native glow intensity and metallic/environment shading remain incomplete. See [visual checks and remaining reports](../../docs/ISSUE_1_MINIFIGS.md).
-
-An experimental Blender importer and set of tools for TT Games' PC cutscenes.
-The main scene work is for **LEGO Marvel Super Heroes** and **LEGO Batman 3:
-Beyond Gotham**, with broader game support being added through separate format
-checks. **The Force Awakens** and **DC Super-Villains** currently support
-reference inspection rather than complete scene import.
-
-**AI was used to help with the code, research and documentation for this project.**
-
-The source reader also exposes opt-in snapshot inspection for the observed
-compact HGOL 17 profile (MESH 175/200, DISP 33/34/35). Its counted resource
-boundaries and complete display ownership can be checked without claiming skin
-deformation support. File-based character/cutscene import keeps its existing
-layout and skin-weight gates. This inspection API is source-only; the public
-addon ZIPs have not been rebuilt for it.
-
-Current source and packaged build: **0.1.28** (experimental).
-
-Drag a single `.cu3` or `.cu2` into the **3D Viewport in Object Mode** to open
-its import options. Confirm the game/assets folder before importing. CU2 drops
-use the existing static reference inspector; they do not become playable scenes.
-Version 0.1.28 also shares the character reader's verified accessory/material
-fixes. See [current checks and limits](../../docs/COMPATIBILITY_2026-10-15.md).
-
-Version 0.1.26 adds a separate **File > Import > LEGO CU2 references (classic
-PC; inspection only)** entry. It creates static actor/object and camera-reference
-empties plus shot markers, not a playable cutscene. Use the matching Character
-0.5.17 profile for raw classic GHG/GSC inspection. See [classic instructions](../classic-pc/README.md)
-and [checks and limitations](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
-
-Version 0.1.18 shares the authored-normal, facial-name and scoped companion
-lookup corrections with Character 0.5.9. It also resolves the supplied native
-HGOL 10/16 body variant arrays and the observed Avengers CC8 v1 index extension.
-These checks do not establish complete cutscene actor recovery or scene fidelity.
-See [the accuracy review](../../docs/CHARACTER_ACCURACY_0.5.9.md).
-
-Version 0.1.17 applies the existing bind-matrix validity check before skeleton
-candidate selection, corrects live-preview grouping for `SpiderFace`, and
-reports unapplied material controls. Read-only skeleton, material and archive
-inspectors provide evidence for refused inputs; unknown ownership and archive
-suffixes remain rejected. See [diagnostic commands](../../docs/DIAGNOSTIC_TOOLS.md)
-and [issue #1 status](../../docs/ISSUE_1_MINIFIGS.md).
-
-The earlier [workstation review](../../docs/MERGE_PACKET_REVIEW_2026-10-06.md)
-recovered cameras but zero actors. Current original-file checks recover 26
-actor/attachment model instances and 22 cameras in LB3's `2BATCAVEFIGHT_INTRO_NXG`,
-and 7 model instances and 13 cameras in LMSH1's `STARKTOWER_INTRO_NXG`.
-These runs disabled static environments to isolate actor recovery; they do not
-establish complete stages or scene fidelity. See the
-[recovery checks](../../docs/RECOVERY_2026-10-07.md).
-
-Version 0.1.16 adds explicit resource/profile and skeleton ownership metadata,
-bounded archive and DDS reads, raw skin-weight diagnostics and a visible
-normal-preservation capability report. Attachment animation matching no longer
-uses a matching label and joint count as sufficient ownership evidence.
-Existing game/layout gates remain in place. Original-game regression and visual
-checks for this build remain pending; see the
-[validation review](../../docs/MERGE_PACKET_REVIEW_2026-10-06.md).
-Version 0.1.15 retains consumed model hashes and rejects a source changed during
-decoding. It enables no new layout. The character addon's companion-export
-guards are documented in the [support notes](../../docs/SUPPORT.md).
-Import now defaults to assembling supported actors, attachments, materials,
-source cameras and experimental static stage geometry. Supply the selected
-CU3 and its installed LB3/LMSH1 game folder or an extracted asset tree. The
-addon loads the needed companions, remembers
-per-game folders and prepares a live camera viewport. **This is still partial
-scene assembly:** stage visibility and render controls are approximate;
-nested scenes, rigid props, original lighting, audio and effects are not
-automatically reconstructed. Faces and native shaders also need more work.
-Game assets and example Blender scenes are not included here.
-
-Version 0.1.13 adds stage-labelled model validation and layout summaries to
-actor and static-stage reports. See the
-[structural compatibility notes](../../docs/STRUCTURAL_COMPATIBILITY.md).
-
-Version 0.1.14 preserves evaluated authored normals through facial clipping
-and depth bias when Blender provides the Set Mesh Normal node. The shared
-material reader also corrects the verified LMSH1 CD head-print UV layout.
-Create a fresh import/preview for existing projects. Scene reconstruction
-limits remain unchanged; see [shading checks](../../docs/SHADING_AND_QUALITY.md).
-
-Version 0.1.12 corrects facial preview layering, cutout alpha and Avengers texture
-references in the shared model reader. Verified packed surface-normal maps now
-also cover selected Hobbit/LB3 layouts. See the
-[face accuracy report](../../docs/FACE_ACCURACY_0.5.3.md) for checks and limits.
-Version 0.1.10 includes the shared model fixes for nearest-detail accessory
-LODs and the verified LMSH1 arm print UV layout. Stage draw-pool interpretation
-and source camera/animation axes remain unchanged. Reimport to rebuild actors;
-see [issue #1 patch scope](../../docs/ISSUE_1_MINIFIGS.md).
-
-See [the progress notes](docs/PROGRESS.md) for what's changed and what still needs checking.
-The new [face GHG editing prototype](docs/FACE_GHG_EDITING.md) exports existing
-shape targets into native GHG copies from verified editing collections.
-Its decoded round trips pass; edited face files still need an in-game test.
-
-Native layer-special selection prevents ordinary, robot and skeleton body
-variants—or both cape shapes—from being drawn together. Attachment tint colors
-are also applied. See [layer selection](docs/NATIVE_LAYERS.md) and the
-[facial rendering notes](docs/FACIAL_RENDERING.md).
-
-[Live playback](docs/LIVE_PLAYBACK.md) follows source cameras and recovered
-facial masks in the viewport without F12. Facial depth bias and mask edges are
-approximations; they do not establish exact game rendering. The
-[workflow audit](../../docs/WORKFLOW.md) separates the supported systems from
-the remaining reconstruction work.
+For individual characters and their animations, use the
+[character addon](../character/README.md). It works separately from this addon.
 
 ## Blender addon
 
-Download the [0.1.30 addon ZIP](../../builds/blender/TT_Cutscene_Importer_0.1.30.zip)
-or use the source build command below.
+Click [Download ZIP · 0.1.37](../../builds/blender/TT_Cutscene_Importer_0.1.37.zip),
+then the **Download button (down-arrow icon) at the top right** of GitHub's file
+view. Keep the ZIP zipped.
 
-1. In Blender, open **Preferences → Add-ons → Install from Disk**, select the
-   ZIP and enable **LEGO CU3 Cutscene Importer (Experimental)**.
+1. In Blender, go to **Edit > Preferences > Get Extensions**, click the
+   **drop-down arrow at the top right**, then select **Install from Disk**.
+   Choose the ZIP and enable **LEGO CU3 Cutscene Importer (Experimental)**
+   under **Add-ons**.
 2. Use **File → Import → LEGO CU3 cutscene (.cu3) [experimental]**.
 3. Choose an extracted CU3 file. Keep **Assemble available scene assets** and
-   **Detect from CU3** selected for LMSH1/LB3.
-4. Set **Game or extracted asset folder** to the matching installed game folder
+   **Detect supported game** selected for LMSH1/LB3.
+4. Set **Game folder** to the matching installed game folder
    or extracted asset tree. Later imports can leave it blank to reuse that
    game's saved folder. The addon preferences also expose both folders and an
    optional extraction-cache location.
-5. **Recovered static environment (experimental)** is enabled by default.
+5. **Include stage geometry (experimental)** is enabled by default.
    It loads supported static geometry from the cutscene's declared primary and
    shared level resources. Disable it for an actor-only scene.
 6. Press **Space** in the camera viewport to play. **NumPad 0** restores camera
@@ -151,8 +48,10 @@ synthetic live-preview checks pass in Blender 5.1.2 and 5.2.2; other versions
 and original-file visual fidelity need separate checks. Building the ZIP only
 needs Python's standard library.
 
-To build the ZIP from source, run `python scripts/build_addon.py` from this
-component folder.
+**Developers:** to build the ZIP from source, run
+`python scripts/build_addon.py` from this component folder.
+
+## More import options
 
 The addon also has these inspection and animation modes:
 
@@ -295,9 +194,6 @@ parent-scale compensation and constant-table decoding have been corrected;
 attachments, faces and camera conventions still need further work.
 Unsupported layouts should report an error rather than produce guessed poses.
 
-The local research scenes have more companion model and scene work than this
-public addon. Those scenes and game assets aren't included here. A successful
-decode or bounded mesh doesn't prove the scene matches the game frame for frame.
 
 ## Later games and archive readers
 
@@ -369,7 +265,21 @@ platform and era do not validate these PC layouts. The
 sources, independent original-file checks and remaining gaps. External
 implementations are not copied or translated into this component.
 
-This component contains source code and documentation; packaged tools are in
-the central builds folder. You'll need your
-own game files. The addon and name editor run locally without network access
-or bundled extraction executables.
+## Checks and research notes
+
+For troubleshooting or development, these reports record what was tested and
+what remains incomplete:
+
+- [Animation support by game](../../docs/ANIMATION_SUPPORT.md) and
+  [animation export checks](../character/EXPORT_VALIDATION.md).
+- [Actor and camera recovery](../../docs/RECOVERY_2026-10-07.md),
+  [scene configuration and stage loading](docs/SCENE_CONFIGURATION.md), and
+  [live playback](docs/LIVE_PLAYBACK.md).
+- [Facial rendering](docs/FACIAL_RENDERING.md),
+  [material and preview quality](../../docs/SHADING_AND_QUALITY.md), and
+  [remaining character issues](../../docs/ISSUE_1_MINIFIGS.md).
+- [Character definitions](../../docs/DEFINITION_COMPATIBILITY_2026-10-20.md),
+  [native layers](docs/NATIVE_LAYERS.md), and
+  [classic compatibility](../../docs/COMPATIBILITY_EXPANSION_2026-10-09.md).
+
+AI helped with code, research and documentation.

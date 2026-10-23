@@ -10,3 +10,9 @@ or enable ANI-E playback.
 
 Full character mesh reconstruction, ANI-E facial playback and faithful cutscene
 assembly are not established. Do not infer support from LB3 or LMSH1 alone.
+
+## Shader and facial completion
+
+This edition must separately pass **1:1 shader matching, face reconstruction,
+facial animation and native facial/material export**. These remain open goals;
+see the [per-game checklist and required evidence](../../docs/VISUAL_AND_FACE_COVERAGE.md).

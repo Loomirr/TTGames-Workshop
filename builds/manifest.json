@@ -1,24 +1,24 @@
 {
   "packages": [
     {
-      "path": "blender/TT_Character_Importer_0.5.23.zip",
-      "bytes": 262420,
-      "sha256": "54f9a944756a474a4550e2a56ab78095c8e87a3cc0bfc182952210cdef5da9b8"
+      "path": "blender/TT_Character_Importer_0.5.31.zip",
+      "bytes": 279647,
+      "sha256": "54de4e06783af82fd1525d6b4336cb0392daa213064da16c68b488ddae739d14"
     },
     {
-      "path": "blender/TT_Cutscene_Importer_0.1.30.zip",
-      "bytes": 215477,
-      "sha256": "d85518a32407720604d6d1bc3621b3fbc8ef07f9a5582f6ec3033d8a0699c566"
+      "path": "blender/TT_Cutscene_Importer_0.1.37.zip",
+      "bytes": 223011,
+      "sha256": "fe1ce932e8c5ab8a13581d61e3d5a44388a4c9bb719c5a3357a9f5e2faa23c99"
     },
     {
       "path": "blender/io_lsw2_hgp-0.2.1.zip",
-      "bytes": 47399,
-      "sha256": "b83ef20e2ee1443bed05f8df64d3117a927a835ea758addb3aa96842e4414e62"
+      "bytes": 47729,
+      "sha256": "d2db14cc9bd12154ab3cccc620d4a54600a8cf4abe80dbd36ea34b9a0385e93b"
     },
     {
-      "path": "blender/lsw1_hgp_importer-0.1.6.zip",
-      "bytes": 31464,
-      "sha256": "2643dfd5b6d0b4901e4d3029c2cd33c809fef0265eedc4c5eb64d1e1cceb611b"
+      "path": "blender/lsw1_hgp_importer-0.1.10.zip",
+      "bytes": 52087,
+      "sha256": "0b283bd769948a2d411b4eabf0accf9c7028f14785266f41b59c0dff4ba53fbb"
     },
     {
       "path": "python/BTGA_Texture_Converter_GUI-0.1.2.zip",

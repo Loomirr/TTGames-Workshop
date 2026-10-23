@@ -55,10 +55,12 @@ def read_definition_bytes(data, *, source=None):
         raise FormatError('Uncompressed definition StreamInfo missing')
     _, info_end = block(marker, b'StreamInfo')
     version = get('I', marker+11, info_end)
-    # LEGO Batman 2 also has streams 18, 19 and 22-24 (see docs/LB2_CHARACTERS.md):
+    # Observed older definitions include streams 18-24. Streams 20/21 were
+    # independently checked on 15 original CD/AS files, including every retained
+    # primitive's value and byte offset (DEFINITION_COMPATIBILITY_2026-10-21).
     # 3 schema words per field before 22, a 16-bit list count before 24 and
     # an 18-byte object header before 25.
-    if version not in (18, 19, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31):
+    if version not in (18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31):
         raise FormatError(f'Definition stream version {version} is not verified')
     marker = data.find(b'ClassList\0', info_end)
     if marker < 0:

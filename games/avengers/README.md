@@ -21,3 +21,9 @@ is currently rejected. Original games and archives remain untouched.
 
 Avengers CU3 scene assembly, ANI-E playback and general topology, new skin palettes,
 material and skeleton writing are not enabled by this character support.
+
+## Shader and facial completion
+
+This edition must separately pass **1:1 shader matching, face reconstruction,
+facial animation and native facial/material export**. These remain open goals;
+see the [per-game checklist and required evidence](../../docs/VISUAL_AND_FACE_COVERAGE.md).

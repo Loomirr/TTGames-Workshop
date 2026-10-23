@@ -8,8 +8,10 @@ from contextlib import contextmanager
 import bpy
 from mathutils import Matrix, Vector
 
+from .preview_pose import translation_offsets
 from .hgp import HGP
 from .colour import diffuse_to_linear
+from .definition import companion, read_layer_set
 
 C=Matrix(((1,0,0,0),(0,0,1,0),(0,1,0,0),(0,0,0,1)))
 DATA_TYPES=('objects','meshes','armatures','materials','images','collections')
@@ -130,7 +132,12 @@ def make_materials(h, label, load_textures):
             texture_node=node
             material.node_tree.links.new(node.outputs['Color'],bsdf.inputs['Base Color'])
         else:bsdf.inputs['Base Color'].default_value=(*linear,1)
-        if source['attributes'] & 15 in (1,10):
+        # The native state setter uses SRCALPHA / ONE for mode 2. Restrict
+        # this preview to the observed ordinary effect; auxiliary bump and
+        # reflection passes also use mode 2 and need their own shader work.
+        additive=(source['attributes'] & 15 == 2 and source['effect']==0
+                  and source['normal_texture'] is None and not source['linked_material'])
+        if source['attributes'] & 15 in (1,10) or additive:
             # The packed vertex alpha is independent of texture alpha. Native
             # glass can be untextured, while facial printing uses both. Raw
             # vertex RGB remains inspection data rather than an assumed tint.
@@ -152,13 +159,48 @@ def make_materials(h, label, load_textures):
             normal_node=material.node_tree.nodes.new('ShaderNodeNormalMap');normal_node.uv_map='Original LSW1 UV';normal_node.space='TANGENT'
             material.node_tree.links.new(node.outputs['Color'],normal_node.inputs['Color'])
             material.node_tree.links.new(normal_node.outputs['Normal'],bsdf.inputs['Normal'])
+        if additive:
+            nodes=material.node_tree.nodes;links=material.node_tree.links
+            # Eevee's dithered path discards zero-coverage fragments, including
+            # their additive emission. Blended rendering retains that color.
+            if hasattr(material,'surface_render_method'):material.surface_render_method='BLENDED'
+            emission=nodes.new('ShaderNodeEmission');emission.label='Additive effect preview'
+            if texture_node:links.new(texture_node.outputs['Color'],emission.inputs['Color'])
+            else:emission.inputs['Color'].default_value=(*linear,1)
+            # Fully transparent transmission preserves the background; adding
+            # emission supplies C * alpha instead of covering it with a plane.
+            # Restrict to camera rays: the game's blend does not light nearby
+            # geometry. Reflections/full native lighting remain separate work.
+            light_path=nodes.new('ShaderNodeLightPath')
+            strength=nodes.new('ShaderNodeMath');strength.operation='MULTIPLY'
+            links.new(multiply.outputs[0],strength.inputs[0])
+            links.new(light_path.outputs['Is Camera Ray'],strength.inputs[1])
+            links.new(strength.outputs[0],emission.inputs['Strength'])
+            transparent=nodes.new('ShaderNodeBsdfTransparent')
+            add=nodes.new('ShaderNodeAddShader')
+            links.new(transparent.outputs[0],add.inputs[0]);links.new(emission.outputs[0],add.inputs[1])
+            links.new(add.outputs[0],nodes.get('Material Output').inputs['Surface'])
+            nodes.remove(bsdf)
+            material['lsw1_additive_preview']='SRCALPHA + ONE; camera preview, native shader lighting not reconstructed'
         result.append(material)
     return result
 
 
 def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textures=True,
                      custom_normals=True,detail='AUTO',correct_preview_pose=True,variant_layers=()):
-    h=HGP(path);parts=h.meshes(lod=detail);label=h.path.stem
+    definition=None
+    path=Path(path)
+    if path.suffix.lower()=='.txt':
+        definition=path
+        path=companion(path,'.hgp')
+        if detail=='AUTO':detail='GAME_SPECIAL'
+    h=HGP(path)
+    if str(detail).startswith('GAME_'):
+        definition=definition or companion(path,'.txt')
+        layer_set=str(detail)[5:].lower()
+        parts=h.meshes_for_layers(read_layer_set(definition,layer_set,h.layer_count))
+    else:parts=h.meshes(lod=detail)
+    label=h.path.stem
     # Optional scene-builder variants retain the same native skeleton/weights.
     seen={(p['geometry'],p['primitive'],p['rigid_bone']) for p in parts}
     for layer in variant_layers:
@@ -175,6 +217,14 @@ def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textu
         if not math.isfinite(error) or error>2e-5:raise ValueError('Unsupported or inconsistent native bind transforms')
         max_error=max(max_error,error);worlds.append(world)
     worlds=[C@m@C for m in worlds]
+    preview_offsets=translation_offsets(h.bones) if correct_preview_pose else {}
+    world_offsets=[]
+    for native in h.bones:
+        parent=native['parent']
+        delta=Vector(preview_offsets.get(native['index'], (0.,0.,0.)))
+        delta=Vector((delta.x,delta.z,delta.y))
+        world_offsets.append((world_offsets[parent] + worlds[parent].to_3x3()@delta)
+                             if parent>=0 else delta)
     mats=make_materials(h,label,textures)
     if any(p['material']>=len(mats) for p in parts):raise ValueError('Invalid material reference')
     collection=bpy.data.collections.new(f'LSW1 {label}');context.scene.collection.children.link(collection)
@@ -190,6 +240,9 @@ def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textu
     root['lsw1_selected_layer_names']=', '.join(h.layers[i] for i in selected_layers)
     root['lsw1_native_weights']=bool(armature)
     root['lsw1_animation_status']='No game animations imported'
+    if definition:
+        root['lsw1_definition_file']=str(definition)
+        root['lsw1_definition_scope']='Explicit layer selection only; runtime switches and animation settings are not applied'
     names=[]
     if armature:
         bpy.ops.object.select_all(action='DESELECT');root.select_set(True)
@@ -212,6 +265,9 @@ def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textu
     for index,part in enumerate(parts):
         bind=worlds[part['rigid_bone']] if part['rigid_bone'] is not None else Matrix.Identity(4)
         vertices=[bind@Vector((v[0],v[2],v[1])) for v in part['vertices']]
+        if not armature and preview_offsets:
+            vertices=[vertex + sum((world_offsets[bi]*weight for bi,weight in weights.items()), Vector())
+                      for vertex,weights in zip(vertices,part['weights'])]
         # The mesh-only path bakes the optional preview-facing correction.
         if not armature and correct_preview_pose and h.path.stem.lower()=='jangofett' and part['rigid_bone'] is not None and h.bones[part['rigid_bone']]['name']=='helmet':
             correction=bind@Matrix.Rotation(math.pi,4,'X')@bind.inverted()
@@ -228,9 +284,24 @@ def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textu
         obj=bpy.data.objects.new(f'{label} part {index:02d}',mesh);collection.objects.link(obj)
         obj.parent=root;mesh.materials.append(mats[part['material']])
         obj['lsw1_geometry_offset']=hex(part['geometry']);obj['lsw1_vertex_buffer']=part['buffer']
+        obj['lsw1_primitive_offset']=hex(part['primitive'])
         obj['lsw1_layer_index']=part.get('layer',0)
         obj['lsw1_layer_name']=h.layers[part.get('layer',0)]
         obj['lsw1_attachment_bone']=part['rigid_bone'] if part['rigid_bone'] is not None else -1
+        morph=part.get('morph')
+        if morph:
+            basis=obj.shape_key_add(name='Basis',from_mix=False)
+            for target in morph['targets']:
+                key=obj.shape_key_add(name=f"morph {target['id']}",from_mix=False)
+                key.value=0.0
+                if target['deltas'] is not None:
+                    for vi,delta in enumerate(target['deltas']):
+                        key.data[vi].co=basis.data[vi].co+linear_transform@Vector((delta[0],delta[2],delta[1]))
+            mesh.shape_keys['lsw1_target_ids']=[t['id'] for t in morph['targets']]
+            mesh.shape_keys['lsw1_empty_target_ids']=[t['id'] for t in morph['targets'] if t['deltas'] is None]
+            obj['lsw1_morph_offset']=hex(morph['offset'])
+            obj['lsw1_morph_unknown_word']=morph['unknown_word']
+            obj['lsw1_face_animation_status']='Static shape targets; game facial clips are not linked'
         uv=mesh.uv_layers.new(name='Original LSW1 UV')
         opacity=mesh.attributes.new(OPACITY_ATTRIBUTE,'FLOAT','POINT')
         packed=mesh.attributes.new(PACKED_COLOR_ATTRIBUTE,'INT','POINT')
@@ -265,6 +336,12 @@ def import_character(context,path,location=(0,0,0),scale=1.0,armature=True,textu
                     if bi not in groups:groups[bi]=obj.vertex_groups.new(name=names[bi])
                     groups[bi].add([vi],weight,'REPLACE')
             modifier=obj.modifiers.new('Native LSW1 skinning','ARMATURE');modifier.object=root
+    if preview_offsets:
+        root['lsw1_preview_pose_correction']='Clone hand display offsets; native bind unchanged. Disable Correct Known Preview Poses for source inspection or animation.'
+        if armature:
+            for index,delta in preview_offsets.items():
+                native_local=C@matrix(h.bones[index]['local'])@C
+                root.pose.bones[names[index]].location=native_local.to_3x3().inverted()@Vector((delta[0],delta[2],delta[1]))
     if armature and correct_preview_pose and h.path.stem.lower()=='jangofett':
         helmet=root.pose.bones.get('helmet')
         if helmet:

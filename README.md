@@ -1,149 +1,137 @@
 # TTGames Workshop
 
-A place for our TT Games / LEGO game file format research, Blender importers,
-texture readers and other reusable modding tools. Everything lives in one repo,
-with each game and format keeping its own notes and instructions.
+Tools for bringing supported LEGO game models and animations into Blender,
+inspecting game files, and making limited edits back to game formats.
 
-**AI was used to help with this project's code, research and documentation,
-including assistance from 6.1sol.** Maintained by Loomirr and contributors.
+## Download and install
 
-This first version brings together our existing projects. Some tools are ready
-to use for specific formats; others are still research scripts. Support for one
-game does not mean support for every TT game that uses the same extension.
+Choose your game below. Click **Download ZIP**, then the **Download button
+(down-arrow icon) at the top right** of GitHub's file view. Keep the ZIP zipped.
 
-## Start here
-
-**Current candidates:** Character **0.5.23**, CU3 **0.1.30**, LSW1 HGP **0.1.6**, experimental LSW2 HGP **0.2.1**.
-This pass integrates experimental LB2 characters and animation, additional
-LMSH1/LB3 model layouts, classic attachments and material preview fixes.
-See [validation and remaining gaps](docs/PR_REVIEW_2026-10-19.md).
-The [LSW1 feedback pass](docs/LSW1_FEEDBACK_2026-10-20.md) covers complementary
-layers, authored vehicle opacity and the confirmed custom-normal fan defect.
-
-Want to help, including with an AI coding session? Start with
-[contribution instructions](CONTRIBUTING.md) and the
-[copy-paste AI task prompts](docs/AI_CONTRIBUTING.md). A repository link alone
-does not specify a task or provide access to your local game files.
-
-## Game and file support
-
-This lists the file families covered by Workshop, not every extension shipped
-with each game. **Partial import** means usable Blender assembly for supported
-layouts with known omissions. **Inspection** reads data or references without
-building the complete model/scene. No row means every asset in that game is verified.
-
-| Game / platform | File types | Support and how to use it |
+| What you want to open | Download | First steps |
 | --- | --- | --- |
-| LEGO Star Wars: The Video Game (2005), PC | HGP | [HGP addon](formats/hgp/lsw1/README.md): models, native rigs and textures; observed original PC layouts, including vehicle HGPs. Does not cover LSW2/TCS. |
-| LEGO Star Wars II: The Original Trilogy, PC | DAT -1; AN3, CU2; HGP | Separate experimental [LSW2 HGP addon](formats/hgp/lsw2/README.md): models, rigs, textures, morphs and AN3 import; separate-file HGP export including new bones/parts. Synthetic/Blender integration checks only; original-file retesting and in-game export pending. [Archive/inspection notes](games/lsw2/README.md). |
-| LEGO Star Wars: The Complete Saga, PC | DAT -3; NU20 GHG/GSC; CU2, AN3, GIZ | [Classic inspection](formats/classic-pc/README.md): raw models/rigs/textures; native rigid binding and explicit sibling TXT `layers_high` visibility, retaining every layer. CU2 static references; AN3/GIZ CLI inspection. Costume switches, native shaders, animation playback and native export remain incomplete. Installed test tree has local mods. |
-| LEGO Batman (2008), PC | DAT -2; NU20 GHG/GSC; CU2, AN3, GIZ | Same [classic inspection](formats/classic-pc/README.md), with installed-DAT or extracted character browsing. Raw Blender models and CU2 reference scenes have explicit omissions; no complete character/cutscene or AN3 playback claim. |
-| LEGO Indiana Jones 1, PC | CU2, AN3, GIZ; NU20 GHG/GSC | Same [classic inspection tools](formats/classic-pc/README.md) for reported matching layouts. **No local game validation yet.** Separate from the Xbox prototype. |
-| LEGO Indiana Jones 1, Xbox 360 prototype | GHG, GSC, TEX, FNT, DDS | [DDS extractor](formats/nu20/lij1-xbox360/README.md): supported tiled texture allocations, mips and cubemaps. Does not import character meshes. |
-| LEGO Marvel Super Heroes, PC | CD, GHG/model GSC, AN4, CU3, DAT | [Character addon](formats/character/README.md): partial models/materials and supported animations; installed or extracted inputs. [CU3 addon](formats/cu3/README.md): partial scene assembly for v16/17/18, with separate camera/track gates. [AN4 CLI](formats/an4/lmsh1/README.md): scalar/BVH research. |
-| LEGO Batman 3, PC | CD, GHG/model GSC, AN4, CU3, DAT | [Character addon](formats/character/README.md): partial import/playback; [CU3 addon](formats/cu3/README.md): partial v19 scene assembly. Packed and extracted inputs; native shader/scene gaps remain. |
-| LEGO The Hobbit, PC | CD, GHG/model GSC, AN4, DAT | [Character addon](formats/character/README.md): partial import/playback for gated layouts, packed or extracted. Complete cutscene assembly is not enabled. |
-| LEGO Marvel's Avengers, PC | CD, GHG/model GSC, AN4, DAT | [Character addon](formats/character/README.md): partial import/playback, packed or extracted. Observed CC8 archive variant supported; complete cutscene assembly not enabled. |
-| LEGO Star Wars: The Force Awakens, PC | DAT/HDR (CC8), CU3, GHG/AN4 references | [Verified archive inspection/extraction](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md) and [CU3 reference inspection](formats/cu3/README.md). ANI-E playback, full characters and full scenes are not enabled. |
-| LEGO DC Super-Villains, PC | DAT/HDR (CC12, four-byte marker), CU3, GHG/AN4 references | [Verified archive inspection/extraction](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md), CU3 inspection and limited [skeleton-transfer research](docs/SKELETON_TRANSFER.md). Not a complete character/scene importer or general native exporter. |
-| LEGO Marvel Super Heroes 2, PC | DAT/HDR (CC12), CD, GHG, AN4 | [Verified archive inspection/extraction](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md) for modes 0/2; ZIPX, later CD and ANI-E playback remain refused. No complete character importer. |
-| LEGO The Lord of the Rings, PC | DAT, CD, GHG, AN4 | [Archive and character inspection](formats/character/COMPATIBILITY.md). Sample MESH 48 / DISP 15 / UMTL 148 / HGOL 10 models remain outside the full character reader. |
-| The LEGO Movie Videogame, PC | DAT parent -5; character/cutscene payloads unverified | [PC DAT index GUI/CLI](docs/COMPATIBILITY_EXPANSION_2026-10-09.md): checked paths and file spans. No character or cutscene assembly yet. |
-| LEGO Batman 2, PC | DAT -4; CD, GHG/GSC (MESH 47/48), AN4 | [Experimental character import](docs/LB2_CHARACTERS.md), [body animation](docs/LB2_ANIMATION.md) and [facial controls](docs/LB2_FACES.md). Observed older material/display/rig versions and vehicle layouts are supported; native shaders, cutscenes and source export remain incomplete. |
-| LEGO Star Wars III, PC | DAT -4 | [PC DAT index GUI/CLI](docs/COMPATIBILITY_EXPANSION_2026-10-09.md). Character and cutscene payloads remain unverified. |
-| LEGO Jurassic World, PC | DAT parent -7 observed | Diagnostic research only; unresolved hashes and trailing index tables remain refused. |
-| LEGO Star Wars: The Skywalker Saga, PC | Later DAT layouts observed | Diagnostic research only; archive and character layouts remain unverified. |
-| The LEGO Ninjago Movie Videogame / LEGO Dimensions | Ninjago DAT/HDR (CC12); selected GHG / AN4 resources | [Verified Ninjago archive indexes](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md), [skeleton-transfer diagnostics](tools/skeleton_transfer/README.md) and a private native weapon proof. No general game importer/exporter yet. |
-| LMSH: Universe in Peril, Nintendo 3DS | BTGA, FUSE | [Texture / payload tools](formats/btga/3ds/README.md): PNG/DDS conversion and observed USA FUSE decoding; no full character/animation importer. |
-| LEGO Fortnite | Exported JSON, GLB, PNG; optional Paks bridge | [Static character profile](formats/fortnite/README.md) in the character addon. External Unreal runtime required for Paks extraction; no animation support and incomplete native shaders. |
+| LEGO Star Wars 1, PC — models | [Download ZIP · 0.1.10](builds/blender/lsw1_hgp_importer-0.1.10.zip) | [Install and import](formats/hgp/lsw1/README.md) |
+| LEGO Star Wars II, PC — models and animations | [Download ZIP · 0.2.1](builds/blender/io_lsw2_hgp-0.2.1.zip) | [Install and import](formats/hgp/lsw2/README.md) |
+| The Complete Saga / LEGO Batman 1, PC — models and rigs; no animation playback | [Download ZIP · 0.5.31](builds/blender/TT_Character_Importer_0.5.31.zip) | [Import classic models](formats/character/README.md#lego-batman-1-and-the-complete-saga) |
+| LEGO Batman 2 / Marvel Super Heroes / Batman 3 / The Hobbit / Marvel's Avengers, PC — characters and supported animations | [Download ZIP · 0.5.31](builds/blender/TT_Character_Importer_0.5.31.zip) | [Install and import](formats/character/README.md) |
+| Marvel Super Heroes / Batman 3, PC — cutscenes, with missing features | [Download ZIP · 0.1.37](builds/blender/TT_Cutscene_Importer_0.1.37.zip) | [Install and import](formats/cu3/README.md#blender-addon) |
 
-Other installed games and handheld editions do not gain importer support merely
-because their files share these extensions. Unlisted layouts remain unverified.
+In Blender, go to **Edit > Preferences > Get Extensions**, click the **drop-down
+arrow at the top right**, then select **Install from Disk** and choose the ZIP.
+Enable the addon under **Add-ons**, then go to **File > Import**. For Star Wars
+1 and II, you can also drag the ZIP into the Blender window to install it.
 
-**Editing/export:** enabled TT character profiles can write constrained edits
-back to matching loose source files. General topology, material, skeleton and
-cross-game animation export is not complete. CU3 name editing and face-target
-writing have separate hash/layout guards; see [support notes](docs/SUPPORT.md).
-See [character editing and native export](docs/CHARACTER_EDITING.md) for the
-current limits on adding bones, swapping hair and rebuilding native models.
+Star Wars 1 and II need **Blender 4.2+**; the other downloads need **4.4+**.
+The two model rows using version 0.5.31 share one download, listed in Blender
+as **TT Character and Animation Importer**. Install it once and choose your game.
 
-See the [game index](games/README.md), [format index](formats/README.md),
-[support notes](docs/SUPPORT.md), [project layout](docs/LAYOUT.md) and
-[next steps](docs/ROADMAP.md).
-The [skeleton transfer planner](tools/skeleton_transfer/README.md) adds
-read-only rig/mapping/AN4 checks, item action diagnostics and a rest-relative rotation API. See the
-[cross-game transfer pipeline](docs/SKELETON_TRANSFER.md) for the private native
-proof, validation stages and remaining export limits.
-The [validation review](docs/MERGE_PACKET_REVIEW_2026-10-06.md) records
-this implementation pass and its validation limits. The
-[BactaTank interoperability study](docs/BACTATANK_INTEROP.md) describes a possible
-independent `.bmesh` export path; no BactaTank exporter is enabled yet.
-The [latest tool review](docs/TOOL_REVIEW_2026-10-05.md) records the checks,
-current limitations and priorities across the components.
-The [community reference review](docs/RESEARCH_REFERENCES_2026-10-07.md) records
-independent material/face/archive checks and separates external project claims
-from our validated coverage. That research review copied no external implementation.
-The separate [classic PC contribution](formats/classic-pc/README.md) retains its MIT attribution.
-The [Figure Forge and fork review](docs/FIGURE_FORGE_REVIEW_2026-10-20.md)
-compares reusable native writers, unmerged LSW2 work and our skeleton-transfer
-tools, with local round-trip results and explicit integration limits.
-The [minifigure issue patch notes](docs/ISSUE_1_MINIFIGS.md) cover the newer
-accessory LOD and LMSH1 arm UV fixes, plus the remaining reported problems.
+Need a different tool? See [all downloads, including face and texture tools](builds/README.md).
+For other games, check [game and file support](#game-and-file-support).
+See [viewing and editing animations](docs/ANIMATION_SUPPORT.md) before choosing
+an animation workflow.
 
-The [TCS PC scripting guide](games/tcs/scripting/README.md) documents AI state
-machines, native command names, character/animation definitions, stock saber
-colors, portraits, engine limits and character/level text integration. It separates
-asset observations and native analysis from unverified runtime behaviour; no
-script compiler or gameplay changes are included. Its authoring recipes use
-the native game's existing interfaces only.
+For **creating characters in the PC versions of The Complete Saga, LEGO Batman 1
+or LEGO Indiana Jones 1**, [BactaTank Classic](https://github.com/AlubJ/BactaTank-Classic)
+is a better starting point than Workshop's inspection tools. Follow that
+project's instructions for its supported editing workflow. Workshop does not
+currently export edited classic GHG models.
 
 ## Using the tools
 
-Ready-to-use packages are in [builds/](builds/README.md), with download and
-installation notes. The packages contain only our tools and their licenses.
+The Character addon can open a supported character definition (`.cd`) to find
+its model, costume and attachments. It can also open supported model files
+(`.ghg` and model `.gsc`) directly. Opening a model alone is useful for inspecting
+one part; it may not include the character's full costume or attachments.
+See [which input to choose](formats/character/README.md#import-a-character).
 
-Prefer browse buttons over commands? Pick a [separate GUI download](builds/README.md#separate-gui-downloads)
-for texture conversion, animation export, archive indexes or face/cutscene
-utilities. Each opens directly to its own tool with `Launch.pyw` and works
-independently. Python 3.10+ with Tk is required; BTGA also needs Pillow.
-The LIJ1 Windows extractor already has its own GUI. The combined
-[toolbox](tools/WORKSHOP_GUI.md) remains optional.
+Each tool works separately. The Character addon does not require the CU3 addon;
+the desktop utilities do not require Blender. There is no single installation
+that enables every file type. The [combined toolbox](tools/WORKSHOP_GUI.md) is
+optional.
 
-Each folder has its own requirements and commands. There is no single install
-that enables everything. Blender addons are built from their own folders;
-Python tools and the .NET extractor run separately.
+Before editing a character, check the [export limits](docs/CHARACTER_EDITING.md).
+Most supported modern games allow edits to existing vertices and face shapes,
+not arbitrary new meshes, bones or materials. Exports use separate files and
+do not modify the installed game automatically.
 
-You supply your own game files. CU3 scene assembly accepts an installed LB3 or
-LMSH1 game folder or an extracted asset tree alongside the selected CU3 file.
-It loads supported actors and source cameras, with experimental static stage
-geometry from declared level resources. Stage visibility, nested scenes,
-props, original lighting, audio and effects still need work.
-Game meshes, textures, audio, full Blender scenes, archive keys and proprietary
-runtimes are not in Git. On the research workstation those files live under
-ignored `local/`; see
-[the local workspace guide](docs/LOCAL_WORKSPACE.md).
+## Game and file support
 
-The character sidebar now exposes import and viewing-copy quality settings.
-See [facial shading, head printing and highest-detail selection](docs/SHADING_AND_QUALITY.md)
-for the latest corrections and remaining limits.
+Choose by **game and platform first**. The families often called Early Classic,
+Classic, NXG, DX11 and NTT help describe the files, but do not guarantee support.
+A `.ghg` or `.cu3` from one game may have a different layout in another.
+See [how the format families relate to the downloads](builds/README.md#game-families).
 
-Character-specific experiments, suit profiles, LOTDK texture mapping and
-historical Fortnite projects are also kept local. The reusable Fortnite profile
-contains tool code only and keeps its external dependencies separate. This repo focuses on reusable TT file
-format tools and importers, rather than character projects.
+This table describes available workflows, not a promise that every character
+works. **Partial import** means Blender assembly with known gaps.
+**Inspection** means viewing model data or file references without a complete
+character or scene. **Experimental export** still needs in-game testing.
+
+Every game also has separate completion targets for [1:1 shaders, faces, facial
+animation and native facial/material export](docs/VISUAL_AND_FACE_COVERAGE.md).
+These targets do not imply those features already work.
+
+| Game / platform | File types covered | What works here |
+| --- | --- | --- |
+| LEGO Star Wars: The Video Game (2005), PC | HGP | [Separate LSW1 addon](formats/hgp/lsw1/README.md): models, rigs and textures, including observed vehicle files. No game-format export. |
+| LEGO Star Wars II: The Original Trilogy, PC | HGP, AN3, CU2, DAT | [Separate experimental LSW2 addon](formats/hgp/lsw2/README.md): models, rigs, textures, face shapes and animation import. HGP export allows new bones and parts; original-file retesting and in-game export checks are pending. [Other file tools](games/lsw2/README.md). |
+| LEGO Star Wars: The Complete Saga, PC | GHG, GSC, CU2, AN3, GIZ, DAT | [Classic inspection](formats/classic-pc/README.md): models, rigs, textures and static cutscene references. A matching character TXT can choose visible layers. Full character assembly, animation playback and game-format export are incomplete. The local test installation includes mods. |
+| LEGO Batman (2008), PC | GHG, GSC, CU2, AN3, GIZ, DAT | [Classic inspection](formats/classic-pc/README.md): models and static cutscene references, from installed or extracted files. No complete character assembly, animation playback or game-format export. |
+| LEGO Indiana Jones 1, PC | GHG, GSC, CU2, AN3, GIZ | [Classic inspection tools](formats/classic-pc/README.md) for matching layouts. No local game validation yet. |
+| LEGO Indiana Jones 1, Xbox 360 prototype | GHG, GSC, TEX, FNT, DDS | [Texture extractor](formats/nu20/lij1-xbox360/README.md), not a character mesh importer. |
+| LEGO Batman 2, PC | CD, GHG, model GSC, AN4, DAT | Experimental [characters](docs/LB2_CHARACTERS.md), [body animation](docs/LB2_ANIMATION.md) and [facial animation](docs/LB2_FACES.md). Materials, cutscenes and export remain incomplete. |
+| LEGO Marvel Super Heroes, PC | CD, GHG, model GSC, AN4, CU3, DAT | [Character addon](formats/character/README.md): partial characters and supported animations. [CU3 addon](formats/cu3/README.md): partial cutscenes. Limited model edits and experimental AN4 export. |
+| LEGO Batman 3, PC | CD, GHG, model GSC, AN4, CU3, DAT | [Character addon](formats/character/README.md): partial characters and supported animations. [CU3 addon](formats/cu3/README.md): partial cutscenes. Limited model edits and experimental AN4 export. |
+| LEGO The Hobbit, PC | CD, GHG, model GSC, AN4, DAT | [Character addon](formats/character/README.md): partial characters, supported animations and limited export. Full cutscene assembly is not enabled. |
+| LEGO Marvel's Avengers, PC | CD, GHG, model GSC, AN4, DAT | [Character addon](formats/character/README.md): partial characters, supported animations and limited export. Full cutscene assembly is not enabled. |
+| LEGO Star Wars: The Force Awakens, PC | DAT/HDR, CU3 and referenced model/animation files | [Archive tools](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md) and [cutscene reference inspection](formats/cu3/README.md). No full character assembly or animation playback. |
+| LEGO DC Super-Villains, PC | DAT/HDR, CU3 and referenced model/animation files | [Archive tools](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md), cutscene reference inspection and [skeleton-transfer research](docs/SKELETON_TRANSFER.md). No general character importer/exporter. |
+| LEGO Marvel Super Heroes 2, PC | DAT/HDR, CD, GHG, AN4 | [Archive inspection/extraction](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md) for supported compression types. Later character definitions and animation layouts are incomplete; no complete character importer. |
+| LEGO The Lord of the Rings, PC | DAT, CD, GHG, AN4 | [Archive and character inspection](formats/character/COMPATIBILITY.md). Sample model versions are outside the full character importer. |
+| The LEGO Movie Videogame, PC | DAT | [Archive index tools](docs/COMPATIBILITY_EXPANSION_2026-10-09.md). Character and cutscene assembly are not enabled. |
+| LEGO Star Wars III, PC | DAT | [Archive index tools](docs/COMPATIBILITY_EXPANSION_2026-10-09.md). Character and cutscene files remain unverified. |
+| LEGO Jurassic World, PC | DAT research | Unresolved archive indexes; no supported character workflow yet. |
+| LEGO Star Wars: The Skywalker Saga, PC | DAT research | Archive and character layouts remain unverified. |
+| The LEGO Ninjago Movie Videogame / LEGO Dimensions | Ninjago DAT/HDR; selected GHG and AN4 files | [Ninjago archive indexes](docs/ARCHIVE_COMPATIBILITY_2026-10-15.md) and [skeleton-transfer diagnostics](tools/skeleton_transfer/README.md). No general game importer/exporter. |
+| LEGO Marvel Super Heroes: Universe in Peril, Nintendo 3DS | BTGA, FUSE | [Texture and file tools](formats/btga/3ds/README.md). No full character or animation importer. |
+| LEGO Fortnite | Exported JSON, GLB, PNG; optional Paks extraction | [Static character profile](formats/fortnite/README.md). An external tool is needed for Paks extraction. No animation or game-format export. |
+
+Games often reuse file extensions while changing the contents. Choosing a
+similar game in the importer does not make an unsupported file compatible.
+For exact file versions and known omissions, see the linked component pages
+and [support notes](docs/SUPPORT.md).
+
+## Research and detailed reports
+
+Development follows **Early Classic → NXG → DX11 → NTT → Classic**.
+LSW1 PC is the active starting point; no era is complete. See the
+[project-wide completion criteria and current gaps](docs/ERA_DEVELOPMENT.md).
+
+These pages are for investigating bugs or developing support; they are not
+required reading for a first import.
+
+- [Game index](games/README.md), [format index](formats/README.md) and [project layout](docs/LAYOUT.md).
+- [Current priorities](docs/ROADMAP.md) and [character editing/export limits](docs/CHARACTER_EDITING.md).
+- [Import and preview quality settings](docs/SHADING_AND_QUALITY.md).
+- [October 19 importer review](docs/PR_REVIEW_2026-10-19.md), [LSW1 feedback](docs/LSW1_FEEDBACK_2026-10-20.md) and [remaining minifigure issues](docs/ISSUE_1_MINIFIGS.md).
+- [Figure Forge and fork review](docs/FIGURE_FORGE_REVIEW_2026-10-20.md) and [community reference review](docs/RESEARCH_REFERENCES_2026-10-07.md).
+- [Skeleton transfer work](docs/SKELETON_TRANSFER.md), [validation review](docs/MERGE_PACKET_REVIEW_2026-10-06.md) and [earlier tool review](docs/TOOL_REVIEW_2026-10-05.md).
+- [TCS scripting guide](games/tcs/scripting/README.md): character definitions, scripts and game limits; no script compiler is included.
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests and PR expectations.
-[AGENTS.md](AGENTS.md) gives repository instructions for coding sessions; the
-[AI contribution guide](docs/AI_CONTRIBUTING.md) includes prompts for both
-execution-capable agents and chat-only reviews.
+Maintained by Loomirr and contributors. AI helped with code, research and documentation.
 
-Keep original inputs intact and make edited copies. Include the exact game,
-platform, file version and what was checked when adding support. Preserve
-native skeletons and source data, and clearly label guessed or approximate
-rendering. More samples help, especially when a file is rejected by the reader.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, tests and pull requests.
+You can help by reporting a reproducible problem, checking a model in-game,
+or improving documentation; coding experience is not required for a useful
+bug report. Include the game, tool version, file name, expected result and what
+actually happened. Do not upload game assets to the repository.
+
+[AGENTS.md](AGENTS.md) contains coding instructions. The
+[AI contribution guide](docs/AI_CONTRIBUTING.md) includes task prompts; a
+repository link alone does not tell an assistant what to work on or give it
+access to your game files.
 
 Existing component licenses stay with their folders. See
-[licensing and credits](docs/LICENSING.md). This repo is not an official LEGO,
+[licensing and credits](docs/LICENSING.md). This is not an official LEGO,
 TT Games, Lucasfilm, Marvel, DC or Epic Games project.

@@ -17,7 +17,7 @@ def main():
     for name in ('an4', 'an4_edit', 'animation_catalog', 'animation_bank', 'native_model_blender', 'costume_materials', 'asset_index', 'dependencies', 'blender_import', 'face_live', 'face_edit', 'source_provenance', 'bundle_output', 'animation_ownership'):
         files.update(dependencies(ADDON / (name + '.py')))
     source = ROOT / 'formats/character/Addon/io_scene_tt_character/__init__.py'
-    info = next(ast.literal_eval(n.value) for n in ast.parse(source.read_text()).body
+    info = next(ast.literal_eval(n.value) for n in ast.parse(source.read_text(encoding='utf-8')).body
                 if isinstance(n, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'bl_info' for t in n.targets))
     version = '.'.join(map(str, info['version']))
     target = ROOT / 'builds/blender' / f'TT_Character_Importer_{version}.zip'

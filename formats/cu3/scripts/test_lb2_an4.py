@@ -79,7 +79,8 @@ class LB2AN4(unittest.TestCase):
             self.assertEqual(samples(source), reference)
 
     def test_unobserved_or_inconsistent_trees_are_refused(self):
-        for raw in (tree(version=3), tree(version=8), tree('<', 3)):
+        # Version 8 is now verified in LOTR; 9 remains unobserved.
+        for raw in (tree(version=3), tree(version=9), tree('<', 3)):
             with self.assertRaisesRegex(FormatError, 'verified big-endian'):AnimationFile('x.an4', data=raw)
         bad = bytearray(tree('<', 2));struct.pack_into('<I', bad, 4, len(bad) + 4)
         with self.assertRaises(FormatError):AnimationFile('x.an4', data=bytes(bad))

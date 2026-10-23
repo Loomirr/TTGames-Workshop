@@ -16,6 +16,12 @@ PREVIEW_FIELDS = (
 )
 
 _DEFINITIONS = (
+    ('tt_workflow', EnumProperty, dict(name='Task', items=[
+        ('IMPORT', 'Import', 'Bring a character or model into Blender'),
+        ('ANIMATE', 'Animate', 'View or edit an imported character animation'),
+        ('EXPORT', 'Export', 'Write supported edits back to game files')], default='IMPORT')),
+    ('tt_show_advanced', BoolProperty, dict(name='Advanced', default=False,
+        description='Show batch import, custom clips, preview setup and technical details')),
     ('tt_mesh_detail', EnumProperty, dict(name='Mesh detail', items=[
         ('HIGHEST', 'Highest detail', 'Use the nearest verified native LOD for all imported character parts'),
         ('AUTHORED', 'Authored binding', 'Inspect the original display binding')], default='HIGHEST')),

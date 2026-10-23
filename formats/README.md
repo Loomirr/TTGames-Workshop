@@ -1,7 +1,8 @@
 # Formats
 
-Folders are organized by container/format first, then by the game or platform
-whose layout was actually investigated.
+Development follows the [era plan](../docs/ERA_DEVELOPMENT.md), starting with
+Early Classic. Source folders remain organized by format and verified game/platform
+layout. Matching extensions do not imply a shared reader.
 
 - [CU3](cu3/README.md): PC cutscenes, names, animation and facial research.
 - [Classic PC](classic-pc/README.md): separate NU20/CU2/AN3/GIZ inspectors, LB1/TCS raw model inspection and CU2 static reference scenes. Complete classic character assembly and animation playback remain unavailable; Indiana Jones layouts are contributor-reported.

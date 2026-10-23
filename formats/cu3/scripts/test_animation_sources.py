@@ -11,6 +11,7 @@ sys.modules[package.__name__] = package
 from tt_source_test.animation_bank import AnimationBank
 from tt_source_test.archive_cc import parse_index, path_hash
 from tt_source_test.cu3 import FormatError
+from tt_source_test.tt_deflate import compress
 
 
 def bank(name='idle.an4'):
@@ -35,6 +36,21 @@ def archive(kind, version):
 
 
 class Checks(unittest.TestCase):
+    def test_stored_bank_member_retains_compression_and_validates_it(self):
+        payload=compress(b'animation data'*100)
+        original=bank()
+        offset=struct.unpack_from('<I',original,28)[0]
+        raw=bytearray(original[:offset]+payload)
+        struct.pack_into('<I',raw,8,len(raw))
+        struct.pack_into('<I',raw,32,len(payload))
+        source=AnimationBank('fixture.pak',data=bytes(raw))
+        self.assertEqual(source.read_stored('IDLE.AN4'),payload)
+        self.assertEqual(source.read('idle.an4'),b'animation data'*100)
+        self.assertEqual(source.data,bytes(raw))
+        struct.pack_into('<I',raw,offset+32,1)
+        broken=AnimationBank('fixture.pak',data=bytes(raw))
+        with self.assertRaises(FormatError):broken.read_stored('idle.an4')
+
     def test_bank_read(self):
         source=AnimationBank('fixture.pak',data=bank())
         self.assertEqual(source.read('IDLE.AN4'),b'abc')

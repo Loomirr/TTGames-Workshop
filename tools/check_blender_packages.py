@@ -46,7 +46,7 @@ def main():
                             raise AssertionError('Unexpected addon package member: ' + member)
                     archive.extractall(destination)
                 source = ROOT / source_path
-                expected = next(ast.literal_eval(node.value) for node in ast.parse(source.read_text()).body
+                expected = next(ast.literal_eval(node.value) for node in ast.parse(source.read_text(encoding='utf-8')).body
                                 if isinstance(node, ast.Assign) and any(
                                     isinstance(target, ast.Name) and target.id == 'bl_info'
                                     for target in node.targets))
@@ -61,12 +61,33 @@ def main():
                 addon.register()
                 registered.append(addon)
                 if name == 'io_scene_tt_character':
+                    sys.path.insert(0, str(ROOT / 'tools'))
+                    from check_character_navigation import check
+                    check(addon)
+                    sys.path.remove(str(ROOT / 'tools'))
                     # Every selectable game must have a saved source-folder field.
                     fields = addon.TTCHAR_Preferences.bl_rna.properties
                     for game, _, _ in addon.GAMES:
                         assert game.lower() in fields, game
+                    from types import SimpleNamespace
+                    export = SimpleNamespace(filepath='animation.AN4', rebuild_bank=True,
+                                             check_extension=True)
+                    assert addon.TTCHAR_OT_export_action.check(export, bpy.context)
+                    assert export.filepath == 'animation.PAK'
+                    export.rebuild_bank = False
+                    assert addon.TTCHAR_OT_export_action.check(export, bpy.context)
+                    assert export.filepath == 'animation.AN4'
                 if name == 'io_scene_lego_cu3':
                     from types import SimpleNamespace
+                    sys.path.insert(0, str(ROOT / 'tools'))
+                    from check_character_navigation import Layout
+                    for mode in ('ASSEMBLE', 'DEPENDENCIES', 'INSPECT', 'SKELETONS', 'SELECTED'):
+                        draw_options = SimpleNamespace(layout=Layout(), mode=mode,
+                            game_profile='AUTO', asset_root='', static_environment=True,
+                            skeleton_path='', actor_filter='', record_index=0,
+                            place_in_scene=False, source_visibility=True, copy_rig=True, cameras=False)
+                        addon.IMPORT_SCENE_OT_lego_cu3.draw(draw_options, bpy.context)
+                    sys.path.remove(str(ROOT / 'tools'))
                     for version in (16,17,18):
                         assert addon.assembly_profile(SimpleNamespace(version=version),'AUTO') == 'LMSH1'
                     assert addon.assembly_profile(SimpleNamespace(version=19),'AUTO') == 'LB3'
@@ -104,7 +125,7 @@ def check_drop_handlers(addon):
                 and issubclass(v,bpy.types.FileHandler) and v is not bpy.types.FileHandler]
     expected = {'io_scene_lego_cu3':{'.cu3','.cu2'},
                 'io_scene_tt_character':{'.cd','.ghg','.gsc','.an4'},
-                'lsw1_hgp_importer':{'.hgp'}, 'io_lsw2_hgp':{'.hgp'}}[addon.__name__]
+                'lsw1_hgp_importer':{'.hgp','.txt'}, 'io_lsw2_hgp':{'.hgp'}}[addon.__name__]
     assert {ext for cls in handlers for ext in cls.bl_file_extensions.split(';')} == expected
     viewport = SimpleNamespace(area=SimpleNamespace(type='VIEW_3D'),mode='OBJECT',object=None)
     for cls in handlers:

@@ -28,13 +28,25 @@ def main():
             json.loads(path.read_text(encoding='utf-8-sig'));counts['json']+=1
         elif path.suffix=='.csproj':
             ET.parse(path);counts['projects']+=1
-    for name in ['test_skeleton_versions.py','test_animation_sources.py','test_tt_deflate.py','test_an4_standalone.py','test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py','test_native_display.py','test_morph_controls.py','test_dependencies.py','test_native_layers.py','test_camera_version_gate.py','test_archive_cc8.py','test_tfa_structure.py','test_archive_assets.py','test_archive_v5.py','test_scene_configuration.py','test_stage_geometry.py']:
+    for name in ['test_skeleton_versions.py','test_animation_sources.py','test_animation_bank_edit.py','test_tt_deflate.py','test_an4_standalone.py','test_an4_constants.py','test_face_targets.py','test_face_edit.py','test_material_flags.py','test_discrete_controls.py','test_texture_store.py','test_native_display.py','test_morph_controls.py','test_dependencies.py','test_native_layers.py','test_camera_version_gate.py','test_archive_cc8.py','test_tfa_structure.py','test_archive_assets.py','test_asset_index_cache.py','test_archive_v5.py','test_scene_configuration.py','test_stage_geometry.py']:
         subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_header_layouts.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_audit_files.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_animation_records.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_face_channels.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_curve_evaluation.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_animation_pose.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_layer_assembly.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_vertex_opacity.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_morph_targets.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_definitions.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_native_effects.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_shader_reference.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_shader_cubemap.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw1/tests/check_shader_inventory.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/hgp/lsw2/tests/test_synthetic.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_definition_inline.py')],check=True,cwd=ROOT)
+    subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_definition_versions.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_layer_selection.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'tools/test_prune_builds.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/classic-pc/tests/test_readers.py')],check=True,cwd=ROOT)
@@ -68,6 +80,8 @@ def main():
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_model_validation.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_source_provenance.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_an4_edit.py')],check=True,cwd=ROOT)
+    for name in ('test_an4_legacy_edit.py','test_an4_tree_profiles.py','test_an4_facial_channels.py'):
+        subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts'/name)],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/cu3/scripts/test_face_decoder_cli.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'tools/check_docs.py')],check=True,cwd=ROOT)
     subprocess.run([sys.executable,str(ROOT/'formats/btga/3ds/test_fuse.py')],check=True,cwd=ROOT)

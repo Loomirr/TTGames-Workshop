@@ -9,12 +9,14 @@ from animation_audit import AnimationFile, compare_files, main
 
 def tree(*, endian=">", first=2.0, flags=0xe6, node_flags=3, ratio=1.0):
     # A five-key native compressed curve, with three complete key groups.
-    block = bytearray(135)
+    key_at = 100 if flags & 0x20 else 108  # External channel controls when 0x20 is clear.
+    flags_at = key_at + 24
+    block = bytearray(flags_at + 11)
     block[:4] = b"ANID" if endian == ">" else b"DINA"
     struct.pack_into(endian + "6H", block, 4, 1, 5, 8, 0, 6, int(first))
     block[19] = flags
     struct.pack_into(endian + "H", block, 22, 7)
-    struct.pack_into(endian + "9I", block, 36, 80, 88, 88, 100, 124, 0, 0, 0, 0)
+    struct.pack_into(endian + "9I", block, 36, 80, 88, 88, key_at, flags_at, 0, 0, 0, 0)
     struct.pack_into(endian + "2f", block, 72, ratio, first)
     struct.pack_into(endian + "2f", block, 80, 1 / 65535, 0)
     struct.pack_into(endian + "6H", block, 88, 7, 14, 14, 14, 14, 14)
@@ -22,8 +24,8 @@ def tree(*, endian=">", first=2.0, flags=0xe6, node_flags=3, ratio=1.0):
         tangent = round(.75 * 4095)
         words = [round(t * 4095) | (((tangent >> (4 * i)) & 15) << 12)
                  for i, t in enumerate((0, .25, .5))]
-        struct.pack_into(endian + "4H", block, 100 + group * 8, value, *words)
-    block[124] = node_flags
+        struct.pack_into(endian + "4H", block, key_at + group * 8, value, *words)
+    block[flags_at] = node_flags
     raw = bytearray(240) + block
     struct.pack_into(">2I", raw, 0, 16, len(raw))
     struct.pack_into(">H", raw, 8, 1)
@@ -89,7 +91,8 @@ class AuditTests(unittest.TestCase):
             self.assertEqual(json.loads(out.read_text())["records"][0]["maximum_undeclared_channel_error"], 0)
             with self.assertRaises(SystemExit):
                 main(args)
-            raw = bytearray(tree());struct.pack_into(">I", raw, 0, 17);new.write_bytes(raw)
+            # Tree 17 is now verified for Dimensions; 21 is still unknown.
+            raw = bytearray(tree());struct.pack_into(">I", raw, 0, 21);new.write_bytes(raw)
             with self.assertRaises(SystemExit):
                 main(args[:-1] + [str(root / "refused.json")])
             self.assertFalse((root / "refused.json").exists())

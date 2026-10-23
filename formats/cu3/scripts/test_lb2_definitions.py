@@ -57,7 +57,7 @@ class LB2Definitions(unittest.TestCase):
             with self.assertRaisesRegex(FormatError,'skeleton name'):character_definition(path)
 
     def test_unobserved_versions_stay_refused(self):
-        for version in (17,20,21,32):
+        for version in (17,32,38):
             with self.assertRaisesRegex(FormatError,'not verified'):read_definition_bytes(fixture(version))
 
     def test_layout_of_another_version_does_not_decode(self):

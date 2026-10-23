@@ -22,3 +22,9 @@ names can refer to the same character; use the family replacement planner.
 The private V5 sewer scene improves depth masks, facial targets, source normals
 and several body proxies. Rendering, environments and some shots remain
 approximate; it is not a fully faithful game replay.
+
+## Shader and facial completion
+
+This edition must separately pass **1:1 shader matching, face reconstruction,
+facial animation and native facial/material export**. These remain open goals;
+see the [per-game checklist and required evidence](../../docs/VISUAL_AND_FACE_COVERAGE.md).

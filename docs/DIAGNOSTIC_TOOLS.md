@@ -207,6 +207,6 @@ import or an operator returning `FINISHED` does not establish actor recovery.
 The two previously tested cutscenes still need nonzero, correctly owned actors
 before their original-file regression can pass.
 
-BactaTank export remains a separate independent proposal in
-[BACTATANK_INTEROP.md](BACTATANK_INTEROP.md). These diagnostics contain no
-BactaTank implementation and do not enable `.bmesh` or classic-game GHG writing.
+These diagnostics do not write classic-game GHG files. For character creation
+in PC TCS, LEGO Batman or LEGO Indiana Jones, start with
+[BactaTank Classic](https://github.com/AlubJ/BactaTank-Classic).

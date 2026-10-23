@@ -6,3 +6,9 @@ and existing PC DDS files. It exports BC1/2/3/5, float textures and six-face
 cubemaps. All 757 supplied GHG/GSC files process; nine undersized allocations
 remain explicitly raw, and objects without mip metadata export base images
 with warnings. See the component README and FORMAT.md for validation and limits.
+
+## Shader and facial completion
+
+This edition must separately pass **1:1 shader matching, face reconstruction,
+facial animation and native facial/material export**. These remain open goals;
+see the [per-game checklist and required evidence](../../docs/VISUAL_AND_FACE_COVERAGE.md).

@@ -1,5 +1,9 @@
 # Support and validation
 
+The [per-game shader and facial checklist](VISUAL_AND_FACE_COVERAGE.md) tracks
+1:1 rendering, face reconstruction, facial playback and native export as separate
+completion requirements. The evidence below describes partial progress.
+
 The [TCS PC scripting reference](../games/tcs/scripting/README.md) adds
 documentation of observed SCP syntax, native command tables and execution paths,
 character and animation definitions, stock colors, portraits and original engine limits.
